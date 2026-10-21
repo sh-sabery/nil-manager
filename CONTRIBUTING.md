@@ -13,7 +13,7 @@ For each released update:
 3. Change `VERSION`, the plugin's `Version:` header and `NIL_Bulk_Manager::VERSION`, and `package.json`; regenerate `package-lock.json` with `npm install --package-lock-only`.
 4. Add `## [X.Y.Z] - YYYY-MM-DD` and factual release notes to CHANGELOG.md.
 5. Run tests and build the ZIP. Inspect the diff and ensure the package only contains plugin files.
-6. Commit and push the change, then create an annotated `vX.Y.Z` tag and push it. The release workflow reruns checks before creating a release with the installation ZIP and the exact changelog entry.
+6. Commit and push the change to `main`. The release workflow reruns checks, creates a `vX.Y.Z` tag for a new VERSION, and publishes a release with the installation ZIP and exact changelog entry. A manually pushed version tag can trigger the same workflow. Existing releases are skipped without changing their tags or assets.
 7. Check the Actions result and release asset. Report the commit, tag, release link, and any unverified behavior to the user. Site installation is a separate action.
 
 GitHub Actions may need to be enabled for the private repository and use available private-repository Actions minutes. The release job requests only `contents: write`; tests use `contents: read`. No external deployment credentials or automatic WordPress installation are configured.

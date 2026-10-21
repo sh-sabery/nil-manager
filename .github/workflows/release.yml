@@ -1,6 +1,7 @@
 name: Release plugin
 on:
   push:
+    branches: [main]
     tags: ['v*.*.*']
 permissions:
   contents: read
@@ -29,13 +30,24 @@ jobs:
           php tests/pricing.php
       - name: Build installation ZIP and release notes
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: python3 scripts/build.py --tag "$RELEASE_TAG"
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          RELEASE_TAG="v$(cat VERSION)"
+          if [ "$REF_TYPE" = tag ] && [ "$REF_NAME" != "$RELEASE_TAG" ]; then
+            echo 'The pushed tag does not match VERSION.' >&2
+            exit 1
+          fi
+          python3 scripts/build.py --tag "$RELEASE_TAG"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
       - name: Publish release with installation ZIP
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
         run: |
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; keeping its tag and assets unchanged."
+            exit 0
+          fi
           gh release create "$RELEASE_TAG" dist/*.zip dist/*.sha256 \
-            --verify-tag --title "$RELEASE_TAG" --notes-file dist/release-notes.md
+            --target "$GITHUB_SHA" --title "$RELEASE_TAG" --notes-file dist/release-notes.md
