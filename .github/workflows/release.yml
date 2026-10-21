@@ -1,0 +1,41 @@
+name: Release plugin
+on:
+  push:
+    tags: ['v*.*.*']
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:js
+      - run: npm run test:ui
+      - name: PHP syntax and pricing checks
+        run: |
+          php -l nilwears-bulk-manager/nilwears-bulk-manager.php
+          php -l nilwears-bulk-manager/includes-price.php
+          php -l tests/integration.php
+          php tests/pricing.php
+      - name: Build installation ZIP and release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/build.py --tag "$RELEASE_TAG"
+      - name: Publish release with installation ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/*.zip dist/*.sha256 \
+            --verify-tag --title "$RELEASE_TAG" --notes-file dist/release-notes.md

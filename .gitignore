@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.cache/
+.env
+.env.*
+!.env.example
+tests/integration-result.txt
+*.log
+.DS_Store
