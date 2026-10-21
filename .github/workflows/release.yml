@@ -20,8 +20,10 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run check:assets
       - run: npm run check:js
       - run: npm run test:ui
+      - run: npm run test:ui:min
       - name: PHP syntax and pricing checks
         run: |
           for file in nilwears-bulk-manager/*.php tests/*.php; do php -l "$file" || exit 1; done

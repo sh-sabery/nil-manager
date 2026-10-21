@@ -21,13 +21,13 @@ final class NIL_Insights {
     }
     public static function report( $r ) {
         if ( ! current_user_can( 'view_woocommerce_reports' ) ) { throw new RuntimeException( 'اجازه مشاهده گزارش فروش ندارید.' ); }
-        $id = sanitize_key( $r->get_param( 'id' ) ?: '' ); $key = 'nil_insight_' . get_current_user_id() . '_' . $id;
-        if ( $id ) { $state = get_transient( $key ); if ( ! $state ) { throw new RuntimeException( 'گزارش منقضی شده؛ دوباره محاسبه کنید.' ); } }
+        $id = sanitize_key( $r->get_param( 'id' ) ?: '' ); $key = 'nil_insight_' . get_current_user_id();
+        if ( $id ) { $state = get_transient( $key ); if ( ! $state || ! hash_equals( $state['id'], $id ) ) { throw new RuntimeException( 'گزارش منقضی شده؛ دوباره محاسبه کنید.' ); } }
         else {
             $from = $r->get_param( 'from' ); $to = $r->get_param( 'to' );
             if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) $from ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) $to ) || ! strtotime( $from ) || ! strtotime( $to ) || $from > $to ) { throw new InvalidArgumentException( 'بازه تاریخ میلادی معتبر وارد کنید.' ); }
-            $id = wp_generate_uuid4(); $key = 'nil_insight_' . get_current_user_id() . '_' . $id;
-            $state = array( 'from' => $from, 'to' => $to, 'page' => 1, 'done' => false, 'customers' => array(), 'products' => array(), 'orders' => 0, 'other_currency_orders' => 0, 'currency' => get_woocommerce_currency(), 'net_revenue' => 0.0, 'known_revenue' => 0.0, 'known_cost' => 0.0, 'unknown_cost_lines' => 0 );
+            $id = wp_generate_uuid4(); $key = 'nil_insight_' . get_current_user_id();
+            $state = array( 'id' => $id, 'from' => $from, 'to' => $to, 'page' => 1, 'done' => false, 'customers' => array(), 'products' => array(), 'orders' => 0, 'other_currency_orders' => 0, 'currency' => get_woocommerce_currency(), 'net_revenue' => 0.0, 'known_revenue' => 0.0, 'known_cost' => 0.0, 'unknown_cost_lines' => 0 );
         }
         if ( ! $state['done'] ) {
             $result = wc_get_orders( array( 'type' => 'shop_order', 'status' => array_unique( array_merge( wc_get_is_paid_statuses(), array( 'refunded' ) ) ), 'date_created' => $state['from'] . '...' . $state['to'], 'limit' => 100, 'page' => $state['page'], 'paginate' => true, 'orderby' => 'ID', 'order' => 'ASC' ) );

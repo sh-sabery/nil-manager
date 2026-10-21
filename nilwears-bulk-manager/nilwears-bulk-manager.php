@@ -2,12 +2,13 @@
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Nilwears
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
  * WC requires at least: 8.5
+ * WC tested up to: 11.2.1
  * Text Domain: nilwears-bulk-manager
  * License: GPL-2.0-or-later
  */
@@ -19,7 +20,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.1.0';
+    const VERSION = '1.2.0';
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {
@@ -58,7 +59,9 @@ final class NIL_Bulk_Manager {
             add_action( 'admin_notices', function() { echo '<div class="notice notice-warning"><p>مدیریت قیمت نیل به ووکامرس فعال نیاز دارد.</p></div>'; } );
             return;
         }
-        if ( get_option( 'nil_bulk_version' ) !== self::VERSION ) { self::install(); }
+        add_action( 'admin_init', function() {
+            if ( current_user_can( 'manage_woocommerce' ) && get_option( 'nil_bulk_version' ) !== self::VERSION ) { self::install(); }
+        } );
         NIL_Suite::boot();
         add_action( 'admin_menu', function() {
             add_submenu_page( 'woocommerce', NIL_Suite::title(), NIL_Suite::title(), 'manage_woocommerce', 'nil-bulk', array( __CLASS__, 'page' ) );
@@ -79,9 +82,9 @@ final class NIL_Bulk_Manager {
     }
     public static function assets( $hook ) {
         if ( 'woocommerce_page_nil-bulk' !== $hook ) { return; }
-        wp_enqueue_style( 'nil-bulk', plugins_url( 'assets/admin.css', __FILE__ ), array(), self::VERSION );
-        wp_enqueue_script( 'nil-bulk', plugins_url( 'assets/admin.js', __FILE__ ), array(), self::VERSION, true );
-        wp_enqueue_script( 'nil-suite', plugins_url( 'assets/suite.js', __FILE__ ), array( 'nil-bulk' ), self::VERSION, true );
+        wp_enqueue_style( 'nil-bulk', plugins_url( 'assets/admin.min.css', __FILE__ ), array(), self::VERSION );
+        wp_enqueue_script( 'nil-bulk', plugins_url( 'assets/admin.min.js', __FILE__ ), array(), self::VERSION, true );
+        wp_enqueue_script( 'nil-suite', plugins_url( 'assets/suite.min.js', __FILE__ ), array( 'nil-bulk' ), self::VERSION, true );
         $categories = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false ) );
         wp_localize_script( 'nil-bulk', 'NIL_BULK', array(
             'api' => esc_url_raw( rest_url( 'nil-bulk/v1/' ) ), 'nonce' => wp_create_nonce( 'wp_rest' ),
@@ -129,7 +132,7 @@ final class NIL_Bulk_Manager {
         return array(
             'name' => $p->get_name( 'edit' ), 'sku' => $p->get_sku( 'edit' ),
             'description' => $p->get_description( 'edit' ), 'short_description' => $p->get_short_description( 'edit' ),
-            'cost_price' => (string) $p->get_meta( '_nil_cost_price', true, 'edit' ),
+            'cost_price' => (string) get_post_meta( $p->get_id(), '_nil_cost_price', true ),
             'category_ids' => $p->is_type( 'variation' ) ? array() : $p->get_category_ids( 'edit' ),
             'brand_ids' => NIL_Suite::product_brands( $p ), 'brand_taxonomy' => NIL_Suite::brand_taxonomy(),
             'regular_price' => $p->get_regular_price( 'edit' ), 'sale_price' => $p->get_sale_price( 'edit' ),
@@ -166,12 +169,20 @@ final class NIL_Bulk_Manager {
             } else { $args['s'] = $search; }
         }
         $query = new WP_Query( $args ); $rows = array();
+        // Prime all variation posts/meta once for the page, rather than once per parent.
+        $children = array(); $parent_ids = wp_list_pluck( $query->posts, 'ID' );
+        if ( $parent_ids ) {
+            $variations = new WP_Query( array( 'post_type' => 'product_variation', 'post_parent__in' => $parent_ids,
+                'post_status' => array( 'publish','private','draft','pending','future' ), 'posts_per_page' => -1,
+                'no_found_rows' => true, 'update_post_term_cache' => true, 'orderby' => array( 'menu_order' => 'ASC', 'ID' => 'ASC' ) ) );
+            foreach ( $variations->posts as $variation_post ) { $children[$variation_post->post_parent][] = $variation_post->ID; }
+        }
         foreach ( $query->posts as $post ) {
             $p = wc_get_product( $post->ID );
             if ( ! $p || ! current_user_can( 'edit_post', $post->ID ) ) { continue; }
             $rows[] = self::row( $p );
             if ( $p->is_type( 'variable' ) ) {
-                foreach ( $p->get_children() as $child ) {
+                foreach ( $children[$p->get_id()] ?? array() as $child ) {
                     $variation = wc_get_product( $child );
                     if ( $variation && current_user_can( 'edit_post', $child ) && 'trash' !== $variation->get_status( 'edit' ) ) { $rows[] = self::row( $variation ); }
                 }

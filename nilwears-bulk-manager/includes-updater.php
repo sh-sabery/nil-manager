@@ -30,13 +30,13 @@ final class NIL_Updater {
         if ( ! is_object( $transient ) || empty( $transient->checked ) ) { return $transient; }
         $r = self::release(); $plugin = plugin_basename( __DIR__ . '/nilwears-bulk-manager.php' );
         if ( $r && version_compare( $r['version'], NIL_Bulk_Manager::VERSION, '>' ) ) {
-            $transient->response[$plugin] = (object) array( 'slug' => 'nilwears-bulk-manager', 'plugin' => $plugin, 'new_version' => $r['version'], 'url' => 'https://github.com/' . self::REPO, 'package' => self::package( $r ), 'requires' => '6.4', 'requires_php' => '7.4' );
+            $transient->response[$plugin] = (object) array( 'slug' => 'nilwears-bulk-manager', 'plugin' => $plugin, 'new_version' => $r['version'], 'url' => 'https://github.com/' . self::REPO, 'package' => self::package( $r ), 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4' );
         } return $transient;
     }
     public static function info( $result, $action, $args ) {
         if ( 'plugin_information' !== $action || 'nilwears-bulk-manager' !== ( $args->slug ?? '' ) ) { return $result; }
         $r = self::release(); if ( ! $r ) { return $result; }
-        return (object) array( 'name' => NIL_Suite::title(), 'slug' => 'nilwears-bulk-manager', 'version' => $r['version'], 'author' => 'Nilwears', 'homepage' => 'https://github.com/' . self::REPO, 'requires' => '6.4', 'requires_php' => '7.4', 'sections' => array( 'description' => 'مدیریت محصولات و قیمت نیل', 'changelog' => nl2br( esc_html( $r['notes'] ) ) ), 'download_link' => self::package( $r ) );
+        return (object) array( 'name' => NIL_Suite::title(), 'slug' => 'nilwears-bulk-manager', 'version' => $r['version'], 'author' => 'Nilwears', 'homepage' => 'https://github.com/' . self::REPO, 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4', 'sections' => array( 'description' => 'مدیریت محصولات و قیمت نیل', 'changelog' => nl2br( esc_html( $r['notes'] ) ) ), 'download_link' => self::package( $r ) );
     }
     public static function download( $reply, $package, $upgrader, $hook_extra ) {
         if ( false !== $reply || ! is_string( $package ) || 0 !== strpos( $package, 'https://api.github.com/repos/' . self::REPO . '/releases/assets/' ) ) { return $reply; }

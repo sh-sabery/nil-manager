@@ -1,0 +1,35 @@
+# Performance contract — v1.2.0
+
+## Scope
+
+“Zero bloat” means no unnecessary storefront assets, boot-time database work or unbounded temporary receipts. It does **not** mean zero storage or zero SQL while editing products, calculating reports or saving historical order costs. Essential costs, explicit pricing schedules and undo history have a purpose and are retained.
+
+The latest stable releases verified on 2026-10-22 Tehran time are WordPress 7.1.3 and WooCommerce 11.2.1. Compatibility is exercised in disposable PHP 8.3 installations with HPOS enabled and disabled. WordPress beta releases are outside this stable-release claim.
+
+## Measurable limits
+
+| Area | Contract |
+|---|---|
+| Public CSS, JavaScript and fonts | 0 plugin enqueues on public pages; also none on unrelated admin screens |
+| Plugin boot | 0 SQL issued by the plugin's boot function; schema-version work only during authorized admin initialization |
+| Admin assets | Two minified vanilla-JS files and one minified stylesheet, 53,159 bytes total; 17,883 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
+| Font | Local Vazirmatn WOFF2, 46,308 bytes, requested only by the plugin admin stylesheet; no CDN font |
+| Build budget | CSS/JS limited to 60,000 uncompressed bytes and checked in CI; readable source files remain in git and are excluded from the installation ZIP |
+| Optional PHP tools | Spreadsheet, media, maintenance and report code load on use; update hooks load in admin/cron contexts |
+| Product pages | 15 parent/simple products per page; variation posts, metadata and taxonomy caches loaded together; plugin cost reads use the primed WordPress metadata cache |
+| Media listing | No reference scans; scans require an explicit selection and run in batches of at most 5 images; archive rechecks references |
+| Temporary state | One active XLSX/CSV file, one media preview and one insights report per user, each with a one-hour expiry; starting another invalidates the older token |
+| Creation receipts | One small token on its product instead of an indefinite new WordPress option per creation |
+| Media backup metadata | Last 3 metadata snapshots; physical old files stay to preserve old URLs |
+| Maintenance | Explicit user action, at most 100 owned jobs per request; remove abandoned drafts older than 7 days; completed history deletion requires confirmation and an age of at least 30 days (UI defaults to 90) |
+| Background tasks | No periodic analytics or media scans; only user-created price schedules and normal WordPress update mechanisms |
+
+## Verification and practical limits
+
+The integration regression compares cold-cache reads of a parent with 2 variations and a parent with 40 variations. The HPOS and legacy fixtures each measured 17 SQL queries for both cases (the first 40-variation probe issued 97). The regression requires query count to remain within a small fixed margin rather than grow linearly with the variation count. It also verifies zero SQL during plugin boot, no unrelated-screen assets, no reference-scan SQL during media listing, bounded cache replacement and cleanup ownership/state protections. See CONTRIBUTING.md for measured results.
+
+DOM tests run against both readable sources and the exact production minified JavaScript. They cover table edits, shared stock, selection, preview/apply/undo, imports, quick creation, branding and tab navigation. They do not substitute for visual testing of the actual store's admin theme.
+
+GTmetrix scores describe the whole tested page and are at most 100, not above 100. This plugin cannot guarantee a whole-site GTmetrix score: theme, hosting, images, other plugins, scripts, cache, network and test conditions matter. No live-store GTmetrix test, real MySQL concurrency test or automatic live installation is implied by this release. The SQLite fixture emulates MySQL locking only. Sales and order writes intentionally add the small immutable cost metadata needed for accurate future historical profit.
+
+References: [WordPress releases](https://wordpress.org/download/releases/), [WooCommerce changelog](https://developer.woocommerce.com/changelog/), [GTmetrix scoring](https://gtmetrix.com/blog/everything-you-need-to-know-about-the-new-gtmetrix-report-powered-by-lighthouse/).

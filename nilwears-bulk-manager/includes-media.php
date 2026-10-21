@@ -31,9 +31,16 @@ final class NIL_Media {
         $q = new WP_Query( array( 'post_type' => 'attachment', 'post_status' => $trash ? 'trash' : 'inherit', 'post_mime_type' => 'image', 'posts_per_page' => 20, 'paged' => $page, 's' => sanitize_text_field( $r->get_param( 'search' ) ?: '' ), 'orderby' => 'ID', 'order' => 'DESC' ) );
         $rows = array(); foreach ( $q->posts as $p ) {
             if ( ! current_user_can( 'edit_post', $p->ID ) ) { continue; } $file = get_attached_file( $p->ID );
-            $rows[] = array( 'id' => $p->ID, 'title' => $p->post_title, 'alt' => get_post_meta( $p->ID, '_wp_attachment_image_alt', true ), 'file' => basename( $file ), 'url' => wp_get_attachment_image_url( $p->ID, 'thumbnail' ), 'bytes' => is_file( $file ) ? filesize( $file ) : 0, 'candidate' => ! $trash && self::unused( $p->ID ), 'version' => self::version( $p->ID ), 'trash' => $trash );
+            $rows[] = array( 'id' => $p->ID, 'title' => $p->post_title, 'alt' => get_post_meta( $p->ID, '_wp_attachment_image_alt', true ), 'file' => basename( $file ), 'url' => wp_get_attachment_image_url( $p->ID, 'thumbnail' ), 'bytes' => is_file( $file ) ? filesize( $file ) : 0, 'candidate' => null, 'version' => self::version( $p->ID ), 'trash' => $trash );
         }
         return array( 'rows' => $rows, 'page' => $page, 'pages' => (int) $q->max_num_pages );
+    }
+    public static function scan( $r ) {
+        $b = $r->get_json_params(); $ids = $b['ids'] ?? array();
+        if ( ! is_array( $ids ) || ! $ids || count( $ids ) > 5 ) { throw new InvalidArgumentException( 'هر بسته بررسی حداکثر ۵ تصویر دارد.' ); }
+        $out = array(); foreach ( array_unique( array_map( 'absint', $ids ) ) as $id ) {
+            self::check( $id ); $out[] = array( 'id' => $id, 'candidate' => self::unused( $id ) );
+        } return $out;
     }
     public static function preview( $r ) {
         $b = $r->get_json_params(); $rows = $b['rows'] ?? array();
@@ -50,7 +57,7 @@ final class NIL_Media {
         }
         $quality = absint( $b['quality'] ?? 82 ); $width = absint( $b['width'] ?? 2400 );
         if ( $quality < 40 || $quality > 95 || $width < 320 || $width > 6000 ) { throw new InvalidArgumentException( 'کیفیت ۴۰ تا ۹۵ و عرض ۳۲۰ تا ۶۰۰۰.' ); }
-        $token = wp_generate_uuid4(); set_transient( 'nil_media_' . get_current_user_id() . '_' . $token, array( 'rows' => $out, 'action' => $action, 'quality' => $quality, 'width' => $width ), HOUR_IN_SECONDS );
+        $token = wp_generate_uuid4(); set_transient( 'nil_media_' . get_current_user_id(), array( 'token' => $token, 'rows' => $out, 'action' => $action, 'quality' => $quality, 'width' => $width ), HOUR_IN_SECONDS );
         return array( 'token' => $token, 'rows' => $out, 'action' => $action );
     }
     private static function copy_file( $id, $basename, $optimize, $quality, $width ) {
@@ -80,14 +87,14 @@ final class NIL_Media {
             $meta['file'] = _wp_relative_upload_path( $new );
             $history = get_post_meta( $id, '_nil_media_backups', true ); if ( ! is_array( $history ) ) { $history = array(); }
             $history[] = array( 'file' => $old, 'metadata' => wp_get_attachment_metadata( $id ), 'date' => gmdate( 'c' ) );
-            update_post_meta( $id, '_nil_media_backups', $history );
+            update_post_meta( $id, '_nil_media_backups', array_slice( $history, -3 ) );
             update_attached_file( $id, $new ); wp_update_attachment_metadata( $id, $meta ); clean_post_cache( $id );
             return array( 'file' => basename( $new ), 'saved_bytes' => $optimize ? filesize( $real ) - filesize( $new ) : 0 );
         } catch ( Throwable $e ) { foreach ( $written as $file ) { @unlink( $file ); } throw $e; }
     }
     public static function apply( $r ) {
-        $b = $r->get_json_params(); $key = 'nil_media_' . get_current_user_id() . '_' . sanitize_key( $b['token'] ?? '' ); $p = get_transient( $key );
-        if ( ! $p ) { throw new RuntimeException( 'پیش‌نمایش منقضی شده است.' ); }
+        $b = $r->get_json_params(); $key = 'nil_media_' . get_current_user_id(); $p = get_transient( $key );
+        if ( ! $p || ! hash_equals( $p['token'], (string) ( $b['token'] ?? '' ) ) ) { throw new RuntimeException( 'پیش‌نمایش منقضی شده است یا پیش‌نمایش جدید جای آن را گرفته است.' ); }
         $lock = NIL_Bulk_Manager::lock(); $results = array();
         try {
             foreach ( $p['rows'] as $row ) {

@@ -1,15 +1,19 @@
 <?php
 /** Product operations shared by the administration, imports and scheduler. */
 defined( 'ABSPATH' ) || exit;
-require_once __DIR__ . '/includes-sheet.php';
-require_once __DIR__ . '/includes-media.php';
-require_once __DIR__ . '/includes-insights.php';
-require_once __DIR__ . '/includes-updater.php';
+// Optional tools are parsed only when an endpoint or update hook needs them.
+spl_autoload_register( function( $class ) {
+    if ( 0 !== strpos( $class, 'NIL_' ) ) { return; }
+    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance' );
+    if ( isset( $map[$class] ) ) { require_once __DIR__ . '/includes-' . $map[$class] . '.php'; }
+} );
 final class NIL_Suite {
     public static function boot() {
         add_action( 'rest_api_init', array( __CLASS__, 'routes' ) );
         add_action( 'nil_bulk_schedule', array( __CLASS__, 'tick' ), 10, 1 );
-        NIL_Insights::boot(); NIL_Updater::boot();
+        add_action( 'woocommerce_checkout_create_order_line_item', array( 'NIL_Insights', 'checkout_cost' ), 10, 4 );
+        add_action( 'woocommerce_new_order_item', array( 'NIL_Insights', 'new_item_cost' ), 10, 3 );
+        if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) { NIL_Updater::boot(); }
         add_filter( 'all_plugins', function( $plugins ) {
             $key = plugin_basename( __DIR__ . '/nilwears-bulk-manager.php' );
             if ( isset( $plugins[$key] ) ) { $plugins[$key]['Name'] = self::title(); }
@@ -31,8 +35,8 @@ final class NIL_Suite {
     }
     public static function product_brands( $p ) {
         $tax = self::brand_taxonomy(); if ( ! $tax || $p->is_type( 'variation' ) ) { return array(); }
-        $ids = wp_get_object_terms( $p->get_id(), $tax, array( 'fields' => 'ids' ) );
-        return is_wp_error( $ids ) ? array() : array_map( 'intval', $ids );
+        $terms = get_the_terms( $p->get_id(), $tax );
+        $ids = ! $terms || is_wp_error( $terms ) ? array() : array_map( 'intval', wp_list_pluck( $terms, 'term_id' ) ); sort( $ids ); return $ids;
     }
     public static function validate_field( $p, $key, $value ) {
         if ( in_array( $key, array( 'category_ids','brand_ids' ), true ) ) {
@@ -83,6 +87,8 @@ final class NIL_Suite {
             'sheet/read' => array( 'POST', 'NIL_Sheet', 'read_request' ),
             'sheet/prepare' => array( 'POST', 'NIL_Sheet', 'prepare' ),
             'media' => array( 'GET', 'NIL_Media', 'listing' ),
+            'media/scan' => array( 'POST', 'NIL_Media', 'scan' ),
+            'maintenance' => array( 'POST', 'NIL_Maintenance', 'clean' ),
             'media/preview' => array( 'POST', 'NIL_Media', 'preview' ),
             'media/apply' => array( 'POST', 'NIL_Media', 'apply' ),
             'insights' => array( 'GET', 'NIL_Insights', 'report' ),
@@ -109,7 +115,9 @@ final class NIL_Suite {
         if ( ! preg_match( '/^[a-f0-9-]{32,36}$/', $token ) ) { throw new InvalidArgumentException( 'کلید ایجاد نامعتبر است.' ); }
         $lock = NIL_Bulk_Manager::lock(); $created = array();
         try {
-            $previous = get_option( 'nil_created_' . $token ); if ( $previous ) { return $previous; }
+            // Store one receipt on its product, never an unbounded collection of options.
+            $matches = get_posts( array( 'post_type' => 'product', 'post_status' => array( 'publish','private','draft','pending','future' ), 'meta_key' => '_nil_creation_token', 'meta_value' => $token, 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => true ) );
+            if ( $matches ) { $old = wc_get_product( $matches[0] ); NIL_Bulk_Manager::editable( $old ); return array( 'id' => $old->get_id(), 'created' => array_merge( array( $old->get_id() ), $old->is_type( 'variable' ) ? $old->get_children() : array() ) ); }
             $type = $b['type'] ?? 'simple'; if ( ! in_array( $type, array( 'simple','variable' ), true ) ) { throw new InvalidArgumentException( 'نوع محصول معتبر نیست.' ); }
             $p = 'variable' === $type ? new WC_Product_Variable() : new WC_Product_Simple();
             $p->set_name( self::validate_field( $p, 'name', $b['name'] ?? '' ) );
@@ -138,6 +146,7 @@ final class NIL_Suite {
             } else { $p->set_regular_price( $regular ); $p->set_sale_price( $sale ); if ( null !== $quantity ) { $p->set_manage_stock( true ); $p->set_stock_quantity( $quantity ); } }
             // Save draft first. Incomplete creations are removed on any exception.
             $brand_ids = isset( $b['brand_ids'] ) ? self::validate_field( $p, 'brand_ids', $b['brand_ids'] ) : array();
+            $p->update_meta_data( '_nil_creation_token', $token );
             $p->set_status( 'draft' ); $p->save(); $created[] = $p->get_id();
             if ( $brand_ids ) { $term_result = wp_set_object_terms( $p->get_id(), $brand_ids, self::brand_taxonomy() ); if ( is_wp_error( $term_result ) ) { throw new RuntimeException( $term_result->get_error_message() ); } }
             if ( 'variable' === $type ) {
@@ -152,7 +161,6 @@ final class NIL_Suite {
             }
             $p = wc_get_product( $p->get_id() ); $p->set_status( $status ); $p->save();
             $result = array( 'id' => $p->get_id(), 'created' => $created );
-            update_option( 'nil_created_' . $token, $result, false );
             return $result;
         } catch ( Throwable $e ) {
             foreach ( array_reverse( $created ) as $id ) { $p = wc_get_product( $id ); if ( $p ) { $p->delete( true ); } }

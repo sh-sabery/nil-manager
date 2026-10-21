@@ -13,13 +13,13 @@
     root.innerHTML = `
         <header class="nil-header"><div><span class="nil-eyebrow">NILWEARS / STORE OPERATIONS</span><h1>قیمت و موجودی نیل</h1><p>همهٔ رنگ‌ها و سایزها، در یک جدول.</p></div><span class="nil-unit">واحد ووکامرس: ${esc(cfg.currency)} (${esc(cfg.currencyCode)})</span></header>
         <div id="nil-message" role="status" aria-live="polite"></div>
-        <section class="nil-card"><form id="nil-filter" class="nil-toolbar"><label>جست‌وجو<input id="nil-search" placeholder="نام محصول، شناسه یا SKU دقیق"></label><label>دسته‌بندی<select id="nil-category"><option value="">همه دسته‌ها</option>${cfg.categories.map(c => `<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><label>برند<select id="nil-brand"><option value="">همه برندها</option>${(cfg.brands||[]).map(c=>`<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('')}</select></label>
+        <section class="nil-card"><form id="nil-filter" class="nil-toolbar"><label>جست‌وجو<input id="nil-search" placeholder="نام محصول، شناسه یا SKU دقیق"></label><label>دسته‌بندی<select id="nil-category"><option value="">همه دسته‌ها</option>${cfg.categories.map(c => `<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><details class="nil-advanced"><summary>فیلترهای بیشتر</summary><div class="nil-toolbar"><label>برند<select id="nil-brand"><option value="">همه برندها</option>${(cfg.brands||[]).map(c=>`<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('')}</select></label>
         <label>نوع${select('nil-type',[['','همه'],['simple','ساده'],['variable','متغیر']],'')}</label>
         <label>انتشار${select('nil-status',[['','همه'],...Object.entries(publication)],'')}</label>
         <label>موجودی${select('nil-stock',[['','همه'],['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']],'')}</label>
         <label>از قیمت<input id="nil-min_price" inputmode="decimal"></label><label>تا قیمت<input id="nil-max_price" inputmode="decimal"></label>
         <label>ترتیب${select('nil-sort',[['ID','شناسه'],['modified','آخرین تغییر'],['title','نام']],'modified')}</label>
-        <button class="button" type="submit">جست‌وجو / تازه‌سازی</button><span id="nil-total"></span></form>
+        </div></details><button class="button" type="submit">جست‌وجو / تازه‌سازی</button><span id="nil-total"></span></form>
         <p class="nil-hint">قیمت‌ها با واحد فعلی فروشگاه هستند. ردیف والد با زمینهٔ بنفش و هر ورییشن زیر آن نمایش داده می‌شود. خانهٔ خالیِ حراج یعنی حذف حراج؛ قیمت صفر یعنی رایگان.</p>
         <div class="nil-table-scroll"><table class="widefat nil-table"><thead><tr><td><input id="nil-select-all" type="checkbox" aria-label="انتخاب همه ردیف‌های این صفحه"></td><th>محصول / رنگ و سایز</th><th>قیمت خرید</th><th>سود / حاشیه</th><th>قیمت اصلی</th><th>قیمت حراج</th><th>مدیریت تعداد</th><th>موجودی</th><th>وضعیت</th></tr></thead><tbody id="nil-rows"></tbody></table></div>
         <footer class="nil-toolbar nil-table-footer"><button type="button" class="button" id="nil-prev">صفحه قبل</button><span id="nil-pagination"></span><button type="button" class="button" id="nil-next">صفحه بعد</button><span id="nil-dirty"></span><button type="button" class="button button-primary" id="nil-manual">پیش‌نمایش ویرایش‌های جدول</button><button type="button" class="button" id="nil-reset">پاک‌کردن ویرایش‌ها</button></footer></section>
@@ -126,6 +126,7 @@
         state.previewChanges = rule ? null : new Map(rows.map(row=>[row.id, JSON.stringify(row)]));
         await showJob(); await history();
         message(`پیش‌نمایش آماده است: ${fmt(count)} ردیف تغییر و ${fmt(unchanged)} ردیف بدون تغییر. برای اعمال، دکمه تأیید و ذخیره را بزنید.`);
+        window.NIL_APP?.activatePanel?.('products');
         $('preview').scrollIntoView({behavior:'smooth',block:'start'});
     }
     $('manual').onclick=()=>task(()=>buildPreview([...state.changes.values()]));

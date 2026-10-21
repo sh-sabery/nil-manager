@@ -1,7 +1,7 @@
 <?php
 // Deterministic HTTP mocks: no network and no real credentials.
 define('ABSPATH',__DIR__);define('NIL_BULK_GITHUB_TOKEN','test-read-token');define('HOUR_IN_SECONDS',3600);define('MINUTE_IN_SECONDS',60);
-class NIL_Bulk_Manager{const VERSION='1.1.0';}class NIL_Suite{public static function title(){return 'Nil';}}
+class NIL_Bulk_Manager{const VERSION='1.2.0';}class NIL_Suite{public static function title(){return 'Nil';}}
 class WP_Error{public $code;public function __construct($code,$message){$this->code=$code;}}
 function is_wp_error($v){return $v instanceof WP_Error;}function absint($v){return abs((int)$v);}function wp_strip_all_tags($v){return strip_tags($v);}function esc_html($v){return htmlspecialchars($v);}function plugin_basename($v){return 'nilwears-bulk-manager/nilwears-bulk-manager.php';}
 $cache=false;$calls=array();$bad_host=false;$bad_bytes=false;$bytes="PK\x03\x04fixture-zip";
@@ -15,7 +15,7 @@ function wp_remote_get($url,$args){global $calls,$bytes,$bad_host,$bad_bytes;$ca
 require __DIR__.'/../nilwears-bulk-manager/includes-updater.php';
 $n=0;function expect_update($ok,$label){global $n;$n++;if(!$ok)throw new Exception($label);}
 $s=NIL_Updater::status();expect_update($s['configured']&&$s['available']==='1.2.3','private release visible');expect_update(strpos(json_encode($s),'test-read-token')===false,'status never returns token');
-$t=(object)array('checked'=>array('nilwears-bulk-manager/nilwears-bulk-manager.php'=>'1.1.0'));$out=NIL_Updater::updates($t);$package=$out->response['nilwears-bulk-manager/nilwears-bulk-manager.php']->package;expect_update(strpos($package,'test-read-token')===false,'package URL never contains token');
+$t=(object)array('checked'=>array('nilwears-bulk-manager/nilwears-bulk-manager.php'=>'1.2.0'));$out=NIL_Updater::updates($t);$package=$out->response['nilwears-bulk-manager/nilwears-bulk-manager.php']->package;expect_update(strpos($package,'test-read-token')===false,'package URL never contains token');
 $file=NIL_Updater::download(false,$package,null,array());expect_update(is_string($file)&&is_file($file),'authenticated asset downloaded');expect_update(file_get_contents($file)===$bytes,'asset bytes checked');unlink($file);
 $last=$calls[count($calls)-1];expect_update(empty($last['args']['headers']['Authorization']),'redirect never receives authorization');expect_update($calls[count($calls)-2]['args']['headers']['Authorization']==='Bearer test-read-token','API request authenticated');
 $bad_host=true;$result=NIL_Updater::download(false,$package,null,array());expect_update(is_wp_error($result)&&$result->code==='nil_update_host','untrusted redirect blocked');$bad_host=false;$bad_bytes=true;$result=NIL_Updater::download(false,$package,null,array());expect_update(is_wp_error($result)&&$result->code==='nil_update_hash','same-size tampered payload blocked');

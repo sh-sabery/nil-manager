@@ -2,6 +2,17 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.2.0] - 2026-10-22
+
+- Verify the stable compatibility target WordPress 7.1.3 / WooCommerce 11.2.1, retaining HPOS and variation-aware flows.
+- Remove schema-version SQL from public boot, load optional tools on demand, batch variation post/meta/taxonomy reads and reuse the primed metadata cache for purchase cost.
+- Make expensive unused-image scans explicit, selected and bounded to five images per request; listing no longer scans post/meta/options references.
+- Bound temporary imports, media previews and insights to one expiring slot per tool/user; move new creation receipts from WordPress options to their products and cap media backup metadata at three snapshots.
+- Add explicit bounded cleanup of abandoned drafts and separately confirmed old completed history, preserving active jobs and other users' history.
+- Introduce seven accessible RTL workspaces, collapsible advanced filters, sticky headers/product columns, visible table actions and responsive controls.
+- Serve minified production CSS/JS only in the plugin admin screen. Check production/source consistency and a 60 KB CSS/JS budget in CI; exclude development assets from installation ZIPs.
+- Validation: source/minified DOM tests, 1,532 pricing checks, 14 spreadsheet checks and 10 updater HTTP checks; HPOS-enabled and legacy-storage performance suites each passed 156 combined assertions with 17 cold-cache queries for both 2 and 40 variations, zero boot SQL and no storefront assets. See PERFORMANCE.md and CONTRIBUTING.md for measurements and limitations; no whole-site GTmetrix score is promised.
+
 ## [1.1.0] - 2026-10-22
 
 - Extend the Persian product grid with editable names, SKU, descriptions, categories, brands, purchase cost, indicative profit and margin. Keep preview, stale-write checks and undo for these fields.

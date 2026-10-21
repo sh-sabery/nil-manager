@@ -94,3 +94,12 @@ define( 'NIL_BULK_GITHUB_TOKEN', 'SERVER_SIDE_READ_ONLY_TOKEN' );
 ```
 
 Replace the placeholder on the server; do not commit the token or send it in chat. Updates use WordPress's normal Plugins / Dashboard update UI. Release metadata is cached for six hours; failed authentication for five minutes. The updater never sends the token to the redirected release-asset host and checks release size and the GitHub SHA-256 digest when provided. An unconfigured token leaves manual ZIP installation available. Site installation and credential configuration are separate from repository development.
+
+
+## Version 1.2: performance and interface
+
+See [PERFORMANCE.md](PERFORMANCE.md) for the measurable performance contract. Product operations now live in seven RTL tabs; advanced filters collapse, product columns and table headers remain visible while scrolling, and preview navigation returns to the product workspace automatically. Source and minified interfaces run the same interaction tests.
+
+The plugin enqueues no storefront CSS/JS/font and performs no SQL during its boot function. Operations intentionally use SQL and retain the data needed for cost reports and undo. Admin files are minified and have a CI size budget. The font stays local and admin-only. Image reference scans run only when requested. Each user has one expiring file import, image preview and insights report; opening another replaces the previous one, including across browser tabs.
+
+Settings includes manual cleanup of owned abandoned drafts older than 7 days. Completed reports older than 90 days can be removed separately after confirmation; that removes their undo capability. No automatic history deletion or extra cleanup cron is installed. Previous release caches expire normally; historical creation receipt options from v1.1 are retained rather than silently deleting legacy data.

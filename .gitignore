@@ -9,3 +9,5 @@ tests/integration-result.txt
 .DS_Store
 tests/suite-result.txt
 tests/hpos-result.txt
+tests/performance-result.txt
+tests/query-profile.json

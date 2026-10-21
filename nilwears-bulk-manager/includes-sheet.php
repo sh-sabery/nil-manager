@@ -121,12 +121,12 @@ final class NIL_Sheet {
     public static function read_request( $r ) {
         $b = $r->get_json_params(); $bytes = base64_decode( $b['data'] ?? '', true ); if ( false === $bytes ) { throw new InvalidArgumentException( 'داده فایل نامعتبر است.' ); }
         $out = self::parse( $bytes, $b['format'] ?? '' ); $id = wp_generate_uuid4();
-        set_transient( 'nil_sheet_' . get_current_user_id() . '_' . $id, $out, HOUR_IN_SECONDS );
+        set_transient( 'nil_sheet_' . get_current_user_id(), array_merge( $out, array( 'id' => $id ) ), HOUR_IN_SECONDS );
         return array( 'id' => $id, 'headers' => $out['headers'], 'sample' => array_slice( $out['rows'], 0, 3 ), 'count' => count( $out['rows'] ) );
     }
     public static function prepare( $r ) {
-        $b = $r->get_json_params(); $file = get_transient( 'nil_sheet_' . get_current_user_id() . '_' . sanitize_key( $b['id'] ?? '' ) );
-        if ( ! $file ) { throw new RuntimeException( 'فایل منقضی شده؛ دوباره انتخاب کنید.' ); }
+        $b = $r->get_json_params(); $file = get_transient( 'nil_sheet_' . get_current_user_id() );
+        if ( ! $file || ! hash_equals( $file['id'], (string) ( $b['id'] ?? '' ) ) ) { throw new RuntimeException( 'فایل منقضی شده؛ دوباره انتخاب کنید.' ); }
         $mapping = $b['mapping'] ?? array(); $used = array();
         foreach ( $mapping as $i => $field ) { if ( '' === $field ) { continue; } if ( ! in_array( $field, self::columns(), true ) || isset( $used[$field] ) ) { throw new InvalidArgumentException( 'نگاشت تکراری یا نامعتبر است.' ); } $used[$field] = true; }
         if ( empty( $used['id'] ) && empty( $used['sku'] ) ) { throw new InvalidArgumentException( 'شناسه یا SKU را نگاشت کنید.' ); }
