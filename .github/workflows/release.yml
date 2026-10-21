@@ -24,10 +24,10 @@ jobs:
       - run: npm run test:ui
       - name: PHP syntax and pricing checks
         run: |
-          php -l nilwears-bulk-manager/nilwears-bulk-manager.php
-          php -l nilwears-bulk-manager/includes-price.php
-          php -l tests/integration.php
+          for file in nilwears-bulk-manager/*.php tests/*.php; do php -l "$file" || exit 1; done
           php tests/pricing.php
+          php tests/sheet.php
+          php tests/updater.php
       - name: Build installation ZIP and release notes
         env:
           REF_TYPE: ${{ github.ref_type }}

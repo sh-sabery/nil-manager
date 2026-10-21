@@ -68,3 +68,29 @@ python3 scripts/build.py
 کد تحت مجوز GPL-2.0-or-later است. فونت وزیرمتن تحت مجوز SIL Open Font License در پوشهٔ assets توزیع شده است. خصوصی‌بودن ریپو مستقل از مجوز کد است.
 
 </div>
+
+
+## Version 1.1: product operations suite
+
+[Coverage of the 21 selected features](FEATURES.md).
+
+The WooCommerce submenu now includes product/variation editing, draft/published product creation, cost-based pricing, stock batches, XLSX/CSV interchange, scheduled pricing, image operations, customer/profit reports and branding. All existing product changes use preview jobs, conflict detection and history/undo. Product creation and media operations have separate explicit controls.
+
+- A variable parent's price is calculated from its variations. Shared inventory belongs to the parent; independent variation stock is separate.
+- Quick creation accepts attributes such as `رنگ: مشکی، سفید` and `سایز: M، L`; at most 100 combinations. Initial price, cost and quantity apply to each generated variation.
+- Spreadsheet exports include `id`, `sku`, `version`, `type`, `parent_id`, cost, descriptions, taxonomy IDs and read-only indicative profit/margin/currency. Keep `version` for stale-edit protection. Category/brand IDs use `|`. Existing variations match by ID or exact SKU. New simple/variable rows become drafts; new standalone variation rows must be created through the variable-product form. Global taxonomy definitions/attribute term creation are not imported.
+- XLSX/CSV: first worksheet, values only, 5,000 rows, 100 columns, 8 MB input/output and 32 MB expanded XLSX limit. XLSX requires PHP ZipArchive and SimpleXML. Formula cells are rejected; XLSX exports use literal text and numeric cells and CSV exports escape formula prefixes. Text cell types preserve leading-zero SKUs. XLSX/CSV prices use the store currency.
+- Scheduled rules use purchase cost as their base to prevent unintended compounding. They run through WP-Cron (traffic-dependent); configure a server cron for reliable timing. A failed preview never seals a partial price job. Review execution history for individual rows skipped due to later changes.
+- Image changes require `upload_files` and individual attachment edit permissions. Rename/optimize keeps old files and URLs plus backup metadata. Optimization targets the main JPG/PNG/WebP file, with quality/width limits, and retains the original if the result is not smaller. Existing thumbnail files are copied with new names; they are not recompressed. Unused-image detection is conservative and cannot prove absence of external/custom references. Archiving is reversible and intentionally does not reclaim disk space or permanently delete files.
+- Purchase-cost profit is indicative in the product grid. Sales reports use immutable order-line unit-cost snapshots captured after this version is installed. Historical lines without a snapshot are marked unknown and excluded from known profit; no historical costs are guessed. Profit excludes tax, shipping, fees and overhead and subtracts line refunds/returned quantity. Net customer spend includes shipping/tax and subtracts order refunds. Loyalty filters refer to the selected order-creation date range; unpaid/cancelled orders are excluded. Mixed currencies are counted separately and excluded from the store-currency totals.
+- Branding changes title, logo URL and accent; it does not change plugin slug, security capabilities or update identity. Settings require `manage_options`; reports additionally require `view_woocommerce_reports`.
+
+### Dashboard updates from this private repository
+
+Create a fine-grained GitHub token scoped only to this repository with **Contents: read**. On the WordPress server, before the `wp-settings.php` include in `wp-config.php`, define:
+
+```php
+define( 'NIL_BULK_GITHUB_TOKEN', 'SERVER_SIDE_READ_ONLY_TOKEN' );
+```
+
+Replace the placeholder on the server; do not commit the token or send it in chat. Updates use WordPress's normal Plugins / Dashboard update UI. Release metadata is cached for six hours; failed authentication for five minutes. The updater never sends the token to the redirected release-asset host and checks release size and the GitHub SHA-256 digest when provided. An unconfigured token leaves manual ZIP installation available. Site installation and credential configuration are separate from repository development.

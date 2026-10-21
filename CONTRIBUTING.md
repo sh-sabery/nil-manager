@@ -17,3 +17,13 @@ For each released update:
 7. Check the Actions result and release asset. Report the commit, tag, release link, and any unverified behavior to the user. Site installation is a separate action.
 
 GitHub Actions may need to be enabled for the private repository and use available private-repository Actions minutes. The release job requests only `contents: write`; tests use `contents: read`. No external deployment credentials or automatic WordPress installation are configured.
+
+
+## Version 1.1 validation
+
+- PHP lint for every plugin and test PHP file, plus 1,532 pricing checks, 14 XLSX/CSV checks (including literal formulas, numeric report cells and leading-zero SKUs), and 10 private-updater HTTP mock checks. Local standalone PHP runtime: PHP.wasm 8.5.
+- Real admin JavaScript tested in LinkeDOM: table/variation selection, preview/apply/undo, stock inheritance, retaining edits made after preview, quick-create attribute parsing, file column mapping, async button enablement, branding and updater status. This is DOM interaction verification, not a visual browser rendering test.
+- Disposable WordPress Playground, PHP 8.3, WP 7.1.3 / WooCommerce 11.2.1: legacy order storage passed 138 combined CRUD/REST assertions; HPOS enabled passed 140 assertions, including matching generated variations through WooCommerce’s storefront variation matcher. Scenarios include array-field undo, cost pricing, variable creation/idempotency, spreadsheet roundtrips and conflicts, scheduled jobs, historical order cost/refunds, unknown historical costs, mixed currencies, actual image editing/renaming and archive/restore.
+- No production-store installation or real MySQL checkout-concurrency test. SQLite shims emulate MySQL locks only. The updater's authorization, redirection and digest checks use fake credentials and mocked HTTP; private-token configuration and a real dashboard upgrade on the Nilwears server remain installation tasks.
+
+To reproduce in a **disposable** Playground, use `tests/playground-hpos.json` or `tests/playground-legacy.json`. Mount the plugin directory at `/wordpress/wp-content/plugins/nilwears-bulk-manager` and the tests directory at `/nil-tests`, then run that Blueprint with `@wp-playground/cli@3.1.60`. The Blueprint downloads and activates WooCommerce. For offline reproducibility, mount an extracted WooCommerce 11.2.1 directory at `/wordpress/wp-content/plugins/woocommerce` and replace the first `installPlugin` step with `activatePlugin`. `tests/suite-result.txt` contains the assertion result and is excluded from git. Test images, orders, products and customer email addresses are generated fixtures only. Never mount a live store or production database.

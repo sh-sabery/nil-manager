@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
- * Description: جدول فارسی مدیریت قیمت و موجودی محصولات و ورییشن‌ها، پیش‌نمایش، تغییر گروهی و بازگردانی.
- * Version: 1.0.0
+ * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
+ * Version: 1.1.0
  * Author: Nilwears
  * Requires at least: 6.4
  * Requires PHP: 7.4
@@ -13,9 +13,13 @@
  */
 defined( 'ABSPATH' ) || exit;
 require_once __DIR__ . '/includes-price.php';
+require_once __DIR__ . '/includes-suite.php';
+add_action( 'before_woocommerce_init', function() {
+    if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) { \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true ); }
+} );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.0.0';
+    const VERSION = '1.1.0';
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {
@@ -55,8 +59,9 @@ final class NIL_Bulk_Manager {
             return;
         }
         if ( get_option( 'nil_bulk_version' ) !== self::VERSION ) { self::install(); }
+        NIL_Suite::boot();
         add_action( 'admin_menu', function() {
-            add_submenu_page( 'woocommerce', 'قیمت و موجودی نیل', 'قیمت و موجودی نیل', 'manage_woocommerce', 'nil-bulk', array( __CLASS__, 'page' ) );
+            add_submenu_page( 'woocommerce', NIL_Suite::title(), NIL_Suite::title(), 'manage_woocommerce', 'nil-bulk', array( __CLASS__, 'page' ) );
         } );
         add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'routes' ) );
@@ -76,12 +81,14 @@ final class NIL_Bulk_Manager {
         if ( 'woocommerce_page_nil-bulk' !== $hook ) { return; }
         wp_enqueue_style( 'nil-bulk', plugins_url( 'assets/admin.css', __FILE__ ), array(), self::VERSION );
         wp_enqueue_script( 'nil-bulk', plugins_url( 'assets/admin.js', __FILE__ ), array(), self::VERSION, true );
+        wp_enqueue_script( 'nil-suite', plugins_url( 'assets/suite.js', __FILE__ ), array( 'nil-bulk' ), self::VERSION, true );
         $categories = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false ) );
         wp_localize_script( 'nil-bulk', 'NIL_BULK', array(
             'api' => esc_url_raw( rest_url( 'nil-bulk/v1/' ) ), 'nonce' => wp_create_nonce( 'wp_rest' ),
             'currency' => html_entity_decode( get_woocommerce_currency_symbol(), ENT_QUOTES, 'UTF-8' ),
             'currencyCode' => get_woocommerce_currency(),
             'decimals' => wc_get_price_decimals(),
+            'branding' => NIL_Suite::branding(), 'brands' => NIL_Suite::brands(),
             'categories' => is_wp_error( $categories ) ? array() : array_map( function( $term ) {
                 return array( 'id' => $term->term_id, 'name' => $term->name );
             }, $categories ),
@@ -107,7 +114,7 @@ final class NIL_Bulk_Manager {
         }
     }
 
-    private static function editable( $product ) {
+    public static function editable( $product ) {
         if ( ! $product || ! in_array( $product->get_type(), array( 'simple','variable','variation' ), true ) ||
             ! in_array( $product->get_status( 'edit' ), array( 'publish','private','draft','pending','future' ), true ) ||
             ! current_user_can( 'edit_post', $product->get_id() ) ||
@@ -116,10 +123,15 @@ final class NIL_Bulk_Manager {
         }
         return $product;
     }
-    private static function snapshot( $p ) {
+    public static function snapshot( $p ) {
         $from = $p->get_date_on_sale_from( 'edit' ); $to = $p->get_date_on_sale_to( 'edit' );
         $parent = $p->is_type( 'variation' ) ? wc_get_product( $p->get_parent_id() ) : false;
         return array(
+            'name' => $p->get_name( 'edit' ), 'sku' => $p->get_sku( 'edit' ),
+            'description' => $p->get_description( 'edit' ), 'short_description' => $p->get_short_description( 'edit' ),
+            'cost_price' => (string) $p->get_meta( '_nil_cost_price', true, 'edit' ),
+            'category_ids' => $p->is_type( 'variation' ) ? array() : $p->get_category_ids( 'edit' ),
+            'brand_ids' => NIL_Suite::product_brands( $p ), 'brand_taxonomy' => NIL_Suite::brand_taxonomy(),
             'regular_price' => $p->get_regular_price( 'edit' ), 'sale_price' => $p->get_sale_price( 'edit' ),
             'manage_stock' => (bool) $p->get_manage_stock( 'edit' ), 'stock_quantity' => $p->get_stock_quantity( 'edit' ),
             'stock_status' => $p->get_stock_status( 'edit' ), 'backorders' => $p->get_backorders( 'edit' ),
@@ -128,8 +140,8 @@ final class NIL_Bulk_Manager {
             'type' => $p->get_type(), 'parent_id' => $p->get_parent_id(), 'status' => $p->get_status( 'edit' ),
         );
     }
-    private static function fingerprint( $data ) { return hash( 'sha256', wp_json_encode( $data ) ); }
-    private static function row( $p ) {
+    public static function fingerprint( $data ) { return hash( 'sha256', wp_json_encode( $data ) ); }
+    public static function row( $p ) {
         $s = self::snapshot( $p );
         return array( 'id' => $p->get_id(), 'parent' => $p->get_parent_id(), 'type' => $p->get_type(),
             'name' => $p->get_name(), 'sku' => $p->get_sku( 'edit' ), 'values' => $s,
@@ -144,6 +156,7 @@ final class NIL_Bulk_Manager {
             'tax_query' => array( array( 'taxonomy' => 'product_type', 'field' => 'slug', 'terms' => array( 'simple','variable' ) ) ),
         );
         if ( $r->get_param( 'category' ) ) { $args['tax_query'][] = array( 'taxonomy' => 'product_cat', 'field' => 'term_id', 'terms' => absint( $r->get_param( 'category' ) ) ); }
+        $args = NIL_Suite::filter_args( $args, $r );
         $search = sanitize_text_field( $r->get_param( 'search' ) ?: '' );
         if ( '' !== $search ) {
             $sku_id = wc_get_product_id_by_sku( $search );
@@ -167,6 +180,7 @@ final class NIL_Bulk_Manager {
         return array( 'rows' => $rows, 'pages' => (int) $query->max_num_pages, 'total' => (int) $query->found_posts, 'page' => $page );
     }
 
+    private static function same( $a, $b ) { return is_array( $a ) || is_array( $b ) ? $a === $b : (string) $a === (string) $b; }
     private static function bool_value( $value ) {
         if ( ! is_bool( $value ) ) { throw new InvalidArgumentException( 'مدیریت موجودی باید روشن یا خاموش باشد.' ); }
         return $value;
@@ -174,10 +188,12 @@ final class NIL_Bulk_Manager {
     private static function proposal( $p, $before, $input, $rule ) {
         $after = $before;
         if ( ! is_array( $input ) ) { throw new InvalidArgumentException( 'تغییرات نامعتبر است.' ); }
-        $allowed = array( 'regular_price','sale_price','manage_stock','stock_quantity','stock_status' );
+        $allowed = array( 'regular_price','sale_price','manage_stock','stock_quantity','stock_status','name','sku','description','short_description','cost_price','category_ids','brand_ids' );
         foreach ( $input as $key => $value ) {
             if ( ! in_array( $key, $allowed, true ) ) { throw new InvalidArgumentException( 'فیلد غیرمجاز.' ); }
-            if ( in_array( $key, array( 'regular_price','sale_price' ), true ) ) {
+            if ( in_array( $key, array( 'name','sku','description','short_description','cost_price','category_ids','brand_ids' ), true ) ) {
+                $after[$key] = NIL_Suite::validate_field( $p, $key, $value );
+            } elseif ( in_array( $key, array( 'regular_price','sale_price' ), true ) ) {
                 if ( $p->is_type( 'variable' ) ) { throw new InvalidArgumentException( 'قیمت والد از ورییشن‌ها محاسبه می‌شود.' ); }
                 if ( '' === $value ) { $after[$key] = ''; }
                 else { $n = NIL_Bulk_Price::number( $value ); if ( $n < 0 ) { throw new InvalidArgumentException( 'قیمت منفی مجاز نیست.' ); } $after[$key] = number_format( $n, wc_get_price_decimals(), '.', '' ); }
@@ -195,7 +211,7 @@ final class NIL_Bulk_Manager {
             $target = isset( $rule['target'] ) ? $rule['target'] : 'regular_price';
             if ( ! in_array( $target, array( 'regular_price','sale_price','both' ), true ) ) { throw new InvalidArgumentException( 'ستون قیمت نامعتبر است.' ); }
             foreach ( array( 'regular_price','sale_price' ) as $key ) {
-                if ( $target === $key || 'both' === $target ) { $after[$key] = NIL_Bulk_Price::calculate( $after[$key], $rule, wc_get_price_decimals() ); }
+                if ( $target === $key || 'both' === $target ) { $source = isset( $rule['source'] ) && 'cost' === $rule['source'] ? $after['cost_price'] : $after[$key]; if ( isset( $rule['source'] ) && 'cost' === $rule['source'] && '' === $source ) { throw new InvalidArgumentException( 'قیمت خرید ثبت نشده است.' ); } $after[$key] = NIL_Bulk_Price::calculate( $source, $rule, wc_get_price_decimals() ); }
             }
         }
         if ( $after['manage_stock'] && ( array_key_exists( 'manage_stock', $input ) || array_key_exists( 'stock_quantity', $input ) || array_key_exists( 'stock_status', $input ) ) ) {
@@ -223,13 +239,13 @@ final class NIL_Bulk_Manager {
         if ( ! $job ) { throw new RuntimeException( 'عملیات پیدا نشد.' ); }
         return $job;
     }
-    private static function lock() {
+    public static function lock() {
         global $wpdb;
         $name = 'nil_bulk_' . md5( DB_NAME . $wpdb->prefix );
         if ( '1' !== (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s,0)', $name ) ) ) { throw new RuntimeException( 'یک عملیات دیگر در حال اجراست؛ چند ثانیه بعد دوباره امتحان کنید.' ); }
         return $name;
     }
-    private static function unlock( $name ) { global $wpdb; $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $name ) ); }
+    public static function unlock( $name ) { global $wpdb; $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $name ) ); }
     public static function preview( $r ) {
         global $wpdb;
         $body = $r->get_json_params();
@@ -250,7 +266,7 @@ final class NIL_Bulk_Manager {
                     if ( ! is_string( $row['version'] ) || ! hash_equals( self::fingerprint( $before ), $row['version'] ) ) { throw new RuntimeException( 'محصول بعد از بارگذاری تغییر کرده است؛ جدول را تازه کنید.' ); }
                     $after = self::proposal( $p, $before, isset( $row['changes'] ) ? $row['changes'] : array(), isset( $body['rule'] ) ? $body['rule'] : null );
                     $fields = array();
-                    foreach ( $before as $key => $value ) { if ( (string) $value !== (string) $after[$key] ) { $fields[] = $key; } }
+                    foreach ( $before as $key => $value ) { if ( ! self::same( $value, $after[$key] ) ) { $fields[] = $key; } }
                     if ( ! $fields ) { $unchanged++; continue; }
                     self::db_ok( $wpdb->insert( self::table( 'items' ), array( 'job_id' => $id, 'product_id' => $p->get_id(), 'label' => $p->get_name(), 'before_json' => wp_json_encode( $before ), 'after_json' => wp_json_encode( $after ), 'fields_json' => wp_json_encode( $fields ), 'state' => 'pending', 'error' => '' ) ) );
                     $added++;
@@ -283,14 +299,14 @@ final class NIL_Bulk_Manager {
         $counts = $wpdb->get_results( $wpdb->prepare( 'SELECT state,COUNT(*) AS n FROM ' . self::table( 'items' ) . ' WHERE job_id=%s GROUP BY state', $job['id'] ), ARRAY_A );
         return array( 'job' => $job, 'items' => $items, 'counts' => $counts );
     }
-    private static function require_transactions() {
+    public static function require_transactions() {
         global $wpdb;
-        foreach ( array( $wpdb->posts, $wpdb->postmeta, self::table( 'items' ), self::table( 'jobs' ) ) as $table ) {
+        foreach ( array( $wpdb->posts, $wpdb->postmeta, $wpdb->term_relationships, $wpdb->term_taxonomy, self::table( 'items' ), self::table( 'jobs' ) ) as $table ) {
             $engine = $wpdb->get_var( $wpdb->prepare( 'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s', $table ) );
             if ( 'innodb' !== strtolower( (string) $engine ) ) { throw new RuntimeException( 'برای ذخیره امن، جدول‌های محصولات و گزارش باید InnoDB باشند.' ); }
         }
     }
-    private static function clear_cache( $id ) { clean_post_cache( $id ); wp_cache_delete( $id, 'post_meta' ); wc_delete_product_transients( $id ); }
+    public static function clear_cache( $id ) { clean_post_cache( $id ); wp_cache_delete( $id, 'post_meta' ); wc_delete_product_transients( $id ); }
     private static function apply_item( $item, $undo ) {
         global $wpdb;
         $id = (int) $item['product_id']; $before = json_decode( $item['before_json'], true ); $after = json_decode( $item['after_json'], true );
@@ -307,7 +323,7 @@ final class NIL_Bulk_Manager {
             // Undo compares only touched fields plus their semantic dependencies.
             $compare = $undo ? array_unique( array_merge( $fields, array( 'type','parent_id','parent_stock','manage_stock','backorders','sale_from','sale_to' ) ) ) : array_keys( $expected );
             foreach ( $compare as $field ) {
-                if ( (string) $current[$field] !== (string) $expected[$field] ) { throw new RuntimeException( 'تداخل با تغییر جدید (' . $field . ')؛ این ردیف رد شد.' ); }
+                if ( ! self::same( $current[$field], $expected[$field] ) ) { throw new RuntimeException( 'تداخل با تغییر جدید (' . $field . ')؛ این ردیف رد شد.' ); }
             }
             // Keep the log aligned with actual WooCommerce values after save.
             if ( in_array( 'regular_price', $fields, true ) ) { $p->set_regular_price( $desired['regular_price'] ); }
@@ -317,7 +333,12 @@ final class NIL_Bulk_Manager {
             if ( in_array( 'manage_stock', $fields, true ) ) { $p->set_manage_stock( $desired['manage_stock'] ); }
             if ( in_array( 'stock_quantity', $fields, true ) ) { $p->set_stock_quantity( $desired['stock_quantity'] ); }
             if ( in_array( 'stock_status', $fields, true ) ) { $p->set_stock_status( $desired['stock_status'] ); }
+            foreach ( array( 'name','sku','description','short_description','category_ids' ) as $field ) {
+                if ( in_array( $field, $fields, true ) ) { $setter = 'set_' . $field; $p->$setter( $desired[$field] ); }
+            }
+            if ( in_array( 'cost_price', $fields, true ) ) { $p->update_meta_data( '_nil_cost_price', $desired['cost_price'] ); }
             $p->save();
+            if ( in_array( 'brand_ids', $fields, true ) && NIL_Suite::brand_taxonomy() ) { $result = wp_set_object_terms( $id, $desired['brand_ids'], NIL_Suite::brand_taxonomy() ); if ( is_wp_error( $result ) ) { throw new RuntimeException( $result->get_error_message() ); } }
             if ( $p->get_parent_id() ) { WC_Product_Variable::sync( $p->get_parent_id() ); }
             if ( $p->is_type( 'variable' ) ) { WC_Product_Variable::sync( $id ); }
             self::clear_cache( $id );
@@ -325,7 +346,7 @@ final class NIL_Bulk_Manager {
             // Capture side effects (for example stock status when manage_stock changes).
             if ( ! $undo ) {
                 foreach ( array( 'regular_price','sale_price','manage_stock','stock_quantity','stock_status' ) as $field ) {
-                    if ( (string) $current[$field] !== (string) $actual[$field] && ! in_array( $field, $fields, true ) ) { $fields[] = $field; }
+                    if ( ! self::same( $current[$field], $actual[$field] ) && ! in_array( $field, $fields, true ) ) { $fields[] = $field; }
                 }
             }
             $data = array( 'state' => $undo ? 'undone' : 'applied', 'error' => '' );

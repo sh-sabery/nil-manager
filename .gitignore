@@ -7,3 +7,5 @@ dist/
 tests/integration-result.txt
 *.log
 .DS_Store
+tests/suite-result.txt
+tests/hpos-result.txt
