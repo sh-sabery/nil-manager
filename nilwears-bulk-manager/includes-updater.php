@@ -1,5 +1,5 @@
 <?php
-/** Private GitHub releases; the read-only token stays on the WordPress server. */
+/** Public GitHub releases; optional private-repository token stays on the server. */
 defined( 'ABSPATH' ) || exit;
 final class NIL_Updater {
     const REPO = 'sh-sabery/nilwears-bulk-manager';
@@ -9,18 +9,22 @@ final class NIL_Updater {
         add_filter( 'upgrader_pre_download', array( __CLASS__, 'download' ), 10, 4 );
     }
     private static function token() { return defined( 'NIL_BULK_GITHUB_TOKEN' ) ? (string) NIL_BULK_GITHUB_TOKEN : ''; }
+    private static function headers( $accept ) {
+        $headers = array( 'Accept' => $accept, 'X-GitHub-Api-Version' => '2022-11-28' );
+        if ( self::token() ) { $headers['Authorization'] = 'Bearer ' . self::token(); }
+        return $headers;
+    }
     private static function release() {
-        if ( ! self::token() ) { return false; }
-        $cached = get_site_transient( 'nil_release' ); if ( is_array( $cached ) ) { return $cached; }
+        $cached = get_site_transient( self::token() ? 'nil_release' : 'nil_release_public' ); if ( is_array( $cached ) ) { return $cached; }
         if ( 'none' === $cached ) { return false; }
-        $response = wp_remote_get( 'https://api.github.com/repos/' . self::REPO . '/releases/latest', array( 'timeout' => 15, 'redirection' => 0, 'headers' => array( 'Authorization' => 'Bearer ' . self::token(), 'Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => '2022-11-28' ) ) );
-        if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) { set_site_transient( 'nil_release', 'none', 5 * MINUTE_IN_SECONDS ); return false; }
+        $response = wp_remote_get( 'https://api.github.com/repos/' . self::REPO . '/releases/latest', array( 'timeout' => 15, 'redirection' => 0, 'headers' => self::headers( 'application/vnd.github+json' ) ) );
+        if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) { set_site_transient( self::token() ? 'nil_release' : 'nil_release_public', 'none', 5 * MINUTE_IN_SECONDS ); return false; }
         $data = json_decode( wp_remote_retrieve_body( $response ), true ); $tag = $data['tag_name'] ?? '';
         if ( ! preg_match( '/^v(\d+\.\d+\.\d+)$/', $tag, $m ) || ! empty( $data['prerelease'] ) || ! empty( $data['draft'] ) ) { return false; }
         foreach ( $data['assets'] ?? array() as $asset ) {
             if ( $asset['name'] === 'nilwears-bulk-manager-' . $tag . '.zip' ) {
                 $release = array( 'version' => $m[1], 'asset' => absint( $asset['id'] ), 'size' => absint( $asset['size'] ), 'digest' => $asset['digest'] ?? '', 'notes' => wp_strip_all_tags( $data['body'] ?? '' ) );
-                set_site_transient( 'nil_release', $release, 6 * HOUR_IN_SECONDS ); return $release;
+                set_site_transient( self::token() ? 'nil_release' : 'nil_release_public', $release, 6 * HOUR_IN_SECONDS ); return $release;
             }
         } return false;
     }
@@ -40,10 +44,10 @@ final class NIL_Updater {
     }
     public static function download( $reply, $package, $upgrader, $hook_extra ) {
         if ( false !== $reply || ! is_string( $package ) || 0 !== strpos( $package, 'https://api.github.com/repos/' . self::REPO . '/releases/assets/' ) ) { return $reply; }
-        $r = self::release(); if ( ! $r || $package !== self::package( $r ) || ! self::token() ) { return new WP_Error( 'nil_update_auth', 'دسترسی به ریلیز خصوصی معتبر نیست.' ); }
+        $r = self::release(); if ( ! $r || $package !== self::package( $r ) ) { return new WP_Error( 'nil_update_auth', 'ریلیز مورد درخواست معتبر نیست.' ); }
         if ( ! function_exists( 'wp_tempnam' ) ) { require_once ABSPATH . 'wp-admin/includes/file.php'; }
         $tmp = wp_tempnam( 'nil-update.zip' );
-        $args = array( 'timeout' => 60, 'redirection' => 0, 'headers' => array( 'Authorization' => 'Bearer ' . self::token(), 'Accept' => 'application/octet-stream', 'X-GitHub-Api-Version' => '2022-11-28' ), 'stream' => true, 'filename' => $tmp, 'limit_response_size' => 20 * 1024 * 1024 );
+        $args = array( 'timeout' => 60, 'redirection' => 0, 'headers' => self::headers( 'application/octet-stream' ), 'stream' => true, 'filename' => $tmp, 'limit_response_size' => 20 * 1024 * 1024 );
         $response = wp_remote_get( $package, $args );
         if ( ! is_wp_error( $response ) && in_array( wp_remote_retrieve_response_code( $response ), array( 301,302,303,307 ), true ) ) {
             $url = wp_remote_retrieve_header( $response, 'location' ); $parts = wp_parse_url( $url );

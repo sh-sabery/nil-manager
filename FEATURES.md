@@ -1,4 +1,4 @@
-# Selected feature coverage — v1.3.0
+# Selected feature coverage — v1.4.0
 
 The 21 selected numbers refer to the feature list discussed with the user. This is an independent implementation in the Nilwears plugin.
 
@@ -24,9 +24,11 @@ The 21 selected numbers refer to the feature list discussed with the user. This 
 | 27 | Customer analysis | Purchase count, spend, recency and purchased-product filters, period-based loyalty and exports. Paid/refunded orders, mixed currency excluded and counted separately. |
 | 48 | White labeling | Plugin/menu/header title, HTTPS logo and accent; plugin identity and update slug stay stable. |
 | 49 | HPOS | Compatibility declaration, WooCommerce CRUD order access and disposable HPOS-enabled integration tests. |
-| 50 | Dashboard updates | Private GitHub release updater; server-side repository read token required. Metadata caching, safe redirect handling and digest checks. |
+| 50 | Dashboard updates | Public GitHub release updater without a token from v1.4; optional server-side read token for private access. Metadata caching, safe redirect handling and digest checks. |
 
 See [README.md](README.md) for use and [CONTRIBUTING.md](CONTRIBUTING.md) for validation evidence and reproducible tests. This release updates the repository and installation package; it does not install itself on the live store.
 
 
 Additional v1.3 requests (numbers 2 and 5 refer to the later improvement suggestions, separately from the original comparison list): append missing color/size combinations to existing variable products and save per-user filters, visible/ordered columns and reusable bulk-price rules. Existing variation wildcard coverage, duplicate SKU checks, stale-parent checks and transactional rollback are covered by disposable fixtures. See README.md for limits and cost-source switching semantics.
+
+Version 1.4 adds in-app Persian help, a dedicated pricing workspace, non-executing example recipes, illustrative client-side price calculation and immediate post-save branding with an isolated unsaved preview. The interface is reorganized and restyled without adding a UI framework or increasing the 60 KB CSS/JS cap.

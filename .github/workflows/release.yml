@@ -30,6 +30,7 @@ jobs:
           php tests/pricing.php
           php tests/sheet.php
           php tests/updater.php
+          NIL_PUBLIC_UPDATES=1 php tests/updater.php
       - name: Build installation ZIP and release notes
         env:
           REF_TYPE: ${{ github.ref_type }}

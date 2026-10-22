@@ -1,4 +1,4 @@
-# Performance contract — v1.3.0
+# Performance contract — v1.4.0
 
 ## Scope
 
@@ -12,9 +12,10 @@ The latest stable releases verified on 2026-10-22 Tehran time are WordPress 7.1.
 |---|---|
 | Public CSS, JavaScript and fonts | 0 plugin enqueues on public pages; also none on unrelated admin screens |
 | Plugin boot | 0 SQL issued by the plugin's boot function; schema-version work only during authorized admin initialization |
-| Admin assets | Three minified vanilla-JS files and one minified stylesheet, 59,870 bytes total; 20,819 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
+| Admin assets | Three minified vanilla-JS files and one minified stylesheet, 59,239 bytes total; 21,077 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
 | Font | Local Vazirmatn WOFF2, 46,308 bytes, requested only by the plugin admin stylesheet; no CDN font |
 | Build budget | CSS/JS limited to 60,000 uncompressed bytes and checked in CI; readable source files remain in git and are excluded from the installation ZIP |
+| In-app help and static forms | Rendered as templates only on the plugin admin page; 0 additional SQL, no extra script, library or remote asset |
 | Optional PHP tools | Spreadsheet, media, maintenance, variation creation, presets and report code load on use; update hooks load in admin/cron contexts |
 | Product pages | 15 parent/simple products per page; variation posts, metadata and taxonomy caches loaded together; legacy cost reads use the primed WordPress metadata cache; native costs use WooCommerce CRUD |
 | Media listing | No reference scans; scans require an explicit selection and run in batches of at most 5 images; archive rechecks references |
@@ -29,7 +30,7 @@ The latest stable releases verified on 2026-10-22 Tehran time are WordPress 7.1.
 
 The integration regression compares cold-cache reads of a parent with 2 variations and a parent with 40 variations. The fixtures measure both legacy cost metadata and native COGS. Each measured 17 SQL queries for both cases (the first 40-variation probe issued 97). The regression requires query count to remain within a small fixed margin rather than grow linearly with the variation count. It also verifies zero SQL during plugin boot, no unrelated-screen assets, no reference-scan SQL during media listing, bounded cache replacement and cleanup ownership/state protections. See CONTRIBUTING.md for measured results.
 
-DOM tests run against both readable sources and the exact production minified JavaScript. They cover table edits, shared stock, selection, preview/apply/undo, imports, quick creation, branding, tab navigation, saved column layouts and adding variations to existing parents. They do not substitute for visual testing of the actual store's admin theme.
+DOM tests run against both readable sources and the exact production minified JavaScript. They cover table edits, shared stock, selection, preview/apply/undo, imports, quick creation, branding, tab navigation, saved column layouts and adding variations to existing parents, help recipes, sample-price calculation, immediate branding changes/failures and startup branding after a fresh document. They do not substitute for visual testing of the actual store's admin theme.
 
 GTmetrix scores describe the whole tested page and are at most 100, not above 100. This plugin cannot guarantee a whole-site GTmetrix score: theme, hosting, images, other plugins, scripts, cache, network and test conditions matter. No live-store GTmetrix test, real MySQL concurrency test or automatic live installation is implied by this release. The SQLite fixture emulates MySQL locking only. With native COGS enabled, WooCommerce records the order cost and Nil does not duplicate its unit-cost metadata. Without COGS, Nil captures the small immutable cost metadata needed for future historical profit.
 

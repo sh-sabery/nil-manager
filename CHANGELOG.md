@@ -2,6 +2,17 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.4.0] - 2026-10-22
+
+- Add an in-app Persian Help workspace and header shortcut: a three-step pricing guide, worked 10% + ending-9000 example, fixed/percentage/reduction recipes and FAQs for scope, units, variations, stock, COGS, files, branding, errors and undo.
+- Move bulk pricing, stock, schedules and history into a dedicated Pricing workspace. Add a visible entry from the product table, grouped fieldsets, current-scope explanation and an illustrative client-side price calculator. Example buttons only fill controls; product edits still require the immutable server preview and explicit confirmation.
+- Fix branding feedback: apply the server-confirmed title, accent, logo and WooCommerce submenu label immediately after saving. Show unsaved edits in a separate identity preview, preserve the applied identity after failed saves, replace/clear logos without duplicates, and show saved branding after a fresh page load.
+- Normalize three-digit brand colors, choose light/dark button text for the chosen accent, reject invalid/non-HTTPS logo addresses explicitly and preserve administrator-only branding controls during initial asynchronous loading.
+- Refresh the RTL interface with eight workspaces, consistent surfaces, clearer typography/controls, responsive form groups, horizontally scrollable mobile navigation and isolated table scrolling. Keep Vazirmatn local; add no UI framework or public storefront assets.
+- Render static admin forms/help as admin-only PHP templates, retaining zero additional template-rendering SQL and the unchanged 60,000-byte admin CSS/JS cap. Shipped CSS/JS totals 59,239 bytes (21,077 deterministic gzip bytes).
+- Enable tokenless GitHub metadata checks and verified asset downloads for the now-public repository; keep optional private-token access and credential-free redirects. Versions before 1.4 without a configured token need one manual ZIP replacement before future tokenless dashboard updates.
+- Validation: 21 PHP files linted; 1,532 pricing checks, 14 spreadsheet checks, 10 private and 10 public updater HTTP checks, and both source/minified DOM suites passed. Disposable PHP 8.3 / WordPress 7.1.3 / WooCommerce 11.2.1 passed 218 combined assertions in each HPOS and legacy fixture, including persisted branding, invalid-logo rejection, normalized colors, role restrictions and query-free admin templates. Cold product queries remain 17 for both 2 and 40 variations, with native COGS on/off. A reproducible mock-data preview generator is included; browser visual review was not completed because Cloud Browser rejected local file navigation. No live-store installation, real dashboard upgrade or MySQL concurrency validation was performed.
+
 ## [1.3.0] - 2026-10-22
 
 - Add explicit preview/apply for missing variations on existing variable parents, with custom/global attribute options, duplicate/wildcard coverage detection, unique SKU validation, stale-parent checks and retry receipts. Keep existing children; validate all rows before transactional creation (maximum 100 variations and 20 parents per preview).

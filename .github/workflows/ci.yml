@@ -26,4 +26,5 @@ jobs:
           php tests/pricing.php
           php tests/sheet.php
           php tests/updater.php
+          NIL_PUBLIC_UPDATES=1 php tests/updater.php
       - run: python3 scripts/build.py

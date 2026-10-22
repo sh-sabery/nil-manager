@@ -4,51 +4,37 @@
     const a=window.NIL_APP, cfg=NIL_BULK, root=document.getElementById('nil-bulk-app');
     if(!a)return;
     const {api,task,esc,fmt,message}=a, b=cfg.branding||{};
-    if(b.title){root.querySelector('h1').textContent=b.title;root.querySelector('.nil-eyebrow').textContent='';}
-    if(/^#[a-f0-9]{6}$/i.test(b.accent||''))root.style.setProperty('--nil-accent',b.accent);
-    if(b.logo){const img=document.createElement('img');img.src=b.logo;img.alt=b.title||'';img.className='nil-logo';root.querySelector('header').prepend(img);}
-    const panel=document.createElement('div');panel.innerHTML=`
-    <section class="nil-card"><h2>موجودی گروهی</h2><p>محدوده از بخش قیمت انتخاب می‌شود؛ موجودی مشترک روی والد است.</p>
-    <label>تعداد جدید<input id="nil-stock-value" inputmode="numeric" value="0"></label><button class="button" id="nil-stock-preview">پیش‌نمایش تعیین موجودی</button></section>
-    <section class="nil-card"><h2>ایجاد سریع محصول</h2><form id="nil-create-form" class="nil-rule-grid">
-    <label>نام<input id="nil-create-name" required></label><label>SKU<input id="nil-create-sku"></label>
-    <label>نوع<select id="nil-create-type"><option value="simple">ساده</option><option value="variable">متغیر</option></select></label>
-    <label>قیمت اصلی<input id="nil-create-price" inputmode="decimal"></label><label>قیمت خرید<input id="nil-create-cost" inputmode="decimal"></label><label>موجودی هر ورییشن<input id="nil-create-qty" inputmode="numeric" placeholder="خالی: بدون مدیریت تعداد"></label>
-    <label>ویژگی‌ها (هر خط یک ویژگی)<textarea id="nil-create-attrs" placeholder="رنگ: مشکی، سفید&#10;سایز: M، L"></textarea></label>
-    <label>وضعیت<select id="nil-create-status"><option value="draft">پیش‌نویس</option><option value="publish">انتشار</option></select></label><button class="button button-primary">ایجاد محصول و ترکیب‌های رنگ/سایز</button></form><p id="nil-create-result"></p></section>
-    <section class="nil-card"><h2>اکسل و CSV</h2><p>فایل خروجی را ویرایش و دوباره وارد کنید. سقف: ۵۰۰۰ ردیف، ۸ مگابایت و یک برگه. ستون version را حفظ کنید.</p>
-    <div class="nil-toolbar"><label>فرمت<select id="nil-file-format"><option value="xlsx">Excel XLSX</option><option value="csv">CSV</option></select></label><button class="button" id="nil-products-export">خروجی محدوده انتخاب‌شده</button><label>فایل<input type="file" id="nil-import-file" accept=".xlsx,.csv"></label><button class="button" id="nil-file-read">خواندن فایل و نگاشت ستون‌ها</button></div>
-    <div id="nil-mapping"></div><label><input type="checkbox" id="nil-import-new">محصول جدید ساده/متغیر هم به صورت پیش‌نویس ساخته شود</label>
-    <p class="nil-hint">ورییشن جدید به والد موجود نیاز دارد. ساختار فایل در راهنمای افزونه آمده است.</p>
-    <button class="button" id="nil-file-prepare" disabled>اعتبارسنجی و ساخت پیش‌نمایش</button><div id="nil-import-summary"></div><button class="button button-primary" id="nil-import-create" hidden>تأیید ایجاد محصولات جدید فایل</button></section>
-    <section class="nil-card"><h2>قوانین خودکار قیمت‌گذاری</h2><p>تنظیمات قیمت و فیلتر فعلی ثبت می‌شوند؛ مبنا باید قیمت خرید باشد. زمان اجرا به بازدید یا کران سرور وابسته است.</p>
-    <div class="nil-toolbar"><label>عنوان<input id="nil-schedule-name"></label><label>شروع<input type="datetime-local" id="nil-schedule-start"></label><label>تکرار<select id="nil-schedule-frequency"><option value="once">یک بار</option><option value="daily">روزانه</option><option value="weekly">هفتگی</option></select></label><button class="button" id="nil-schedule-save">ثبت قانون</button><button class="button" id="nil-schedule-refresh">مشاهده قوانین</button></div><div id="nil-schedule-list"></div></section>
-    <section class="nil-card"><h2>مدیریت تصاویر</h2><p>بررسی ارجاع فقط با انتخاب شما اجرا می‌شود. بایگانی قابل بازیابی است و لینک‌های قدیمی حفظ می‌شوند.</p>
-    <div class="nil-toolbar"><input id="nil-media-search" aria-label="جست‌وجوی تصویر" placeholder="جست‌وجو در رسانه"><label><input type="checkbox" id="nil-media-trash">بایگانی نیل</label><button class="button" id="nil-media-load">نمایش تصاویر</button><button class="button" id="nil-media-scan">بررسی ارجاع تصاویر انتخابی</button><button class="button" id="nil-media-prev">قبلی</button><span id="nil-media-page"></span><button class="button" id="nil-media-next">بعدی</button></div><div id="nil-media-list" class="nil-table-scroll"></div>
-    <div class="nil-toolbar"><label>عملیات<select id="nil-media-action"><option value="alt">متن جایگزین</option><option value="rename">تغییر نام واقعی فایل</option><option value="optimize">بهینه‌سازی</option><option value="trash">بایگانی نامزدهای بلااستفاده</option><option value="restore">بازیابی بایگانی</option></select></label><label>الگو<input id="nil-media-template" value="{title}-{id}"></label><label>کیفیت<input id="nil-media-quality" type="number" min="40" max="95" value="82"></label><label>حداکثر عرض<input id="nil-media-width" type="number" min="320" max="6000" value="2400"></label><button class="button" id="nil-media-preview">پیش‌نمایش تصاویر انتخابی</button></div><p>الگو: {title}، {id}، {filename}؛ نام بدون پسوند. بهینه‌سازی فقط فایل اصلی را فشرده می‌کند.</p>
-    <div id="nil-media-result"></div><button class="button button-primary" id="nil-media-apply" hidden>تأیید عملیات تصاویر</button></section>
-    <section class="nil-card"><h2>تحلیل مشتریان و سود فروش</h2><p>سود ردیف‌های با هزینه معلوم، پس از مرجوعی؛ بدون حمل، مالیات و سربار. هزینهٔ گذشته حدس زده نمی‌شود.</p>
-    <div class="nil-toolbar"><label>از<input type="date" id="nil-insight-from"></label><label>تا<input type="date" id="nil-insight-to"></label><button class="button" id="nil-insight-load">محاسبه گزارش</button></div>
-    <div class="nil-toolbar"><label>حداقل سفارش وفادار<input id="nil-customer-orders" type="number" value="3" min="0"></label><label>حداقل خرید خالص<input id="nil-customer-spend" type="number" value="0"></label><label>حداقل روز از آخرین خرید<input id="nil-customer-days" type="number" value="0" min="0"></label><label>شناسه کالای خریداری‌شده<input id="nil-customer-product" inputmode="numeric"></label><button class="button" id="nil-customer-filter">فیلتر مشتریان</button><button class="button" id="nil-customers-export">خروجی مشتریان</button><button class="button" id="nil-profit-export">خروجی سود کالاها</button></div><div id="nil-insight-summary"></div><div id="nil-customers" class="nil-table-scroll"></div><div id="nil-profit" class="nil-table-scroll"></div></section>
-    <section class="nil-card"><h2>برندینگ و به‌روزرسانی</h2><div class="nil-rule-grid"><label>عنوان افزونه<input id="nil-brand-title" value="${esc(b.title||'مدیریت محصولات نیل')}"></label><label>رنگ<input id="nil-brand-accent" type="color" value="${esc(b.accent||'#6941c6')}"></label><label>آدرس HTTPS لوگو<input id="nil-brand-logo" type="url" value="${esc(b.logo||'')}"></label><button class="button" id="nil-brand-save">ذخیره برندینگ</button><button class="button" id="nil-update-status">وضعیت به‌روزرسانی</button></div><p id="nil-update-result"></p><details><summary>فضای گزارش‌ها و پاکسازی</summary><p>اطلاعات خرید و بازگردانی ذخیره می‌شوند. حذف گزارش تکمیل‌شده، امکان بازگردانی آن را از بین می‌برد.</p><div class="nil-toolbar"><button class="button" id="nil-clean-drafts">پاکسازی پیش‌نویس‌های قدیمی من</button><button class="button" id="nil-clean-history">حذف گزارش‌های تکمیل‌شدهٔ من با عمر بیش از ۹۰ روز</button></div><p id="nil-clean-result"></p></details><p>دسترسی ریپوی خصوصی باید روی سرور تنظیم شود؛ راهنما در فایل افزونه است.</p></section>`;
+    function paint(el,color){const rgb=color.match(/[a-f0-9]{2}/gi).map(x=>parseInt(x,16));el.style.setProperty('--nil-accent',color);el.style.setProperty('--nil-on-accent',(rgb[0]*299+rgb[1]*587+rgb[2]*114)>150000?'#172333':'#fff');}
+    function applyBranding(brand){
+        cfg.branding=brand;root.querySelector('h1').textContent=brand.title;
+        paint(root,brand.accent);
+        const mark=root.querySelector('.nil-mark');mark.textContent='N';
+        if(brand.logo){const img=document.createElement('img');img.src=brand.logo;img.alt='';img.onerror=()=>img.remove();mark.append(img);}
+        document.querySelectorAll('#toplevel_page_woocommerce a[href$="page=nil-bulk"]').forEach(el=>{el.textContent=brand.title;});
+    }
+    applyBranding({title:b.title||'مدیریت محصولات نیل',accent:b.accent||'#6941c6',logo:b.logo||''});
+    const panel=document.createElement('div');panel.append(document.getElementById('nil-suite-template').content.cloneNode(true));
     root.append(panel);a.table=table;a.scoped=scoped;
-    // Seven small workspaces, no UI framework and no background report requests.
-    const workspaces=[['products','محصولات'],['create','افزودن محصول'],['files','اکسل'],['schedules','قوانین قیمت'],['media','تصاویر'],['insights','مشتریان و سود'],['settings','تنظیمات']];
+    // Focused workspaces, no UI framework and no background report requests.
+    const workspaces=[['products','محصولات'],['pricing','قیمت‌گذاری'],['create','افزودن'],['files','اکسل'],['media','تصاویر'],['insights','مشتریان و سود'],['settings','تنظیمات'],['help','راهنما']];
     const sections=[...root.querySelectorAll('section.nil-card')];
-    const groups=['products','products','products','products','products','create','files','schedules','media','insights','settings'];
+    const groups=['products','pricing','pricing','pricing','pricing','create','files','pricing','media','insights','settings'];
     const nav=document.createElement('nav');nav.className='nil-tabs';nav.setAttribute('role','tablist');nav.setAttribute('aria-label','بخش‌های مدیریت فروشگاه');
     const panels=new Map();workspaces.forEach(([id,label])=>{
         const box=document.createElement('div');box.id='nil-panel-'+id;box.setAttribute('role','tabpanel');box.setAttribute('aria-labelledby','nil-tab-'+id);root.append(box);panels.set(id,box);
         const button=document.createElement('button');button.type='button';button.id='nil-tab-'+id;button.className='nil-tab';button.textContent=label;button.setAttribute('role','tab');button.setAttribute('aria-controls',box.id);button.dataset.workspace=id;nav.append(button);
     });
     sections.forEach((section,i)=>panels.get(groups[i]).append(section));
+    const help=document.getElementById('nil-help-template');if(help)panels.get('help').append(help.content.cloneNode(true));
     root.insertBefore(nav,document.getElementById('nil-message'));
-    function activatePanel(id){for(const [key,box] of panels){box.hidden=key!==id;}nav.querySelectorAll('button').forEach(btn=>{const active=btn.dataset.workspace===id;btn.setAttribute('aria-selected',String(active));btn.tabIndex=active?0:-1;});}
+    function activatePanel(id){if(!panels.has(id))return;for(const [key,box] of panels){box.hidden=key!==id;}nav.querySelectorAll('button').forEach(btn=>{const active=btn.dataset.workspace===id;btn.setAttribute('aria-selected',String(active));btn.tabIndex=active?0:-1;});}
     nav.onclick=event=>{const btn=event.target.closest('[data-workspace]');if(btn)activatePanel(btn.dataset.workspace);};
     nav.onkeydown=event=>{const list=[...nav.querySelectorAll('button')],index=list.indexOf(document.activeElement);let next=index;
         if(event.key==='ArrowRight')next=(index-1+list.length)%list.length;else if(event.key==='ArrowLeft')next=(index+1)%list.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=list.length-1;else return;
         event.preventDefault();activatePanel(list[next].dataset.workspace);list[next].focus();};
     a.activatePanel=activatePanel;activatePanel('products');
+    root.addEventListener('click',e=>{const go=e.target.closest('[data-go]');if(go){activatePanel(go.dataset.go);panels.get(go.dataset.go).scrollIntoView({block:'start'});}});
+    root.addEventListener('click',e=>{const btn=e.target.closest('[data-recipe]');if(!btn)return;const name=btn.dataset.recipe;a.applyRule({source:'current',target:'regular_price',operation:name==='fixed'?'fixed':'percent',value:name==='fixed'?'50000':name==='discount'?'-10':'10',rounding:name==='ending'?'up':'none',step:'10000',ending:'9000'});activatePanel('pricing');a.refreshMeta();message('فرم آماده شد؛ محدوده را انتخاب و پیش‌نمایش بسازید.');});
     const $=name=>document.getElementById('nil-'+name), on=(name,fn)=>{$(name).onclick=()=>task(fn);};
     function table(headers,rows){return `<table class="widefat nil-report"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;}
     async function scoped(){let rows=a.getRows();const scope=document.getElementById('nil-scope').value;
@@ -94,6 +80,10 @@
     on('profit-export',async()=>{if(!insights)throw new Error('گزارش را محاسبه کنید.');download(await api('sheet/export',{format:$('file-format').value,headers:['id','name','net_quantity','net_revenue_ex_tax','known_cost','known_cost_profit','known_margin_percent','unknown_cost_lines'],report:insights.products.map(p=>[p.id,p.name,p.quantity,p.revenue,p.cost,p.profit,p.margin,p.unknown_lines])}));});
     on('clean-drafts',async()=>{const out=await api('maintenance',{history:false});$('clean-result').textContent=`${fmt(out.deleted)} پیش‌نویس پاک شد.${out.more?' برای بستهٔ بعد دوباره بزنید.':''}`;});
     on('clean-history',async()=>{if(!window.confirm('گزارش‌های تکمیل‌شدهٔ بیش از ۹۰ روز حذف می‌شوند و بازگردانی آن‌ها دیگر ممکن نیست. ادامه؟'))return;const out=await api('maintenance',{history:true,days:90});$('clean-result').textContent=`${fmt(out.deleted)} گزارش قدیمی حذف شد.${out.more?' برای بستهٔ بعد دوباره بزنید.':''}`;});
-    on('brand-save',async()=>{await api('branding',{title:$('brand-title').value,accent:$('brand-accent').value,logo:$('brand-logo').value});message('برندینگ ذخیره شد؛ صفحه را تازه کنید.');});
-    on('update-status',async()=>{const s=await api('updater');$('update-result').textContent=`نسخه نصب‌شده: ${s.current} · ${s.configured?'توکن سرور تنظیم شده':'توکن سرور تنظیم نشده'} · آخرین نسخه قابل دریافت: ${s.available||'در دسترس نیست'}`;});
+    $('brand-title').value=b.title||'مدیریت محصولات نیل';$('brand-accent').value=b.accent||'#6941c6';$('brand-logo').value=b.logo||'';
+    function brandPreview(){const box=$('brand-preview');paint(box,$('brand-accent').value);box.querySelector('strong').textContent=$('brand-title').value;box.querySelector('small').textContent='پیش‌نمایش؛ برای اعمال ذخیره کنید.';const mark=box.querySelector('.nil-mark');mark.textContent='N';if(/^https:\/\//.test($('brand-logo').value)){const img=document.createElement('img');img.src=$('brand-logo').value;img.alt='';img.onerror=()=>{if(mark.contains(img)){img.remove();box.querySelector('small').textContent='لوگو بارگذاری نشد؛ آدرس مستقیم تصویر را بررسی کنید.';}};mark.append(img);}}
+    for(const key of ['title','accent'])$('brand-'+key).oninput=brandPreview;$('brand-logo').onchange=brandPreview;brandPreview();
+    if(cfg.canBrand===false){$('brand-save').disabled=true;$('brand-preview').querySelector('small').textContent='ذخیرهٔ برندینگ فقط برای مدیر سایت فعال است.';}
+    on('brand-save',async()=>{const brand=await api('branding',{title:$('brand-title').value,accent:$('brand-accent').value,logo:$('brand-logo').value});applyBranding(brand);brandPreview();message('برندینگ ذخیره و اعمال شد.');});
+    on('update-status',async()=>{const s=await api('updater');$('update-result').textContent=`نسخه نصب‌شده: ${s.current} · ${s.configured?'دریافت با توکن سرور':'دریافت عمومی؛ بدون نیاز به توکن'} · آخرین نسخه قابل دریافت: ${s.available||'در دسترس نیست'}`;});
 })();

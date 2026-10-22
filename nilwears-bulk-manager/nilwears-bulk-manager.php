@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: Nilwears
  * Requires at least: 6.4
  * Requires PHP: 7.4
@@ -21,7 +21,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.3.0';
+    const VERSION = '1.4.0';
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {
@@ -74,6 +74,8 @@ final class NIL_Bulk_Manager {
     public static function page() {
         if ( current_user_can( 'manage_woocommerce' ) ) {
             echo '<div id="nil-bulk-app" class="wrap" dir="rtl"><p>در حال آماده‌سازی جدول نیل…</p></div>';
+            require __DIR__ . '/includes-view.php';
+            require __DIR__ . '/includes-help.php';
         }
     }
     private static function config() {
@@ -94,6 +96,7 @@ final class NIL_Bulk_Manager {
             'currencyCode' => get_woocommerce_currency(),
             'decimals' => wc_get_price_decimals(),
             'costBackend' => NIL_Cost::native() ? 'native' : 'legacy',
+            'canBrand' => current_user_can( 'manage_options' ),
             'branding' => NIL_Suite::branding(), 'brands' => NIL_Suite::brands(),
             'categories' => is_wp_error( $categories ) ? array() : array_map( function( $term ) {
                 return array( 'id' => $term->term_id, 'name' => $term->name );

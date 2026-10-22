@@ -4,7 +4,7 @@
 
 افزونهٔ اختصاصی ووکامرس برای مدیریت قیمت و موجودی محصولات ساده و ورییشن‌های رنگ/سایز، با پیش‌نمایش، تغییر گروهی، رندکردن قابل تنظیم و بازگردانی.
 
-**نسخهٔ فعلی: 1.3.0**
+**نسخهٔ فعلی: 1.4.0**
 
 ## نصب
 
@@ -85,15 +85,17 @@ The WooCommerce submenu now includes product/variation editing, draft/published 
 - Purchase-cost profit is indicative in the product grid. Sales reports use native recorded order-line COGS when enabled, or immutable legacy unit-cost snapshots otherwise. Historical lines without a snapshot are marked unknown and excluded from known profit; no historical costs are guessed. Profit excludes tax, shipping, fees and overhead and subtracts line refunds/returned quantity. Net customer spend includes shipping/tax and subtracts order refunds. Loyalty filters refer to the selected order-creation date range; unpaid/cancelled orders are excluded. Mixed currencies are counted separately and excluded from the store-currency totals.
 - Branding changes title, logo URL and accent; it does not change plugin slug, security capabilities or update identity. Settings require `manage_options`; reports additionally require `view_woocommerce_reports`.
 
-### Dashboard updates from this private repository
+### Dashboard updates from GitHub
 
-Create a fine-grained GitHub token scoped only to this repository with **Contents: read**. On the WordPress server, before the `wp-settings.php` include in `wp-config.php`, define:
+The repository is public at the user's request. **Version 1.4+ checks and downloads public releases without a token.** An installed v1.3 or earlier still requires a token; if none is configured, install the v1.4 ZIP once through Plugins → Add New → Upload Plugin and replace the existing version. Future releases use the standard WordPress update screen. This repository release does not install itself on the store.
+
+For a private repository, an optional fine-grained GitHub token needs only **Contents: read** for that repository. On the WordPress server, before the `wp-settings.php` include in `wp-config.php`, define:
 
 ```php
 define( 'NIL_BULK_GITHUB_TOKEN', 'SERVER_SIDE_READ_ONLY_TOKEN' );
 ```
 
-Replace the placeholder on the server; do not commit the token or send it in chat. Updates use WordPress's normal Plugins / Dashboard update UI. Release metadata is cached for six hours; failed authentication for five minutes. The updater never sends the token to the redirected release-asset host and checks release size and the GitHub SHA-256 digest when provided. An unconfigured token leaves manual ZIP installation available. Site installation and credential configuration are separate from repository development.
+Replace the placeholder on the server; do not commit the token or send it in chat. Updates use WordPress's normal Plugins / Dashboard update UI. Release metadata is cached for six hours; failed authentication for five minutes. The updater never sends the token to the redirected release-asset host and checks release size and the GitHub SHA-256 digest when provided. Public releases do not require this constant. Public/private metadata caches are separate; redirect hosts never receive credentials. Site installation and credential configuration are separate from repository development.
 
 
 ## Version 1.2: performance and interface
@@ -113,3 +115,15 @@ Settings includes manual cleanup of owned abandoned drafts older than 7 days. Co
 - **One active cost source:** if native WooCommerce COGS is enabled, the grid, cost-based rules, files and creation use its product APIs. The table shows effective cost including parent inheritance/additive definitions. Editing a variation cost sets an absolute total; clearing it restores inheritance, while explicit zero overrides a parent. Undo restores the original native definition and additive flag. Zero/blank on a simple product follows WooCommerce's native semantics.
 - **Existing cost data:** enabling COGS does not silently copy `_nil_cost_price` or fall back to it. In Settings, preview migration for the selected/page/filtered scope, review any conflicting existing/inherited native costs, and confirm the usual price preview for eligible missing costs. Conflicting costs are skipped. Legacy metadata remains available if COGS is later disabled; edits made to native costs are not mirrored back. Changing cost backend after a cost preview requires a new preview.
 - **Order reporting:** with COGS active, WooCommerce records order costs and Nil reads those recorded line totals, without a second Nil cost snapshot. Historical lines can use an existing legacy snapshot when native cost is absent; missing historical costs are not reconstructed from today's product cost. No old order backfill is performed.
+
+
+## Version 1.4: help, pricing workflow and live branding
+
+**مسیر تغییر قیمت:** در «محصولات» ردیف‌ها را انتخاب کنید ← «قیمت‌گذاری» ← مثال «۱۰٪ + پایان ۹۰۰۰» یا تنظیم دلخواه ← محدوده را بررسی کنید ← «ساخت پیش‌نمایش» ← بررسی قبل/بعد ← «تأیید و ذخیره همین پیش‌نمایش». برای تمام محصولات، ابتدا فیلترها را پاک و جدول را تازه کنید، سپس محدودهٔ «همهٔ محصولات فیلتر فعلی» را انتخاب کنید. واحد قیمت همان واحد ووکامرس است؛ تبدیل ریال/تومان انجام نمی‌شود.
+
+- **راهنمای داخل افزونه:** از دکمهٔ بالای صفحه یا تب «راهنما» باز می‌شود؛ شروع سه‌مرحله‌ای، مثال‌های آماده، تفاوت محدوده‌ها، رندکردن، ورییشن/موجودی مشترک، COGS، اکسل، خطاها و بازگردانی را توضیح می‌دهد. مثال‌ها فقط فرم را پر می‌کنند و چیزی ذخیره نمی‌کنند.
+- **قیمت‌گذاری مستقل:** دیگر زیر جدول طولانی پنهان نیست. موجودی گروهی، قوانین زمان‌بندی و تاریخچه هم در همین بخش‌اند. پیش‌نمایش ویرایش جدول و قیمت گروهی هر دو به این بخش هدایت می‌شوند. مبلغ نمونه، نتیجهٔ تنظیمات فعلی را به‌صورت راهنما نشان می‌دهد؛ پیش‌نمایش قطعی روی سرور همچنان لازم است.
+- **برندینگ زنده:** تغییرات ذخیره‌نشده در کادر پیش‌نمایش دیده می‌شوند. پس از ذخیرهٔ موفق، عنوان، رنگ، لوگو و منوی مدیریت فوراً به‌روز می‌شوند و بعد از بارگذاری تازه می‌مانند. خطای ذخیره، هویت اعمال‌شده را عوض نمی‌کند. لوگوی HTTP به‌جای حذف خاموش رد می‌شود؛ کد رنگ سه‌رقمی به شش‌رقمی تبدیل می‌شود. این قابلیت هویت همین افزونه را تغییر می‌دهد، نه ظاهر فروشگاه/وودمارت.
+- **رابط تازه:** هشت فضای کاری، تیتر و کنترل‌های واضح، فرم‌های گروه‌بندی‌شده، ناوبری قابل پیمایش در عرض کم و جدول با اسکرول افقی مستقل. فونت محلی وزیرمتن، بدون فریم‌ورک جدید یا فایل عمومی فروشگاه.
+
+The browser DOM suites use the same static admin/help templates and source/minified scripts that WordPress receives. `python3 scripts/preview.py` creates a self-contained **mock-data** preview and a 390px iframe harness under ignored `dist/`; neither connects to a store or ships in the plugin ZIP. Browser visual review was not completed: Cloud Browser rejected local `file:` navigation. DOM fixtures are not visual rendering evidence.

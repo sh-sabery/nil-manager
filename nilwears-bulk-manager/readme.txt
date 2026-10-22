@@ -3,7 +3,7 @@ Contributors: sh-sabery
 Requires at least: 6.4
 Tested up to: 7.1.3
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 Requires Plugins: woocommerce
 License: GPL-2.0-or-later
 
@@ -12,9 +12,11 @@ Persian, variation-aware WooCommerce product operations. Tested with WooCommerce
 == Description ==
 Manage products, prices, stock, purchase cost, XLSX/CSV, images and customer reports in a scoped RTL admin screen. No storefront CSS/JavaScript/font is enqueued. Optional PHP modules load on use; temporary tool state is bounded per user. Essential cost metadata and undo history intentionally use database storage.
 
-See README-fa.html for usage, and the private repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Dashboard updates require a server-side read-only GitHub token.
+See README-fa.html for usage, and the repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Public-repository updates need no token from v1.4. Older versions without a token require one manual v1.4 ZIP installation. An optional token supports private access.
 
 == Changelog ==
+= 1.4.0 =
+In-app Persian help, dedicated pricing workspace, safe example recipes and live sample calculation. Immediate saved-brand application with an unsaved preview, refreshed responsive styling and tokenless public-release updates.
 = 1.3.0 =
 Append variations to existing parents from the form or mapped XLSX/CSV, save personal views and price rules, and use native WooCommerce COGS when enabled. Preview legacy-cost migration; retain conflicting native costs.
 = 1.2.0 =

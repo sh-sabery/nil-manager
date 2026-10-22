@@ -21,7 +21,12 @@ final class NIL_Suite {
         } );
     }
     public static function branding() {
-        return wp_parse_args( get_option( 'nil_bulk_branding', array() ), array( 'title' => 'مدیریت محصولات نیل', 'accent' => '#6941c6', 'logo' => '' ) );
+        $b = wp_parse_args( get_option( 'nil_bulk_branding', array() ), array( 'title' => 'مدیریت محصولات نیل', 'accent' => '#6941c6', 'logo' => '' ) );
+        $b['accent'] = self::accent( $b['accent'] ); return $b;
+    }
+    private static function accent( $color ) {
+        $color = sanitize_hex_color( $color ) ?: '#6941c6';
+        return 4 === strlen( $color ) ? '#' . $color[1] . $color[1] . $color[2] . $color[2] . $color[3] . $color[3] : $color;
     }
     public static function title() { return self::branding()['title']; }
     public static function brand_taxonomy() {
@@ -110,8 +115,9 @@ final class NIL_Suite {
         if ( ! current_user_can( 'manage_options' ) ) { throw new RuntimeException( 'تنظیم برندینگ به مدیر سایت نیاز دارد.' ); }
         $b = $r->get_json_params(); $title = sanitize_text_field( $b['title'] ?? '' ); $accent = sanitize_hex_color( $b['accent'] ?? '' );
         if ( ! $title || ! $accent ) { throw new InvalidArgumentException( 'عنوان و رنگ معتبر وارد کنید.' ); }
-        $logo = esc_url_raw( $b['logo'] ?? '', array( 'https' ) );
-        update_option( 'nil_bulk_branding', array( 'title' => $title, 'accent' => $accent, 'logo' => $logo ), false );
+        $raw_logo = trim( (string) ( $b['logo'] ?? '' ) ); $logo = esc_url_raw( $raw_logo, array( 'https' ) );
+        if ( $raw_logo && ( ! $logo || 'https' !== wp_parse_url( $logo, PHP_URL_SCHEME ) || ! wp_parse_url( $logo, PHP_URL_HOST ) ) ) { throw new InvalidArgumentException( 'لوگو باید نشانی HTTPS مستقیم تصویر باشد.' ); }
+        update_option( 'nil_bulk_branding', array( 'title' => $title, 'accent' => self::accent( $accent ), 'logo' => $logo ), false );
         return self::branding();
     }
     public static function create( $r ) {

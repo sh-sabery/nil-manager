@@ -1,7 +1,8 @@
 const fs=require('fs'), vm=require('vm'), assert=require('assert/strict');
 const {parseHTML}=require('linkedom');
 (async()=>{
-const {window}=parseHTML('<html lang="fa" dir="rtl"><body><div id="nil-bulk-app"></div></body></html>');
+const templates=['view','help'].map(name=>fs.readFileSync('nilwears-bulk-manager/includes-'+name+'.php','utf8').replace(/<\?php[\s\S]*?\?>/,'' )).join('');
+const {window}=parseHTML('<html lang="fa" dir="rtl"><body><div id="toplevel_page_woocommerce"><a href="admin.php?page=nil-bulk">نیل</a></div><div id="nil-bulk-app"></div>'+templates+'</body></html>');
 const document=window.document;window.HTMLElement.prototype.scrollIntoView=function(){};window.confirm=()=>true;
 const base={cost_price:'100000',name:'تست',sku:'',category_ids:[],brand_ids:[],regular_price:'495000',sale_price:'',manage_stock:false,stock_quantity:null,stock_status:'instock',backorders:'no',sale_from:null,sale_to:null,parent_stock:false,type:'simple',parent_id:0,status:'publish'};
 const rows=[{id:10,parent:0,type:'variable',name:'بارونی نیل',values:{...base,type:'variable',manage_stock:true,stock_quantity:12},version:'p'},
@@ -9,9 +10,9 @@ const rows=[{id:10,parent:0,type:'variable',name:'بارونی نیل',values:{.
 {id:12,parent:10,type:'variation',name:'بارونی سفید L',values:{...base,type:'variation',parent_id:10,parent_stock:true,regular_price:'695000'},version:'b'},
 {id:20,parent:0,type:'simple',name:'تیشرت ساده',values:{...base,regular_price:'200000'},version:'s'}];
 rows.forEach(r=>{r.sku='sku'+r.id;r.attributes='رنگ و سایز';r.url='https://nil.test/edit/'+r.id;});
-let job=null,payload=null,presetList=[];
+let job=null,payload=null,presetList=[],brandFailure=false;const requests=[];
 async function fetchMock(url,options={}){
-const parsed=new URL(url),path=parsed.pathname.replace('/nil/',''),body=options.body?JSON.parse(options.body):null;let result;
+const parsed=new URL(url),path=parsed.pathname.replace('/nil/',''),body=options.body?JSON.parse(options.body):null;requests.push({path,body});if(path==='branding'&&brandFailure)return{ok:false,json:async()=>({message:'ذخیره انجام نشد'})};let result;
 if(path==='products')result={rows:structuredClone(rows),page:1,pages:1,total:2};
 else if(path==='jobs')result=job?[{id:job.id,state:job.state,created_at:'2026-10-21 12:00:00'}]:[];
 else if(path==='preview'){
@@ -27,7 +28,7 @@ else if(path==='variations/preview'){payload=body;result={token:'v-token',rows:[
 else if(path==='variations/apply'){payload=body;result={created:[40]};}
 else if(path==='create'){payload=body;result={id:30,created:[30,31,32,33,34]};}
 else if(path==='branding'){payload=body;result=body;}
-else if(path==='updater')result={configured:false,current:'1.2.0',available:null};
+else if(path==='updater')result={configured:false,current:'1.4.0',available:null};
 else if(path==='sheet/read')result={id:'file-token',headers:['id','regular_price'],sample:[['11','600000']],count:1};
 else if(path==='sheet/prepare'){payload=body;result={updates:[],creates:[],errors:[]};}
 else throw new Error('Unknown endpoint: '+path);
@@ -51,16 +52,31 @@ qty=$('[data-id="11"][data-field="stock_quantity"]');qty.value='4';change(qty);
 $('#nil-apply').click();await idle();assert.equal($('[data-id="11"][data-field="stock_quantity"]').value,'4');assert(!$('#nil-manual').disabled);
 $('#nil-reset').click();assert.equal($('[data-id="11"][data-field="stock_quantity"]').value,'3');assert($('#nil-manual').disabled);
 vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/suite'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
-assert.equal(document.querySelectorAll('[role=tab]').length,7);assert(!$('#nil-panel-products').hidden);$('#nil-tab-media').click();assert(!$('#nil-panel-media').hidden);assert($('#nil-panel-products').hidden);$('#nil-tab-products').click();assert(!$('#nil-panel-products').hidden);
+assert.equal(document.querySelectorAll('[role=tab]').length,8);assert(!$('#nil-panel-products').hidden);$('#nil-tab-media').click();assert(!$('#nil-panel-media').hidden);assert($('#nil-panel-products').hidden);$('#nil-tab-products').click();assert(!$('#nil-panel-products').hidden);
+assert($('#nil-panel-pricing').contains($('#nil-bulk')));assert(!$('#nil-panel-products').contains($('#nil-bulk')));
+$('#nil-tab-help').click();assert(!$('#nil-panel-help').hidden);assert($('#nil-panel-help').textContent.includes('قیمت تازه، در سه قدم.'));
+const beforeRecipe=requests.length;$('[data-recipe="ending"]').click();assert(!$('#nil-panel-pricing').hidden);assert.equal(requests.length,beforeRecipe,'recipe only fills controls');assert.equal($('#nil-value').value,'10');assert.equal($('#nil-ending').value,'9000');assert($('#nil-demo-result').textContent.includes('۵۴۹٬۰۰۰'));
+$('[data-recipe="fixed"]').click();assert.equal($('#nil-operation').value,'fixed');assert($('#nil-demo-result').textContent.includes('۵۴۵٬۰۰۰'));assert($('#nil-step').disabled);
+$('[data-recipe="discount"]').click();assert($('#nil-demo-result').textContent.includes('۴۴۵٬۵۰۰'));
+$('[data-recipe="percent"]').click();$('#nil-value').value='۲۰';$('#nil-value').dispatchEvent(new window.Event('input',{bubbles:true}));assert($('#nil-demo-result').textContent.includes('۵۹۴٬۰۰۰'));
+$('[data-recipe="ending"]').click();$('#nil-step').value='0';$('#nil-step').dispatchEvent(new window.Event('input',{bubbles:true}));assert.equal($('#nil-demo-result').className,'nil-error-text');$('[data-recipe="ending"]').click();
+$('#nil-tab-products').click();
 assert($('#nil-create-form'));assert($('#nil-media-action'));assert($('#nil-mapping'));assert($('#nil-rows').textContent.includes('۳۹۵'));
 $('#nil-create-name').value='محصول جدید';$('#nil-create-attrs').value='رنگ: مشکی، سفید\nسایز: M، L';
 $('#nil-create-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await idle();assert.equal(payload.name,'محصول جدید');assert.deepEqual(Object.keys(payload.attributes),['رنگ','سایز']);assert($('#nil-create-result').textContent.includes('#30'));
 const fileInput=$('#nil-import-file');Object.defineProperty(fileInput,'files',{value:[{name:'test.csv',size:20}]});$('#nil-file-read').click();await idle();assert(!$('#nil-file-prepare').disabled,'mapping action becomes enabled after async load');assert.equal(document.querySelectorAll('[data-map]').length,2);$('#nil-file-prepare').click();await idle();assert.equal(payload.mapping[0],'id');assert.equal(payload.mapping[1],'regular_price');
-$('#nil-brand-title').value='فروشگاه من';$('#nil-brand-save').click();await idle();assert.equal(payload.title,'فروشگاه من');$('#nil-update-status').click();await idle();assert($('#nil-update-result').textContent.includes('1.2.0'));
+$('#nil-brand-title').value='فروشگاه من';$('#nil-brand-accent').value='#146b5a';$('#nil-brand-logo').value='https://example.test/logo.png';$('#nil-brand-title').dispatchEvent(new window.Event('input'));assert.equal($('#nil-brand-preview strong').textContent,'فروشگاه من');assert.notEqual($('h1').textContent,'فروشگاه من','unsaved branding stays in preview');$('#nil-brand-save').click();await idle();assert.equal(payload.title,'فروشگاه من');assert.equal($('h1').textContent,'فروشگاه من');assert.equal($('#toplevel_page_woocommerce a').textContent,'فروشگاه من');assert.equal($('#nil-bulk-app').style.getPropertyValue('--nil-accent'),'#146b5a');assert.equal(document.querySelectorAll('.nil-header .nil-mark img').length,1);$('#nil-brand-save').click();await idle();assert.equal(document.querySelectorAll('.nil-header .nil-mark img').length,1,'logo not duplicated');
+brandFailure=true;$('#nil-brand-title').value='ذخیره نشده';$('#nil-brand-save').click();await idle();assert.equal($('h1').textContent,'فروشگاه من','failed save leaves applied identity intact');assert.equal($('#nil-message').getAttribute('role'),'alert');brandFailure=false;
+$('#nil-brand-title').value='فروشگاه من';$('#nil-brand-logo').value='';$('#nil-brand-save').click();await idle();assert.equal(document.querySelectorAll('.nil-header .nil-mark img').length,0,'clearing logo applied immediately');$('#nil-update-status').click();await idle();assert($('#nil-update-result').textContent.includes('1.4.0'));
 vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/advanced'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
 const unrelated=document.createElement('table');unrelated.className='nil-table';unrelated.innerHTML='<tr>'+Array.from({length:9},(_,i)=>'<td>'+i+'</td>').join('')+'</tr>';document.getElementById('nil-bulk-app').append(unrelated);
 const costColumn=$('#nil-columns [data-col="cost"]');costColumn.checked=false;change(costColumn);assert($('th[data-column="cost"]').hidden,'hidden cost column');assert(!unrelated.querySelector('[data-column]'),'column layout scoped to product grid');
 $('#nil-p-name').value='نمای من';$('#nil-p-view').click();await idle();assert.equal(payload.kind,'view');assert(!payload.data.columns.includes('cost'));$('#nil-p-apply').click();await idle();assert($('th[data-column="cost"]').hidden,'saved columns survive reload');
 $('#nil-v-parent').value='10';$('#nil-v-load').click();await idle();assert($('#nil-v-options').value.includes('color: black'));$('#nil-v-options').value='color: blue\nsize: M';$('#nil-v-price').value='300000';$('#nil-v-preview').click();await idle();assert.equal(payload.options.color[0],'blue');assert(!$('#nil-v-apply').hidden);$('#nil-v-apply').click();await idle();assert.equal(payload.token,'v-token');assert($('#nil-v-result').textContent.includes('#40'));
-console.log('PASS: suite forms, attribute parsing, import column mapping, async button state, branding, updater, saved views/columns and append-variation preview/apply; DOM table, inherited stock, parent selection, preview, apply, undo, manual stock, preservation of post-preview edits, reset');
+// Fresh document: saved identity is applied at startup; manager-only disable survives async loading.
+const reloadWindow=parseHTML('<html lang="fa" dir="rtl"><body><div id="nil-bulk-app"></div>'+templates+'</body></html>').window;reloadWindow.HTMLElement.prototype.scrollIntoView=function(){};
+const reloadContext=vm.createContext({...context,window:reloadWindow,document:reloadWindow.document,Event:reloadWindow.Event,NIL_BULK:{...context.NIL_BULK,canBrand:false}});
+for(const script of ['admin','suite','advanced'])vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/'+script+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),reloadContext);
+await new Promise(resolve=>setTimeout(resolve,10));assert.equal(reloadWindow.document.querySelector('h1').textContent,'فروشگاه من','saved branding shown after reload');assert.equal(reloadWindow.document.getElementById('nil-brand-accent').value,'#146b5a');assert(reloadWindow.document.getElementById('nil-brand-save').disabled,'manager branding permission survives initial async load');
+console.log('PASS: suite forms, attribute parsing, import column mapping, async button state, live branding success/failure/logo clearing, help recipes, example calculator, pricing workspace, updater, saved views/columns and append-variation preview/apply; DOM table, inherited stock, parent selection, preview, apply, undo, manual stock, preservation of post-preview edits, reset');
 })().catch(e=>{console.error(e);process.exit(1);});
