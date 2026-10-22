@@ -4,12 +4,14 @@ defined( 'ABSPATH' ) || exit;
 // Optional tools are parsed only when an endpoint or update hook needs them.
 spl_autoload_register( function( $class ) {
     if ( 0 !== strpos( $class, 'NIL_' ) ) { return; }
-    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets' );
+    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market' );
     if ( isset( $map[$class] ) ) { require_once __DIR__ . '/includes-' . $map[$class] . '.php'; }
 } );
 final class NIL_Suite {
     public static function boot() {
         add_action( 'rest_api_init', array( __CLASS__, 'routes' ) );
+        add_action( 'nil_bulk_market', array( 'NIL_Market', 'tick' ), 10, 1 );
+        add_action( 'nil_bulk_before_job_run', array( 'NIL_Market', 'guard' ), 10, 2 );
         add_action( 'nil_bulk_schedule', array( __CLASS__, 'tick' ), 10, 1 );
         add_action( 'woocommerce_checkout_create_order_line_item', array( 'NIL_Insights', 'checkout_cost' ), 10, 4 );
         add_action( 'woocommerce_new_order_item', array( 'NIL_Insights', 'new_item_cost' ), 10, 3 );
@@ -85,6 +87,10 @@ final class NIL_Suite {
     }
     public static function routes() {
         $routes = array(
+            'market/rates' => array( 'GET', 'NIL_Market', 'rates' ),
+            'market/rules' => array( 'GET,POST', 'NIL_Market', 'endpoint' ),
+            'market/capture' => array( 'POST', 'NIL_Market', 'capture' ),
+            'market/preview' => array( 'POST', 'NIL_Market', 'preview' ),
             'variation-parent' => array( 'GET', 'NIL_Variations', 'parent_info' ),
             'variations/preview' => array( 'POST', 'NIL_Variations', 'preview' ),
             'variations/apply' => array( 'POST', 'NIL_Variations', 'apply' ),

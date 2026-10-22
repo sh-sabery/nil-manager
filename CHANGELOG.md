@@ -2,6 +2,16 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.5.0] - 2026-10-22
+
+- Add administrator-managed automatic pricing for WallGold 18K gold, USD and EUR. Capture each selected simple product or variation's original prices and an explicit reference rate in Toman; calculate every cycle from that fixed baseline, without compounding previous updates.
+- Support regular prices, existing sale prices or both, existing none/up/down/nearest rounding and custom steps/endings. An optional below-baseline reduction switch clamps the ratio and rounded result to the original price floor; declines from a higher rate toward the reference can still reduce prices.
+- Require a complete, unexpired preview and explicit activation. Show sample changes and a full paginated report; prevent ordinary history Apply from bypassing market-rule activation. Pause, resume, run now, delete and change the 5–1440 minute interval without rebasing. Newly added products/variations are not silently included.
+- Schedule one event per activated rule, with bounded planning (50 rows) and WooCommerce CRUD writes (10 rows), a replacement event for interrupted workers, existing undo/history and receipt reconciliation after partial writes. The interval starts after a cycle completes; WP-Cron needs site traffic or a server cron. Pausing/deleting preserves current prices and prior reports.
+- Reject overlapping product membership, stale table versions and changed currency/precision/permissions; skip manually changed prices. Validate source schema, unit/divide flags and quote age; retry source failures without stale-price writes. Use a fixed public endpoint, 60-second shared rate cache and 15-second failure throttle; send no product data or credentials.
+- Load market PHP only on use. Keep rule metadata in one non-autoload option (20 rules maximum) and one fixed baseline table (5,000 products/variations per rule). Do not fetch rates at page startup or enqueue storefront assets. Actual price-change history is retained; unchanged cycles create no empty price jobs. Move the main static grid into an admin-only PHP template to retain the unchanged 60,000-byte budget: shipped CSS/JS totals 59,494 bytes (22,318 deterministic gzip bytes).
+- Validation: 25 PHP files linted; 1,532 price, 58 market arithmetic/feed, 14 spreadsheet and 20 public/private updater checks; source/minified DOM suites passed. Disposable PHP 8.3 / WP 7.1.3 / WooCommerce 11.2.1 passed 275 combined assertions in each HPOS and legacy mode. Cold baseline capture measured 25 queries for both 2 and 40 variations; product-grid reads remain 17/17, with zero boot SQL and public assets. Integration HTTP is mocked; the live public feed contract was checked separately. Browser visual rendering, real MySQL concurrency, actual dashboard upgrade and live-store installation remain unverified.
+
 ## [1.4.0] - 2026-10-22
 
 - Add an in-app Persian Help workspace and header shortcut: a three-step pricing guide, worked 10% + ending-9000 example, fixed/percentage/reduction recipes and FAQs for scope, units, variations, stock, COGS, files, branding, errors and undo.

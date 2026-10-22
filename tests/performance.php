@@ -3,7 +3,7 @@
 wp_set_current_user(1);
 $start=$wpdb->num_queries;NIL_Bulk_Manager::assets('dashboard');check($wpdb->num_queries===$start,'unrelated admin page performs no plugin asset queries');
 $start=$wpdb->num_queries;NIL_Bulk_Manager::boot();check($wpdb->num_queries===$start,'plugin boot itself executes zero SQL');
-check(!wp_style_is('nil-bulk','enqueued')&&!wp_script_is('nil-bulk','enqueued')&&!wp_script_is('nil-suite','enqueued')&&!wp_script_is('nil-advanced','enqueued'),'no plugin assets on storefront/unrelated screen');
+check(!wp_style_is('nil-bulk','enqueued')&&!wp_script_is('nil-bulk','enqueued')&&!wp_script_is('nil-suite','enqueued')&&!wp_script_is('nil-advanced','enqueued')&&!wp_script_is('nil-market','enqueued'),'no plugin assets on storefront/unrelated screen');
 $seen=array();$observe=function($sql)use(&$seen){$seen[]=$sql;return $sql;};add_filter('query',$observe);
 request_nil('GET','media');remove_filter('query',$observe);check(!array_filter($seen,function($sql){return stripos($sql,'REGEXP')!==false;}),'media listing runs zero reference-scan queries');
 $ml=request_nil('GET','media');$ids=array_slice(wp_list_pluck($ml['rows'],'id'),0,2);$scan=request_nil('POST','media/scan',array('ids'=>$ids));check(count($scan)===count($ids),'reference scans are explicit and bounded');check(rejected_nil('POST','media/scan',array('ids'=>range(1,6))),'oversized reference scans rejected');

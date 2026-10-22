@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: Nilwears
  * Requires at least: 6.4
  * Requires PHP: 7.4
@@ -21,7 +21,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.4.0';
+    const VERSION = '1.5.0';
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {
@@ -52,6 +52,7 @@ final class NIL_Bulk_Manager {
             UNIQUE KEY job_product (job_id,product_id),
             KEY job_state (job_id,state)
         ) ENGINE=InnoDB $charset;" );
+        NIL_Market::install();
         update_option( 'nil_bulk_version', self::VERSION, false );
     }
 
@@ -74,6 +75,7 @@ final class NIL_Bulk_Manager {
     public static function page() {
         if ( current_user_can( 'manage_woocommerce' ) ) {
             echo '<div id="nil-bulk-app" class="wrap" dir="rtl"><p>در حال آماده‌سازی جدول نیل…</p></div>';
+            require __DIR__ . '/includes-grid.php';
             require __DIR__ . '/includes-view.php';
             require __DIR__ . '/includes-help.php';
         }
@@ -89,6 +91,7 @@ final class NIL_Bulk_Manager {
         wp_enqueue_script( 'nil-bulk', plugins_url( 'assets/admin.min.js', __FILE__ ), array(), self::VERSION, true );
         wp_enqueue_script( 'nil-suite', plugins_url( 'assets/suite.min.js', __FILE__ ), array( 'nil-bulk' ), self::VERSION, true );
         wp_enqueue_script( 'nil-advanced', plugins_url( 'assets/advanced.min.js', __FILE__ ), array( 'nil-suite' ), self::VERSION, true );
+        wp_enqueue_script( 'nil-market', plugins_url( 'assets/market.min.js', __FILE__ ), array( 'nil-advanced' ), self::VERSION, true );
         $categories = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false ) );
         wp_localize_script( 'nil-bulk', 'NIL_BULK', array(
             'api' => esc_url_raw( rest_url( 'nil-bulk/v1/' ) ), 'nonce' => wp_create_nonce( 'wp_rest' ),
@@ -96,7 +99,7 @@ final class NIL_Bulk_Manager {
             'currencyCode' => get_woocommerce_currency(),
             'decimals' => wc_get_price_decimals(),
             'costBackend' => NIL_Cost::native() ? 'native' : 'legacy',
-            'canBrand' => current_user_can( 'manage_options' ),
+            'canBrand' => current_user_can( 'manage_options' ), 'canMarket' => current_user_can( 'manage_options' ), 'userId' => get_current_user_id(),
             'branding' => NIL_Suite::branding(), 'brands' => NIL_Suite::brands(),
             'categories' => is_wp_error( $categories ) ? array() : array_map( function( $term ) {
                 return array( 'id' => $term->term_id, 'name' => $term->name );
@@ -315,7 +318,7 @@ final class NIL_Bulk_Manager {
             foreach ( array( 'before','after','fields' ) as $field ) { $item[$field] = json_decode( $item[$field . '_json'], true ); unset( $item[$field . '_json'] ); }
         } unset( $item );
         $counts = $wpdb->get_results( $wpdb->prepare( 'SELECT state,COUNT(*) AS n FROM ' . self::table( 'items' ) . ' WHERE job_id=%s GROUP BY state', $job['id'] ), ARRAY_A );
-        return array( 'job' => $job, 'items' => $items, 'counts' => $counts );
+        return array( 'job' => $job, 'items' => $items, 'counts' => $counts, 'market' => NIL_Market::job_info( $job['id'] ) );
     }
     public static function require_transactions() {
         global $wpdb;
@@ -389,6 +392,7 @@ final class NIL_Bulk_Manager {
             $job = self::job( $r['id'] );
             if ( ! in_array( $r->get_param( 'mode' ), array( 'apply', 'undo' ), true ) ) { throw new InvalidArgumentException( 'حالت اجرای عملیات نامعتبر است.' ); }
             $undo = 'undo' === $r->get_param( 'mode' );
+            do_action( 'nil_bulk_before_job_run', $job, $undo );
             if ( json_decode( $job['config'], true ) !== self::config() ) { throw new RuntimeException( 'واحد پول یا دقت قیمت تغییر کرده است؛ عملیات متوقف شد.' ); }
             if ( ! in_array( $job['state'], $undo ? array( 'done','undoing','undone' ) : array( 'ready','running','done' ), true ) ) { throw new RuntimeException( 'وضعیت عملیات اجازه اجرا نمی‌دهد.' ); }
             if ( ( ! $undo && 'done' === $job['state'] ) || ( $undo && 'undone' === $job['state'] ) ) { return array( 'done' => true ); }

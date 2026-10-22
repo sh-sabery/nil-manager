@@ -1,4 +1,4 @@
-# Selected feature coverage — v1.4.0
+# Selected feature coverage — v1.5.0
 
 The 21 selected numbers refer to the feature list discussed with the user. This is an independent implementation in the Nilwears plugin.
 
@@ -32,3 +32,5 @@ See [README.md](README.md) for use and [CONTRIBUTING.md](CONTRIBUTING.md) for va
 Additional v1.3 requests (numbers 2 and 5 refer to the later improvement suggestions, separately from the original comparison list): append missing color/size combinations to existing variable products and save per-user filters, visible/ordered columns and reusable bulk-price rules. Existing variation wildcard coverage, duplicate SKU checks, stale-parent checks and transactional rollback are covered by disposable fixtures. See README.md for limits and cost-source switching semantics.
 
 Version 1.4 adds in-app Persian help, a dedicated pricing workspace, non-executing example recipes, illustrative client-side price calculation and immediate post-save branding with an isolated unsaved preview. The interface is reorganized and restyled without adding a UI framework or increasing the 60 KB CSS/JS cap.
+
+Version 1.5 adds the later market-pricing request independently of the original numbered list: WallGold 18K gold, USD and EUR; a Toman reference rate and fixed captured product prices; configurable below-baseline reductions; none/up/down/nearest rounding; preview and explicit activation; 5–1440 minute intervals editable without rebasing; pause/resume/delete, source/manual-edit protections and variation-aware CRUD. The scope is fixed when captured; frequency depends on WP-Cron and batch completion. See README.md for examples and limits.

@@ -10,32 +10,18 @@
     const esc = value => String(value ?? '').replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
     const fmt = value => value === '' || value == null ? '—' : new Intl.NumberFormat('fa-IR', {maximumFractionDigits:cfg.decimals}).format(Number(value));
     const select = (id, options, value) => `<select id="${id}">${options.map(([v,t]) => `<option value="${v}" ${String(v)===String(value)?'selected':''}>${esc(t)}</option>`).join('')}</select>`;
-    root.innerHTML = `
-        <header class="nil-header"><div class="nil-identity"><span class="nil-mark" aria-hidden="true">N</span><div><span class="nil-kicker">فضای مدیریت فروشگاه</span><h1>قیمت و موجودی نیل</h1><p>محصولات، قیمت و موجودی؛ با کنترل قبل از هر تغییر.</p></div></div><div class="nil-header-actions"><span class="nil-unit">واحد: ${esc(cfg.currency)} (${esc(cfg.currencyCode)})</span><button class="button" data-go="help">راهنما و شروع سریع</button></div></header>
-        <div id="nil-message" role="status" aria-live="polite"></div>
-        <section class="nil-card" id="nil-products"><div class="nil-section-head"><div><span class="nil-kicker">فهرست کالاها</span><h2>محصولات فروشگاه</h2></div><button class="button button-primary" data-go="pricing">تغییر گروهی قیمت ←</button></div><form id="nil-filter" class="nil-toolbar"><label>جست‌وجو<input id="nil-search" placeholder="نام محصول، شناسه یا SKU دقیق"></label><label>دسته‌بندی<select id="nil-category"><option value="">همه دسته‌ها</option>${cfg.categories.map(c => `<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><details class="nil-advanced"><summary>فیلترهای بیشتر</summary><div class="nil-toolbar"><label>برند<select id="nil-brand"><option value="">همه برندها</option>${(cfg.brands||[]).map(c=>`<option value="${Number(c.id)}">${esc(c.name)}</option>`).join('')}</select></label>
-        <label>نوع${select('nil-type',[['','همه'],['simple','ساده'],['variable','متغیر']],'')}</label>
-        <label>انتشار${select('nil-status',[['','همه'],...Object.entries(publication)],'')}</label>
-        <label>موجودی${select('nil-stock',[['','همه'],['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']],'')}</label>
-        <label>از قیمت<input id="nil-min_price" inputmode="decimal"></label><label>تا قیمت<input id="nil-max_price" inputmode="decimal"></label>
-        <label>ترتیب${select('nil-sort',[['ID','شناسه'],['modified','آخرین تغییر'],['title','نام']],'modified')}</label>
-        </div></details><button class="button" type="submit">جست‌وجو / تازه‌سازی</button><span id="nil-total"></span></form>
-        <p class="nil-hint">قیمت‌ها با واحد فعلی فروشگاه هستند. ردیف والد با زمینهٔ بنفش و هر ورییشن زیر آن نمایش داده می‌شود. خانهٔ خالیِ حراج یعنی حذف حراج؛ قیمت صفر یعنی رایگان.</p>
-        <div class="nil-table-scroll"><table class="widefat nil-table"><thead><tr><td><input id="nil-select-all" type="checkbox" aria-label="انتخاب همه ردیف‌های این صفحه"></td><th>محصول / رنگ و سایز</th><th>قیمت خرید</th><th>سود / حاشیه</th><th>قیمت اصلی</th><th>قیمت حراج</th><th>مدیریت تعداد</th><th>موجودی</th><th>وضعیت</th></tr></thead><tbody id="nil-rows"></tbody></table></div>
-        <footer class="nil-toolbar nil-table-footer"><button type="button" class="button" id="nil-prev">صفحه قبل</button><span id="nil-pagination"></span><button type="button" class="button" id="nil-next">صفحه بعد</button><span id="nil-dirty"></span><button type="button" class="button button-primary" id="nil-manual">پیش‌نمایش ویرایش‌های جدول</button><button type="button" class="button" id="nil-reset">پاک‌کردن ویرایش‌ها</button></footer></section>
-        <section class="nil-card" id="nil-pricing"><div class="nil-section-head"><div><span class="nil-kicker">۱ · تنظیم تغییر</span><h2>قیمت‌گذاری، با پیش‌نمایش</h2></div><button class="button" data-go="help">چطور قیمت را تغییر بدهم؟</button></div><p id="nil-scope-summary" class="nil-callout" aria-live="polite"></p><div class="nil-recipes"><span>شروع با یک مثال:</span><button class="button" data-recipe="ending">۱۰٪ + پایان ۹۰۰۰</button><button class="button" data-recipe="percent">۱۰٪ افزایش</button><button class="button" data-recipe="fixed">افزایش مبلغی</button><button class="button" data-recipe="discount">۱۰٪ کاهش</button></div><fieldset><legend>کدام محصولات و کدام قیمت؟</legend><div class="nil-rule-grid">
-        <label>محدوده${select('nil-scope', [['selected','ردیف‌های انتخاب‌شدهٔ همین صفحه'],['page','همهٔ ورییشن‌ها و ساده‌های همین صفحه'],['all','همهٔ محصولاتِ فیلتر فعلی']], 'selected')}</label>
-        <label>مبنای قیمت${select('nil-source',[['current','قیمت فعلی'],['cost','قیمت خرید + درصد یا مبلغ']],'current')}</label><label>ستون${select('nil-target', [['regular_price','قیمت اصلی'],['sale_price','قیمت حراج موجود'],['both','اصلی و حراج موجود']], 'regular_price')}</label></div></fieldset><fieldset><legend>چه تغییری اعمال شود؟</legend><div class="nil-rule-grid">
-        <label>عملیات${select('nil-operation', [['percent','تغییر درصدی'],['fixed','افزودن مبلغ ثابت'],['set','تعیین قیمت ثابت'],['round','فقط رندکردن']], 'percent')}</label>
-        <label><span id="nil-value-label">درصد تغییر</span><input id="nil-value" inputmode="decimal" value="10" aria-label="مقدار تغییر؛ برای کاهش منفی بنویسید"></label>
-        </div></fieldset><fieldset><legend>پایان قیمت؛ اختیاری</legend><div class="nil-rule-grid"><label>رندکردن${select('nil-rounding', [['up','رو به بالا'],['nearest','نزدیک‌ترین؛ تساوی رو به بالا'],['down','رو به پایین'],['none','بدون رندکردن']], 'up')}</label>
-        <label>گام قیمت<input id="nil-step" inputmode="decimal" value="10000"></label><label>پایان قیمت<input id="nil-ending" inputmode="decimal" value="9000"></label>
-        </div></fieldset><div class="nil-example nil-simulator"><label>آزمایش روی یک مبلغ<input id="nil-demo-price" inputmode="decimal" value="495000"></label><div><span>نتیجهٔ نمونه با تنظیمات فعلی</span><strong id="nil-demo-result" aria-live="polite"></strong><small>نمونه است؛ پیش‌نمایش محصولات را هم بررسی کنید.</small></div></div>
-        <p class="nil-hint">برای کاهش عدد منفی بنویسید. انتخاب والد، تمام ورییشن‌هایش را شامل می‌شود. گام و پایان قیمت را با واحد فعلی فروشگاه وارد کنید.</p>
-        <button type="button" class="button button-primary" id="nil-bulk">ساخت پیش‌نمایش تغییر گروهی</button></section>
-        <section class="nil-card" id="nil-preview" hidden><div class="nil-toolbar"><h2>۲ · بررسی و تأیید تغییرات</h2><span id="nil-job-state"></span></div><p id="nil-summary"></p><div id="nil-preview-table" class="nil-table-scroll"></div><div class="nil-toolbar"><button type="button" class="button" id="nil-job-prev">گزارش قبل</button><span id="nil-job-pagination"></span><button type="button" class="button" id="nil-job-next">گزارش بعد</button><button type="button" class="button" id="nil-export">دانلود گزارش CSV</button><button type="button" class="button button-primary" id="nil-apply">تأیید و ذخیره همین پیش‌نمایش</button><button type="button" class="button" id="nil-undo">بازگردانی این عملیات</button></div><p class="nil-hint">ردیف متداخل رد می‌شود. عملیات قطع‌شده را از تاریخچه ادامه دهید؛ تاریخ حراج و پیش‌خرید حفظ می‌شوند.</p></section>
-        <section class="nil-card"><div class="nil-toolbar"><h2>۲۰ عملیات اخیر شما</h2><button type="button" class="button" id="nil-history-refresh">تازه‌سازی تاریخچه</button></div><div id="nil-history"></div></section>
-    `;
+    root.replaceChildren(document.getElementById('nil-grid-template').content.cloneNode(true));
+    document.getElementById('nil-type').outerHTML=select('nil-type',[['','همه'],['simple','ساده'],['variable','متغیر']],'');
+    document.getElementById('nil-status').outerHTML=select('nil-status',[['','همه'],...Object.entries(publication)],'');
+    document.getElementById('nil-stock').outerHTML=select('nil-stock',[['','همه'],['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']],'');
+    document.getElementById('nil-sort').outerHTML=select('nil-sort',[['ID','شناسه'],['modified','آخرین تغییر'],['title','نام']],'modified');
+    document.getElementById('nil-scope').outerHTML=select('nil-scope', [['selected','ردیف‌های انتخاب‌شدهٔ همین صفحه'],['page','همهٔ ورییشن‌ها و ساده‌های همین صفحه'],['all','همهٔ محصولاتِ فیلتر فعلی']], 'selected');
+    document.getElementById('nil-source').outerHTML=select('nil-source',[['current','قیمت فعلی'],['cost','قیمت خرید + درصد یا مبلغ']],'current');
+    document.getElementById('nil-target').outerHTML=select('nil-target', [['regular_price','قیمت اصلی'],['sale_price','قیمت حراج موجود'],['both','اصلی و حراج موجود']], 'regular_price');
+    document.getElementById('nil-operation').outerHTML=select('nil-operation', [['percent','تغییر درصدی'],['fixed','افزودن مبلغ ثابت'],['set','تعیین قیمت ثابت'],['round','فقط رندکردن']], 'percent');
+    document.getElementById('nil-rounding').outerHTML=select('nil-rounding', [['up','رو به بالا'],['nearest','نزدیک‌ترین؛ تساوی رو به بالا'],['down','رو به پایین'],['none','بدون رندکردن']], 'up');
+    document.getElementById('nil-currency').textContent=cfg.currency+' ('+cfg.currencyCode+')';
+    for(const [name,items] of [['category',cfg.categories],['brand',cfg.brands||[]]])document.getElementById('nil-'+name).insertAdjacentHTML('beforeend',items.map(c=>`<option value="${Number(c.id)}">${esc(c.name)}</option>`).join(''));
     const $ = id => document.getElementById(`nil-${id}`);
     function demo(){
         const mode=$('rounding').value,op=$('operation').value,out=$('demo-result');
@@ -185,7 +171,7 @@
         const detail=state.detail;
         $('preview').hidden=false;
         $('job-state').textContent=jobs[detail.job.state]||detail.job.state;
-        $('summary').textContent=detail.counts.map(c=>`${statuses[c.state]||c.state}: ${fmt(c.n)}`).join(' · ');
+        $('summary').textContent=detail.counts.map(c=>`${statuses[c.state]||c.state}: ${fmt(c.n)}`).join(' · ')+(detail.market?' · قانون بازار: '+detail.market.name+'؛ اجرا از بخش قانون بازار، بازگردانی پس از توقف قانون.':'');
         $('preview-table').innerHTML=`<table class="widefat nil-report"><thead><tr><th>محصول</th><th>فیلد</th><th>قبل</th><th>بعد</th><th>نتیجه</th></tr></thead><tbody>${detail.items.map(item=>item.fields.map((field,i)=>`<tr><td>${i===0?`${esc(item.label)} <small>#${item.product_id}</small>`:''}</td><td>${esc(labels[field]||field)}</td><td>${esc(display(field,item.before[field]))}</td><td>${esc(display(field,item.after[field]))}</td><td>${i===0?`${esc(statuses[item.state]||item.state)}${item.error?'<br><span class="nil-error-text">'+esc(item.error)+'</span>':''}`:''}</td></tr>`).join('')).join('')}</tbody></table>`;
         const total=detail.counts.reduce((sum,c)=>sum+Number(c.n),0);
         $('job-pagination').textContent=`${fmt(state.jobPage)} / ${fmt(Math.max(1,Math.ceil(total/50)))}`;
@@ -194,7 +180,7 @@
     function updatePreviewButtons() {
         const d=state.detail;
         if(!d) { $('apply').disabled=true; $('undo').disabled=true; return; }
-        $('apply').hidden=!['ready','running'].includes(d.job.state);
+        $('apply').hidden=!!d.market||!['ready','running'].includes(d.job.state);
         $('undo').hidden=!['done','undoing'].includes(d.job.state);
         $('apply').disabled=state.busy; $('undo').disabled=state.busy;
         const total=d.counts.reduce((sum,c)=>sum+Number(c.n),0);
@@ -240,7 +226,7 @@
         const blob=new Blob(['\ufeff'+lines.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
         const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=`nilwears-${state.job}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
-    window.NIL_APP={refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error('واحد پول یا دقت الگو تغییر کرده است.');controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
+    window.NIL_APP={dirtyCount:()=>state.changes.size,openJob:async id=>{state.job=id;state.jobPage=1;state.previewChanges=null;await showJob();window.NIL_APP.activatePanel('pricing');$('preview').scrollIntoView({block:'start'});},refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error('واحد پول یا دقت الگو تغییر کرده است.');controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
     window.addEventListener('beforeunload',e=>{if(state.changes.size||state.busy){e.preventDefault();e.returnValue='';}});
     task(async()=>{await load(1);await history();message('جدول آماده است. ابتدا تغییرات را پیش‌نمایش بگیرید.');});
 })();

@@ -25,6 +25,7 @@
         const button=document.createElement('button');button.type='button';button.id='nil-tab-'+id;button.className='nil-tab';button.textContent=label;button.setAttribute('role','tab');button.setAttribute('aria-controls',box.id);button.dataset.workspace=id;nav.append(button);
     });
     sections.forEach((section,i)=>panels.get(groups[i]).append(section));
+    document.getElementById('nil-pricing').after(document.getElementById('nil-market-panel'));
     const help=document.getElementById('nil-help-template');if(help)panels.get('help').append(help.content.cloneNode(true));
     root.insertBefore(nav,document.getElementById('nil-message'));
     function activatePanel(id){if(!panels.has(id))return;for(const [key,box] of panels){box.hidden=key!==id;}nav.querySelectorAll('button').forEach(btn=>{const active=btn.dataset.workspace===id;btn.setAttribute('aria-selected',String(active));btn.tabIndex=active?0:-1;});}

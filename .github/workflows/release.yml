@@ -28,6 +28,7 @@ jobs:
         run: |
           for file in nilwears-bulk-manager/*.php tests/*.php; do php -l "$file" || exit 1; done
           php tests/pricing.php
+          php tests/market-unit.php
           php tests/sheet.php
           php tests/updater.php
           NIL_PUBLIC_UPDATES=1 php tests/updater.php

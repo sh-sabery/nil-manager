@@ -3,7 +3,7 @@ import path from 'node:path';
 import {minify} from 'terser';
 const dir=path.resolve('nilwears-bulk-manager/assets'), check=process.argv.includes('--check');
 const generated=[];
-for(const name of ['admin','suite','advanced']){
+for(const name of ['admin','suite','advanced','market']){
  const source=fs.readFileSync(path.join(dir,name+'.js'),'utf8');
  const result=await minify(source,{ecma:2020,compress:{passes:2},mangle:true,format:{comments:false,ascii_only:false}});
  generated.push([name+'.min.js',result.code+'\n']);
