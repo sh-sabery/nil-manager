@@ -2,7 +2,8 @@
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.5.0
+ * Version: 1.5.1
+ * Update URI: https://github.com/sh-sabery/nilwears-bulk-manager
  * Author: Nilwears
  * Requires at least: 6.4
  * Requires PHP: 7.4
@@ -21,7 +22,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.5.0';
+    const VERSION = '1.5.1';
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {
@@ -57,6 +58,7 @@ final class NIL_Bulk_Manager {
     }
 
     public static function boot() {
+        if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) { NIL_Updater::boot(); }
         if ( ! class_exists( 'WooCommerce' ) ) {
             add_action( 'admin_notices', function() { echo '<div class="notice notice-warning"><p>مدیریت قیمت نیل به ووکامرس فعال نیاز دارد.</p></div>'; } );
             return;
@@ -99,7 +101,7 @@ final class NIL_Bulk_Manager {
             'currencyCode' => get_woocommerce_currency(),
             'decimals' => wc_get_price_decimals(),
             'costBackend' => NIL_Cost::native() ? 'native' : 'legacy',
-            'canBrand' => current_user_can( 'manage_options' ), 'canMarket' => current_user_can( 'manage_options' ), 'userId' => get_current_user_id(),
+            'canBrand' => current_user_can( 'manage_options' ), 'canMarket' => current_user_can( 'manage_options' ), 'canUpdate' => current_user_can( 'update_plugins' ), 'userId' => get_current_user_id(),
             'branding' => NIL_Suite::branding(), 'brands' => NIL_Suite::brands(),
             'categories' => is_wp_error( $categories ) ? array() : array_map( function( $term ) {
                 return array( 'id' => $term->term_id, 'name' => $term->name );

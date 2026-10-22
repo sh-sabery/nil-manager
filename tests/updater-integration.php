@@ -1,0 +1,36 @@
+<?php
+// Disposable Playground ONLY. Copies and upgrades a fixture, never the mounted source.
+require_once ABSPATH.'wp-admin/includes/plugin.php';
+$nil_update_count=0;$nil_update_http=0;$nil_update_mode='ok';$nil_update_plugin='nilwears-bulk-manager/nilwears-bulk-manager.php';
+function nil_update_assert($ok,$label){global $nil_update_count;$nil_update_count++;if(!$ok)throw new Exception($label);}
+function nil_update_copy($from,$to){if(is_dir($from)){if(!is_dir($to))mkdir($to,0777,true);foreach(scandir($from) as $file)if($file!=='.'&&$file!=='..')nil_update_copy($from.'/'.$file,$to.'/'.$file);}else copy($from,$to);}
+function nil_update_http($pre,$args,$url){global $nil_update_http,$nil_update_mode;
+ if(strpos($url,'https://api.github.com/repos/sh-sabery/nilwears-bulk-manager/releases/latest')===0){$nil_update_http++;if($nil_update_mode==='fail')return new WP_Error('http_request_failed','private-fixture-detail');return array('response'=>array('code'=>200),'headers'=>array(),'body'=>wp_json_encode(array('tag_name'=>'v1.5.2','assets'=>array(array('id'=>246,'name'=>'nilwears-bulk-manager-v1.5.2.zip','size'=>is_file('/tmp/nil-update-fixture.zip')?filesize('/tmp/nil-update-fixture.zip'):1,'digest'=>is_file('/tmp/nil-update-fixture.zip')?'sha256:'.hash_file('sha256','/tmp/nil-update-fixture.zip'):'')))));}
+ if($url==='https://api.github.com/repos/sh-sabery/nilwears-bulk-manager/releases/assets/246')return array('response'=>array('code'=>302),'headers'=>array('location'=>'https://release-assets.githubusercontent.com/nil-updater-fixture.zip'),'body'=>'');
+ if($url==='https://release-assets.githubusercontent.com/nil-updater-fixture.zip'){copy('/tmp/nil-update-fixture.zip',$args['filename']);return array('response'=>array('code'=>200),'headers'=>array(),'body'=>'');}
+ return new WP_Error('http_request_failed','All unrelated HTTP intentionally blocked in fixture');
+}
+add_filter('pre_http_request','nil_update_http',10,3);wp_set_current_user(1);
+if(NIL_UPDATER_STAGE===1){
+ nil_update_assert(has_filter('site_transient_update_plugins',array('NIL_Updater','updates'))!==false,'read-time updater hook');
+ $old=array('version'=>'1.5.1','asset'=>246,'size'=>1,'digest'=>'','notes'=>'','access'=>'public');set_site_transient('nil_release_public',$old,21600);
+ $other=(object)array('new_version'=>'2.0','package'=>'https://example.test/other.zip');set_site_transient('update_plugins',(object)array('checked'=>array($nil_update_plugin=>'1.5.1','other/plugin.php'=>'1.0'),'response'=>array('other/plugin.php'=>$other),'last_checked'=>time()));
+ nil_update_assert(!isset(get_site_transient('update_plugins')->response[$nil_update_plugin]),'fresh old release cache reproduces hidden update');
+ $out=NIL_Updater::check();nil_update_assert($out['available']==='1.5.2'&&$nil_update_http===1,'explicit check bypasses metadata cache once');
+ $t=get_site_transient('update_plugins');nil_update_assert($t->response[$nil_update_plugin]->new_version==='1.5.2','real WP transient shows update');nil_update_assert($t->response['other/plugin.php']->new_version==='2.0','other entry retained');
+ delete_site_transient('update_plugins');wp_update_plugins();nil_update_assert(isset(get_site_transient('update_plugins')->response[$nil_update_plugin]),'GitHub detection works with WordPress.org HTTP blocked');
+ $before=$nil_update_http;$_GET['force-check']=1;do_action('load-update-core.php');unset($_GET['force-check']);nil_update_assert($nil_update_http===$before+1,'dashboard force-check requests fresh GitHub data once');
+ $manager=wp_insert_user(array('user_login'=>'nil-update-manager','user_pass'=>wp_generate_password(),'role'=>'shop_manager'));wp_set_current_user($manager);$before=$nil_update_http;try{NIL_Updater::check();$denied=false;}catch(RuntimeException $e){$denied=true;}nil_update_assert($denied&&$nil_update_http===$before,'manager refresh denied before HTTP');wp_set_current_user(1);
+ $nil_update_mode='fail';$out=NIL_Updater::check();nil_update_assert($out['error']['code']==='network'&&strpos(wp_json_encode($out),'private-fixture-detail')===false,'safe connection diagnostic');$nil_update_mode='ok';nil_update_assert(NIL_Updater::check()['error']===null,'forced recovery clears negative cache');
+ nil_update_copy('/nil-source','/tmp/nil-upgrade-build/nilwears-bulk-manager');$file='/tmp/nil-upgrade-build/'.$nil_update_plugin;$code=file_get_contents($file);$code=str_replace(array('Version: 1.5.1',"const VERSION = '1.5.1'"),array('Version: 1.5.2',"const VERSION = '1.5.2'"),$code);file_put_contents($file,$code);
+ require_once ABSPATH.'wp-admin/includes/class-pclzip.php';$zip=new PclZip('/tmp/nil-update-fixture.zip');nil_update_assert($zip->create('/tmp/nil-upgrade-build/nilwears-bulk-manager',PCLZIP_OPT_REMOVE_PATH,'/tmp/nil-upgrade-build')!==0,'fixture ZIP created');NIL_Updater::check();
+ require_once ABSPATH.'wp-admin/includes/file.php';require_once ABSPATH.'wp-admin/includes/class-wp-upgrader.php';$skin=new Automatic_Upgrader_Skin();$upgrader=new Plugin_Upgrader($skin);ob_start();$result=$upgrader->upgrade($nil_update_plugin,array('clear_update_cache'=>false));ob_end_clean();nil_update_assert($result===true,'real Plugin_Upgrader installs fixture: '.(is_wp_error($result)?$result->get_error_message():var_export($result,true)));
+ $installed=get_plugin_data(WP_PLUGIN_DIR.'/'.$nil_update_plugin,false,false);nil_update_assert($installed['Version']==='1.5.2','installed fixture header updated');nil_update_assert(is_file(WP_PLUGIN_DIR.'/nilwears-bulk-manager/assets/market.min.js'),'complete plugin files retained');nil_update_assert(strpos(file_get_contents('/nil-source/nilwears-bulk-manager.php'),'Version: 1.5.1')!==false,'mounted source untouched');
+ file_put_contents('/nil-tests/updater-result.txt',(string)$nil_update_count);
+}elseif(NIL_UPDATER_STAGE===2){
+ nil_update_assert(NIL_Bulk_Manager::VERSION==='1.5.2','new request runs upgraded plugin');$out=NIL_Updater::check();$t=get_site_transient('update_plugins');nil_update_assert($out['current']==='1.5.2'&&$out['update_available']===false&&!isset($t->response[$nil_update_plugin])&&isset($t->no_update[$nil_update_plugin]),'new request clears old notification and has no_update');deactivate_plugins('woocommerce/woocommerce.php',true);
+ file_put_contents('/nil-tests/updater-result.txt',(string)((int)file_get_contents('/nil-tests/updater-result.txt')+$nil_update_count));
+}else{
+ nil_update_assert(!class_exists('WooCommerce'),'WooCommerce inactive fixture');nil_update_assert(has_filter('site_transient_update_plugins',array('NIL_Updater','updates'))!==false,'updater remains hooked without WooCommerce');nil_update_assert(NIL_Updater::check()['available']==='1.5.2','checking remains available without WooCommerce');
+ $total=(int)file_get_contents('/nil-tests/updater-result.txt')+$nil_update_count;$message="PASS: $total updater lifecycle checks; WP ".get_bloginfo('version')."; real fixture Plugin_Upgrader, post-upgrade reload, cached-read hooks, force refresh, safe diagnostics and WooCommerce inactive; mocked HTTP, no live-store install\n";file_put_contents('/nil-tests/updater-result.txt',$message);echo $message;
+}

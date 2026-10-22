@@ -2,6 +2,14 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.5.1] - 2026-10-23
+
+- Fix update discovery when the plugin's six-hour release cache or WordPress's update cache still reports an older release. Add an authorized POST check that bypasses success/failure caches and merges this plugin's update entry into WordPress's existing update data without installing anything or deleting other plugins' entries. The Settings button now performs that check and displays current/latest versions, update-ready/current state or a safe connection/HTTP/metadata error.
+- Make Dashboard Updates → Check Again refresh GitHub metadata. Register cached-read as well as write-time update filters so GitHub discovery does not depend on a successful WordPress.org update response. Populate no_update when current and clear this plugin's obsolete notification; preserve WordPress's automatic-installation preference.
+- Retry rejected optional-token metadata requests once without credentials for public releases; download public fallback assets without the invalid token and keep redirect credential stripping, expected size and SHA-256 checks. Keep normal six-hour metadata caching and five-minute failure throttling; explicit checks bypass both. Do not return raw HTTP errors, response bodies or tokens.
+- Register admin/cron/CLI update hooks before the WooCommerce dependency gate, and declare the GitHub Update URI. Retain no public assets or plugin boot SQL; shipped CSS/JS is 59,625 bytes (22,363 deterministic gzip), below the unchanged 60,000-byte budget.
+- Validation: 26 PHP files linted; 1,532 price, 58 market, 14 spreadsheet and 35 checks in each public/private updater mode; both source/minified DOM suites passed. A disposable PHP 8.3 / WP 7.1.3 fixture passed 20 updater lifecycle assertions, including real Plugin_Upgrader download/unpack/replacement, a new request executing the upgraded fixture, cached-read recovery while WordPress.org HTTP is blocked, forced refresh, manager denial, safe failures, and update hooks after WooCommerce deactivation. HTTP and future-version packages are fixtures; no real live-store update or visual verification is claimed. This browser could not authenticate to the live dashboard, so the exact host-side cause remains unconfirmed. Existing installations need the fixed code installed once to use its fresh-check controls.
+
 ## [1.5.0] - 2026-10-22
 
 - Add administrator-managed automatic pricing for WallGold 18K gold, USD and EUR. Capture each selected simple product or variation's original prices and an explicit reference rate in Toman; calculate every cycle from that fixed baseline, without compounding previous updates.

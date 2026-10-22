@@ -1,0 +1,51 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "7.1.3"
+  },
+  "constants": {
+    "WP_HTTP_BLOCK_EXTERNAL": true,
+    "FS_METHOD": "direct"
+  },
+  "steps": [
+    {
+      "step": "runPHP",
+      "code": "<?php function nil_fixture_copy($f,$t){if(is_dir($f)){if(!is_dir($t))mkdir($t,0777,true);foreach(scandir($f) as $n)if($n!=='.'&&$n!=='..')nil_fixture_copy($f.'/'.$n,$t.'/'.$n);}else copy($f,$t);}nil_fixture_copy('/nil-source','/wordpress/wp-content/plugins/nilwears-bulk-manager');"
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "woocommerce"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "nilwears-bulk-manager/nilwears-bulk-manager.php"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require '/wordpress/wp-load.php';require '/nil-tests/frontend.php';"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php define('WP_ADMIN',true);define('NIL_UPDATER_STAGE',1);require '/wordpress/wp-load.php';try{require '/nil-tests/updater-integration.php';}catch(Throwable $e){file_put_contents('/nil-tests/updater-result.txt','FAIL stage '.NIL_UPDATER_STAGE.': '.$e->getMessage().' '.$e->getTraceAsString());throw $e;}"
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "nilwears-bulk-manager/nilwears-bulk-manager.php"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php define('WP_ADMIN',true);define('NIL_UPDATER_STAGE',2);require '/wordpress/wp-load.php';try{require '/nil-tests/updater-integration.php';}catch(Throwable $e){file_put_contents('/nil-tests/updater-result.txt','FAIL stage '.NIL_UPDATER_STAGE.': '.$e->getMessage().' '.$e->getTraceAsString());throw $e;}"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php define('WP_ADMIN',true);define('NIL_UPDATER_STAGE',3);require '/wordpress/wp-load.php';try{require '/nil-tests/updater-integration.php';}catch(Throwable $e){file_put_contents('/nil-tests/updater-result.txt','FAIL stage '.NIL_UPDATER_STAGE.': '.$e->getMessage().' '.$e->getTraceAsString());throw $e;}"
+    }
+  ]
+}

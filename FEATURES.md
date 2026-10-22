@@ -1,4 +1,4 @@
-# Selected feature coverage — v1.5.0
+# Selected feature coverage — v1.5.1
 
 The 21 selected numbers refer to the feature list discussed with the user. This is an independent implementation in the Nilwears plugin.
 
@@ -34,3 +34,5 @@ Additional v1.3 requests (numbers 2 and 5 refer to the later improvement suggest
 Version 1.4 adds in-app Persian help, a dedicated pricing workspace, non-executing example recipes, illustrative client-side price calculation and immediate post-save branding with an isolated unsaved preview. The interface is reorganized and restyled without adding a UI framework or increasing the 60 KB CSS/JS cap.
 
 Version 1.5 adds the later market-pricing request independently of the original numbered list: WallGold 18K gold, USD and EUR; a Toman reference rate and fixed captured product prices; configurable below-baseline reductions; none/up/down/nearest rounding; preview and explicit activation; 5–1440 minute intervals editable without rebasing; pause/resume/delete, source/manual-edit protections and variation-aware CRUD. The scope is fixed when captured; frequency depends on WP-Cron and batch completion. See README.md for examples and limits.
+
+Version 1.5.1 repairs update discovery: explicit cache-bypassing checks and dashboard Check Again, persisted WordPress update entries, cached-read detection independent of WordPress.org connectivity, safe error diagnostics, bounded public fallback for an invalid optional token, and update hooks even when WooCommerce is inactive. It does not enable automatic installation or install itself on the live store.

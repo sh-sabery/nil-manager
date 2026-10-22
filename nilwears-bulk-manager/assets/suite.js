@@ -86,5 +86,6 @@
     for(const key of ['title','accent'])$('brand-'+key).oninput=brandPreview;$('brand-logo').onchange=brandPreview;brandPreview();
     if(cfg.canBrand===false){$('brand-save').disabled=true;$('brand-preview').querySelector('small').textContent='ذخیرهٔ برندینگ فقط برای مدیر سایت فعال است.';}
     on('brand-save',async()=>{const brand=await api('branding',{title:$('brand-title').value,accent:$('brand-accent').value,logo:$('brand-logo').value});applyBranding(brand);brandPreview();message('برندینگ ذخیره و اعمال شد.');});
-    on('update-status',async()=>{const s=await api('updater');$('update-result').textContent=`نسخه نصب‌شده: ${s.current} · ${s.configured?'دریافت با توکن سرور':'دریافت عمومی؛ بدون نیاز به توکن'} · آخرین نسخه قابل دریافت: ${s.available||'در دسترس نیست'}`;});
+    on('update-status',async()=>{const s=await api('updater/check',{});$('update-result').textContent=`نسخه نصب‌شده: ${s.current} · آخرین نسخه: ${s.available||'نامشخص'} · ${s.access==='token'?'با توکن':'عمومی'} · ${s.error?.message||(s.update_available?'آپدیت آماده است؛ صفحهٔ افزونه‌ها را باز کنید.':'آخرین نسخه نصب است.')}`;});
+    if(cfg.canUpdate===false)$('update-status').disabled=true;
 })();

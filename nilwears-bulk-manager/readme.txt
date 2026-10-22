@@ -3,7 +3,7 @@ Contributors: sh-sabery
 Requires at least: 6.4
 Tested up to: 7.1.3
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 Requires Plugins: woocommerce
 License: GPL-2.0-or-later
 
@@ -15,6 +15,8 @@ Manage products, prices, stock, purchase cost, XLSX/CSV, images and customer rep
 See README-fa.html for usage, and the repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Public-repository updates need no token from v1.4. Older versions without a token require one manual v1.4 ZIP installation. An optional token supports private access.
 
 == Changelog ==
+= 1.5.1 =
+Fresh update checks bypass the release cache and refresh WordPress update data. Display connection errors, fall back to public access for invalid optional tokens, and keep update hooks available without active WooCommerce.
 = 1.5.0 =
 Fixed-baseline scheduled pricing with WallGold 18K gold, USD and EUR. Reference rates in Toman, optional reduction below baseline, rounding, configurable intervals, explicit activation, pause/resume and source/manual-edit protections.
 = 1.4.0 =

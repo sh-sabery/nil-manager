@@ -15,7 +15,6 @@ final class NIL_Suite {
         add_action( 'nil_bulk_schedule', array( __CLASS__, 'tick' ), 10, 1 );
         add_action( 'woocommerce_checkout_create_order_line_item', array( 'NIL_Insights', 'checkout_cost' ), 10, 4 );
         add_action( 'woocommerce_new_order_item', array( 'NIL_Insights', 'new_item_cost' ), 10, 3 );
-        if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) { NIL_Updater::boot(); }
         add_filter( 'all_plugins', function( $plugins ) {
             $key = plugin_basename( __DIR__ . '/nilwears-bulk-manager.php' );
             if ( isset( $plugins[$key] ) ) { $plugins[$key]['Name'] = self::title(); }
@@ -109,6 +108,7 @@ final class NIL_Suite {
             'media/apply' => array( 'POST', 'NIL_Media', 'apply' ),
             'insights' => array( 'GET', 'NIL_Insights', 'report' ),
             'updater' => array( 'GET', 'NIL_Updater', 'status' ),
+            'updater/check' => array( 'POST', 'NIL_Updater', 'check' ),
         );
         foreach ( $routes as $path => $def ) {
             register_rest_route( 'nil-bulk/v1', '/' . $path, array( 'methods' => $def[0], 'permission_callback' => array( 'NIL_Bulk_Manager', 'permission' ), 'callback' => function( $r ) use ( $def ) {

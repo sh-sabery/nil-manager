@@ -1,4 +1,4 @@
-# Performance contract — v1.5.0
+# Performance contract — v1.5.1
 
 ## Scope
 
@@ -12,7 +12,7 @@ The latest stable releases verified on 2026-10-22 Tehran time are WordPress 7.1.
 |---|---|
 | Public CSS, JavaScript and fonts | 0 plugin enqueues on public pages; also none on unrelated admin screens |
 | Plugin boot | 0 SQL issued by the plugin's boot function; schema-version work only during authorized admin initialization |
-| Admin assets | Four minified vanilla-JS files and one minified stylesheet, 59,494 bytes total; 22,318 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
+| Admin assets | Four minified vanilla-JS files and one minified stylesheet, 59,625 bytes total; 22,363 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
 | Font | Local Vazirmatn WOFF2, 46,308 bytes, requested only by the plugin admin stylesheet; no CDN font |
 | Build budget | CSS/JS limited to 60,000 uncompressed bytes and checked in CI; readable source files remain in git and are excluded from the installation ZIP |
 | In-app help and static forms | Rendered as templates only on the plugin admin page; 0 additional SQL, no extra script, library or remote asset |
@@ -42,3 +42,7 @@ References: [WordPress releases](https://wordpress.org/download/releases/), [Woo
 Market cycles use a fixed captured cohort and immutable original prices, not a growing price history as a baseline. One replacement event is scheduled before each worker step to recover from interruptions. Completion schedules the next interval (5–1440 minutes); long batches and traffic-dependent WP-Cron can delay the wall-clock cadence. A server cron is required for reliable scheduling. Source failures retry, while permission/currency failures pause; no stale-rate writes are allowed. WordPress/MySQL advisory locks serialize rule, settings and product writes, but the disposable SQLite tests do not establish real MySQL concurrency behavior.
 
 Deleting a rule removes its baseline records and pending event but preserves current prices and historical reports. Pausing retains baselines. Source failures and unchanged cycles update only bounded rule state; completed price-change history is retained for undo and can be removed through the existing explicit history cleanup. Frequent schedules with many changed products can produce substantial purposeful history; there is no automatic history deletion or claim of zero database growth.
+
+## Update discovery
+
+Updater hooks stay confined to admin, cron and WP-CLI contexts and are registered before the WooCommerce dependency gate. Reading WordPress's plugin-update transient merges this plugin's verified release metadata, including a no-update entry when current; it does not require a successful WordPress.org update response. Cached ordinary reads retain the six-hour metadata cache and five-minute failure throttle. An authorized explicit check or dashboard Check Again bypasses those caches once, without periodic extra jobs, storefront work, installing software or replacing other plugins' update entries. Failed optional-token requests can retry anonymously once for a public release. Error metadata is one five-minute site transient containing only a safe category/message, status and timestamp.
