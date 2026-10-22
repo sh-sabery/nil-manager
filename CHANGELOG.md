@@ -2,6 +2,17 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.3.0] - 2026-10-22
+
+- Add explicit preview/apply for missing variations on existing variable parents, with custom/global attribute options, duplicate/wildcard coverage detection, unique SKU validation, stale-parent checks and retry receipts. Keep existing children; validate all rows before transactional creation (maximum 100 variations and 20 parents per preview).
+- Add new-variation XLSX/CSV staging for existing parents matched by ID or SKU, plus separate creation preview. Extend existing attribute options and preserve global term labels; require every variation dimension and the appropriate taxonomy permissions.
+- Save personal views (filters, visible columns and column order) and reusable price rules, bounded to 20 entries / 32 KB per user. Loading a price rule fills controls and still requires price preview/confirmation; bind rules to currency and price precision.
+- Use WooCommerce's native COGS product APIs whenever enabled, including effective inherited/additive variation costs, absolute-cost editing, inheritance reset and exact native-definition undo. Keep the legacy backend only while native COGS is disabled; block stale cost jobs if the backend changes.
+- Offer explicit preview migration of eligible legacy purchase costs, retaining legacy metadata and skipping conflicting native/inherited costs. No silent migration, dual-write or historical-order backfill.
+- Read native recorded order-line costs for profit reports while COGS is active and stop writing duplicate Nil cost snapshots; retain historical legacy snapshots as fallback when a native line cost is absent.
+- Preserve zero boot SQL, zero public assets and the existing 60,000-byte admin CSS/JS budget: shipped assets total 59,870 bytes (20,819 gzip bytes). New variation/preset PHP modules load on demand; variation plans expire in one bounded per-user slot.
+- Validation: PHP lint (19 files), 1,532 pricing checks, 14 spreadsheet checks, 10 updater HTTP checks and source/minified DOM tests pass. Disposable PHP 8.3 / WordPress 7.1.3 / WooCommerce 11.2.1 suites passed 209 combined assertions in each HPOS and legacy mode, including late-SKU rollback and recorded native report costs. Cold table requests measured 17 queries for both 2 and 40 variations with native COGS enabled and disabled. One initial legacy run stopped at the pre-existing conservative image-reference assertion; the unchanged assertion passed on rerun with expanded failure diagnostics. Real MySQL concurrency, live-store visuals, dashboard upgrade and site performance scores remain unverified; no live installation is performed.
+
 ## [1.2.0] - 2026-10-22
 
 - Verify the stable compatibility target WordPress 7.1.3 / WooCommerce 11.2.1, retaining HPOS and variation-aware flows.

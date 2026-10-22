@@ -2,8 +2,8 @@
 (() => {
     'use strict';
     const cfg = NIL_BULK, root = document.getElementById('nil-bulk-app');
-    const state = { rows: [], selected: new Set(), changes: new Map(), page: 1, pages: 1, busy: false, job: null, jobPage: 1, detail: null, previewChanges: null };
-    const labels = {name:'نام',sku:'SKU',description:'توضیحات',short_description:'توضیح کوتاه',cost_price:'قیمت خرید',category_ids:'دسته‌ها',brand_ids:'برندها',regular_price:'قیمت اصلی', sale_price:'قیمت حراج', manage_stock:'مدیریت موجودی', stock_quantity:'تعداد', stock_status:'وضعیت موجودی'};
+    const state = { rows: [], selected: new Set(), changes: new Map(), page: 1, pages: 1, busy: false, job: null, jobPage: 1, detail: null, previewChanges: null, columns:['cost','profit','regular','sale','manage','quantity','stock'], order:['cost','profit','regular','sale','manage','quantity','stock'] };
+    const labels = {cost_defined:'هزینه تعریف‌شده COGS',cost_additive:'جمع‌شونده با والد',name:'نام',sku:'SKU',description:'توضیحات',short_description:'توضیح کوتاه',cost_price:'قیمت خرید',category_ids:'دسته‌ها',brand_ids:'برندها',regular_price:'قیمت اصلی', sale_price:'قیمت حراج', manage_stock:'مدیریت موجودی', stock_quantity:'تعداد', stock_status:'وضعیت موجودی'};
     const publication = {publish:'منتشرشده',private:'خصوصی',draft:'پیش‌نویس',pending:'در انتظار بررسی',future:'زمان‌بندی‌شده'};
     const statuses = {pending:'در انتظار', applied:'ذخیره‌شده', skipped:'ردشده', undone:'بازگردانده‌شده', undo_failed:'بازگردانی ناموفق'};
     const jobs = {ready:'آماده ذخیره', running:'در حال ذخیره', done:'ذخیره پایان یافته', undoing:'در حال بازگردانی', undone:'بازگردانی پایان یافته'};
@@ -31,9 +31,9 @@
         <label>رندکردن${select('nil-rounding', [['up','رو به بالا'],['nearest','نزدیک‌ترین؛ تساوی رو به بالا'],['down','رو به پایین'],['none','بدون رندکردن']], 'up')}</label>
         <label>گام قیمت<input id="nil-step" inputmode="decimal" value="10000"></label><label>پایان قیمت<input id="nil-ending" inputmode="decimal" value="9000"></label>
         </div><div class="nil-example">مثال: ۴۹۵٬۰۰۰ ← افزایش ۱۰٪ ← رند رو به بالا، گام ۱۰٬۰۰۰ و پایان ۹٬۰۰۰ ← <strong>۵۴۹٬۰۰۰</strong></div>
-        <p class="nil-hint">برای کاهش، مقدار منفی وارد کنید. گام ۱۰٬۰۰۰ و پایان ۹٬۰۰۰ یعنی خروجی‌هایی مثل ۵۳۹٬۰۰۰، ۵۴۹٬۰۰۰ و ۵۵۹٬۰۰۰. گام ۱۰۰٬۰۰۰ و پایان ۹۹٬۰۰۰ یعنی پایان ۹۹٬۰۰۰. حراج خالی با عملیات گروهی ایجاد نمی‌شود. انتخاب ردیف والد، تمام ورییشن‌های همان والد را شامل می‌شود.</p>
+        <p class="nil-hint">برای کاهش عدد منفی بنویسید. انتخاب والد، تمام ورییشن‌هایش را شامل می‌شود. گام و پایان قیمت را با واحد فعلی فروشگاه وارد کنید.</p>
         <button type="button" class="button button-primary" id="nil-bulk">ساخت پیش‌نمایش تغییر گروهی</button></section>
-        <section class="nil-card" id="nil-preview" hidden><div class="nil-toolbar"><h2>پیش‌نمایش و گزارش عملیات</h2><span id="nil-job-state"></span></div><p id="nil-summary"></p><div id="nil-preview-table" class="nil-table-scroll"></div><div class="nil-toolbar"><button type="button" class="button" id="nil-job-prev">گزارش قبل</button><span id="nil-job-pagination"></span><button type="button" class="button" id="nil-job-next">گزارش بعد</button><button type="button" class="button" id="nil-export">دانلود گزارش CSV</button><button type="button" class="button button-primary" id="nil-apply">تأیید و ذخیره همین پیش‌نمایش</button><button type="button" class="button" id="nil-undo">بازگردانی این عملیات</button></div><p class="nil-hint">ذخیره در بسته‌های کوچک انجام می‌شود. در صورت قطع اتصال، از تاریخچه ادامه دهید. بازگردانی ردیفی که بعداً تغییر کرده باشد رد می‌شود. تاریخ حراج و تنظیم اجازه پیش‌خرید حفظ می‌شود.</p></section>
+        <section class="nil-card" id="nil-preview" hidden><div class="nil-toolbar"><h2>پیش‌نمایش و گزارش عملیات</h2><span id="nil-job-state"></span></div><p id="nil-summary"></p><div id="nil-preview-table" class="nil-table-scroll"></div><div class="nil-toolbar"><button type="button" class="button" id="nil-job-prev">گزارش قبل</button><span id="nil-job-pagination"></span><button type="button" class="button" id="nil-job-next">گزارش بعد</button><button type="button" class="button" id="nil-export">دانلود گزارش CSV</button><button type="button" class="button button-primary" id="nil-apply">تأیید و ذخیره همین پیش‌نمایش</button><button type="button" class="button" id="nil-undo">بازگردانی این عملیات</button></div><p class="nil-hint">ردیف متداخل رد می‌شود. عملیات قطع‌شده را از تاریخچه ادامه دهید؛ تاریخ حراج و پیش‌خرید حفظ می‌شوند.</p></section>
         <section class="nil-card"><div class="nil-toolbar"><h2>۲۰ عملیات اخیر شما</h2><button type="button" class="button" id="nil-history-refresh">تازه‌سازی تاریخچه</button></div><div id="nil-history"></div></section>
     `;
     const $ = id => document.getElementById(`nil-${id}`);
@@ -78,8 +78,18 @@
             const editText=field=>`<label>${esc(labels[field])}<${field.includes('description')?'textarea':'input'} data-field="${field}" data-id="${row.id}" ${field.includes('description')?'':`value="${esc(values[field]??(field==='name'?row.name:field==='sku'?row.sku:''))}"`}>${field.includes('description')?esc(values[field]||'')+'</textarea>':''}</label>`;
             return `<tr class="${variable?'nil-parent':''} ${row.type==='variation'?'nil-variation':''} ${state.changes.has(row.id)?'nil-changed':''}"><td><input type="checkbox" data-select="${row.id}" ${state.selected.has(row.id)?'checked':''} aria-label="انتخاب ${esc(row.name)}"></td><td class="nil-name"><a href="${esc(row.url)}" target="_blank" rel="noopener">${esc(row.name)}</a><small>${row.type==='variation'?esc(row.attributes):variable?'محصول ورییشن‌دار':'محصول ساده'} · ${esc(publication[row.values.status]||row.values.status)} · #${row.id} ${row.sku?'· '+esc(row.sku):''}</small>${inherited?'<span class="nil-badge">موجودی مشترک؛ ویرایش روی والد</span>':''}<details><summary>ویرایش اطلاعات</summary>${['name','sku','description','short_description'].map(editText).join('')}${variable||row.type==='simple'?['category_ids','brand_ids'].map(field=>`<label>${esc(labels[field])} (شناسه‌ها با |)<input data-field="${field}" data-id="${row.id}" value="${esc((values[field]||[]).join('|'))}"></label>`).join(''):''}</details></td><td><input data-id="${row.id}" data-field="cost_price" inputmode="decimal" value="${esc(values.cost_price??'')}" aria-label="قیمت خرید ${esc(row.name)}"></td><td>${variable?'از ورییشن‌ها':profit==null?'هزینه نامشخص':`${fmt(profit)}<small>${Number(effective)>0?fmt(100*profit/Number(effective))+'٪':'—'}</small>`}</td><td>${price('regular_price')}</td><td>${price('sale_price')}</td><td><input data-id="${row.id}" data-field="manage_stock" type="checkbox" ${values.manage_stock?'checked':''} aria-label="مدیریت موجودی مستقل ${esc(row.name)}"></td><td><input data-id="${row.id}" data-field="stock_quantity" inputmode="numeric" value="${esc(values.stock_quantity)}" ${quantityDisabled?'disabled':''} aria-label="تعداد ${esc(row.name)}"></td><td><select data-id="${row.id}" data-field="stock_status" ${statusDisabled?'disabled':''} aria-label="وضعیت ${esc(row.name)}">${[['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']].map(([v,t])=>`<option value="${v}" ${v===values.stock_status?'selected':''}>${t}</option>`).join('')}</select></td></tr>`;
         }).join('') : '<tr><td colspan="9">محصولی پیدا نشد.</td></tr>';
-        renderTableMeta();
+        decorateColumns(); renderTableMeta();
         if (state.busy) $('rows').querySelectorAll('input,select').forEach(e=>{e.disabled=true;});
+    }
+    function decorateColumns() {
+        for(const tr of $('rows').closest('table').querySelectorAll('tr')){
+            const cells=[...tr.children];if(cells.length!==9)continue;
+            cells.forEach((cell,i)=>{if(!cell.dataset.column)cell.dataset.column=['select','name','cost','profit','regular','sale','manage','quantity','stock'][i];});
+            for(const key of state.order){const cell=cells.find(c=>c.dataset.column===key);cell.hidden=!state.columns.includes(key);tr.append(cell);}
+        }
+    }
+    function controls(data){for(const [key,value] of Object.entries(data)){const el=$(key);if(!el)continue;if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===String(value)))throw new Error('گزینهٔ ذخیره‌شده دیگر موجود نیست: '+key);}
+        for(const [key,value] of Object.entries(data)){const el=$(key);if(el){if(el.tagName==='SELECT')[...el.options].forEach(o=>{o.selected=o.value===String(value);});else el.value=String(value);}}
     }
     function renderTableMeta() {
         $('pagination').textContent = `صفحه ${fmt(state.page)} از ${fmt(Math.max(1,state.pages))}`;
@@ -109,6 +119,7 @@
     $('reset').onclick=()=>{state.changes.clear(); renderRows(); message('ویرایش‌های ذخیره‌نشده پاک شد.');};
     async function buildPreview(rows, rule=null) {
         if (!rows.length) throw new Error('ابتدا ردیف موردنظر را انتخاب یا ویرایش کنید.');
+        if(cfg.costBackend==='native'){rows=[...rows].sort((a,b)=>Number(state.rows.find(r=>r.id===a.id)?.type==='variable')-Number(state.rows.find(r=>r.id===b.id)?.type==='variable'));}
         let jobId=null, count=0, unchanged=0, errors=[];
         $('preview').hidden=true; state.job=null; state.detail=null;
         for(let i=0;i<rows.length;i+=50) {
@@ -144,7 +155,7 @@
         await buildPreview(rows.map(r=>({id:r.id,version:r.version,changes:{}})),rule);
     });
     function display(field,value) {
-        if(field==='manage_stock') return value?'روشن':'خاموش';
+        if(field==='manage_stock'||field==='cost_additive') return value?'روشن':'خاموش';
         if(field==='stock_status') return ({instock:'موجود',outofstock:'ناموجود',onbackorder:'پیش‌خرید'})[value] || value;
         if (Array.isArray(value)) return value.join(' | ');
         if (['name','sku','description','short_description'].includes(field)) return value;
@@ -210,7 +221,7 @@
         const blob=new Blob(['\ufeff'+lines.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
         const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=`nilwears-${state.job}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
-    window.NIL_APP={api,task,load,buildPreview,filters,message,esc,fmt,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
+    window.NIL_APP={getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error('واحد پول یا دقت الگو تغییر کرده است.');controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
     window.addEventListener('beforeunload',e=>{if(state.changes.size||state.busy){e.preventDefault();e.returnValue='';}});
     task(async()=>{await load(1);await history();message('جدول آماده است. ابتدا تغییرات را پیش‌نمایش بگیرید.');});
 })();

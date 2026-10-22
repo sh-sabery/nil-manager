@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 // Optional tools are parsed only when an endpoint or update hook needs them.
 spl_autoload_register( function( $class ) {
     if ( 0 !== strpos( $class, 'NIL_' ) ) { return; }
-    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance' );
+    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets' );
     if ( isset( $map[$class] ) ) { require_once __DIR__ . '/includes-' . $map[$class] . '.php'; }
 } );
 final class NIL_Suite {
@@ -80,6 +80,11 @@ final class NIL_Suite {
     }
     public static function routes() {
         $routes = array(
+            'variation-parent' => array( 'GET', 'NIL_Variations', 'parent_info' ),
+            'variations/preview' => array( 'POST', 'NIL_Variations', 'preview' ),
+            'variations/apply' => array( 'POST', 'NIL_Variations', 'apply' ),
+            'presets' => array( 'GET,POST', 'NIL_Presets', 'endpoint' ),
+            'cogs/migration' => array( 'POST', 'NIL_Cost', 'migration' ),
             'create' => array( 'POST', __CLASS__, 'create' ),
             'branding' => array( 'POST', __CLASS__, 'save_branding' ),
             'schedules' => array( 'GET,POST', __CLASS__, 'schedules' ),
@@ -123,7 +128,7 @@ final class NIL_Suite {
             $p->set_name( self::validate_field( $p, 'name', $b['name'] ?? '' ) );
             $status = $b['status'] ?? 'draft'; if ( ! in_array( $status, array( 'draft','publish' ), true ) ) { throw new InvalidArgumentException( 'وضعیت معتبر نیست.' ); } $p->set_status( $status );
             foreach ( array( 'sku','description','short_description','category_ids' ) as $key ) { if ( isset( $b[$key] ) ) { $setter = 'set_' . $key; $p->$setter( self::validate_field( $p, $key, $b[$key] ) ); } }
-            if ( isset( $b['cost_price'] ) ) { $p->update_meta_data( '_nil_cost_price', self::validate_field( $p, 'cost_price', $b['cost_price'] ) ); }
+            if ( isset( $b['cost_price'] ) ) { NIL_Cost::set( $p, self::validate_field( $p, 'cost_price', $b['cost_price'] ) ); }
             $regular = self::validate_field( $p, 'cost_price', $b['regular_price'] ?? '' );
             $sale = self::validate_field( $p, 'cost_price', $b['sale_price'] ?? '' );
             if ( '' !== $sale && ( '' === $regular || (float) $sale >= (float) $regular ) ) { throw new InvalidArgumentException( 'حراج باید کمتر از قیمت اصلی باشد.' ); }
@@ -154,7 +159,7 @@ final class NIL_Suite {
                     $v = new WC_Product_Variation(); $v->set_parent_id( $p->get_id() ); $v->set_attributes( $attrs ); $v->set_status( 'publish' );
                     $v->set_regular_price( $regular ); $v->set_sale_price( $sale ); if ( null !== $quantity ) { $v->set_manage_stock( true ); $v->set_stock_quantity( $quantity ); }
                     if ( '' !== $p->get_sku() ) { $sku = $p->get_sku() . '-' . ( $i + 1 ); if ( wc_get_product_id_by_sku( $sku ) ) { throw new RuntimeException( 'SKU ورییشن تکراری است: ' . $sku ); } $v->set_sku( $sku ); }
-                    if ( isset( $b['cost_price'] ) ) { $v->update_meta_data( '_nil_cost_price', self::validate_field( $v, 'cost_price', $b['cost_price'] ) ); }
+                    if ( isset( $b['cost_price'] ) ) { NIL_Cost::set( $v, self::validate_field( $v, 'cost_price', $b['cost_price'] ) ); }
                     $v->save(); $created[] = $v->get_id();
                 }
                 WC_Product_Variable::sync( $p->get_id() );

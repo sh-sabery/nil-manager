@@ -11,3 +11,4 @@ tests/suite-result.txt
 tests/hpos-result.txt
 tests/performance-result.txt
 tests/query-profile.json
+tests/advanced-result.txt

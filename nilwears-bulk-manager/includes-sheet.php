@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 final class NIL_Sheet {
     const LIMIT = 5000;
     public static function columns() {
-        return array( 'id','sku','version','type','parent_id','name','regular_price','sale_price','cost_price','manage_stock','stock_quantity','stock_status','category_ids','brand_ids','description','short_description','attributes','profit','margin','currency' );
+        return array( 'id','sku','version','type','parent_id','name','regular_price','sale_price','cost_price','manage_stock','stock_quantity','stock_status','category_ids','brand_ids','description','short_description','attributes','parent_sku','profit','margin','currency' );
     }
     public static function file( $headers, $rows, $format, $name ) {
         if ( ! function_exists( 'wp_tempnam' ) ) { require_once ABSPATH . 'wp-admin/includes/file.php'; }
@@ -51,6 +51,7 @@ final class NIL_Sheet {
         $rows = array(); $headers = self::columns();
         foreach ( array_unique( array_map( 'absint', $ids ) ) as $id ) {
             $p = NIL_Bulk_Manager::editable( wc_get_product( $id ) ); $row = NIL_Bulk_Manager::row( $p ); $data = $row['values'];
+            $parent = $p->get_parent_id() ? wc_get_product( $p->get_parent_id() ) : false; $data['parent_sku'] = $parent ? $parent->get_sku( 'edit' ) : '';
             $data['id'] = $id; $data['version'] = $row['version']; $attrs = array();
             if ( $p->is_type( 'variable' ) ) { foreach ( $p->get_attributes() as $attr ) { $attrs[$attr->get_name()] = $attr->get_options(); } }
             elseif ( $p->is_type( 'variation' ) ) { $attrs = $p->get_attributes(); }
@@ -130,7 +131,7 @@ final class NIL_Sheet {
         $mapping = $b['mapping'] ?? array(); $used = array();
         foreach ( $mapping as $i => $field ) { if ( '' === $field ) { continue; } if ( ! in_array( $field, self::columns(), true ) || isset( $used[$field] ) ) { throw new InvalidArgumentException( 'نگاشت تکراری یا نامعتبر است.' ); } $used[$field] = true; }
         if ( empty( $used['id'] ) && empty( $used['sku'] ) ) { throw new InvalidArgumentException( 'شناسه یا SKU را نگاشت کنید.' ); }
-        $updates = array(); $creates = array(); $errors = array(); $seen = array();
+        $updates = array(); $creates = array(); $variations = array(); $errors = array(); $seen = array();
         foreach ( $file['rows'] as $i => $line ) {
             try {
                 $data = array(); foreach ( $mapping as $index => $field ) { if ( '' !== $field ) { $data[$field] = (string) ( $line[(int) $index] ?? '' ); } }
@@ -139,7 +140,15 @@ final class NIL_Sheet {
                 $id = $id ?: $sku_id;
                 if ( ! $id ) {
                     if ( empty( $b['allow_create'] ) ) { throw new RuntimeException( 'محصول پیدا نشد؛ ایجاد جدید خاموش است.' ); }
-                    if ( ( $data['type'] ?? 'simple' ) === 'variation' ) { throw new RuntimeException( 'ورییشن جدید را از ایجاد محصول متغیر بسازید؛ این فایل ورییشن موجود را ویرایش می‌کند.' ); }
+                    if ( ( $data['type'] ?? 'simple' ) === 'variation' ) {
+                        $pid = absint( $data['parent_id'] ?? 0 ); $by_sku = empty( $data['parent_sku'] ) ? 0 : wc_get_product_id_by_sku( $data['parent_sku'] );
+                        if ( $pid && $by_sku && $pid !== $by_sku ) { throw new RuntimeException( 'شناسه و SKU والد متفاوت‌اند.' ); }
+                        $data['parent_id'] = $pid ?: $by_sku; $parent = NIL_Bulk_Manager::editable( wc_get_product( $data['parent_id'] ) );
+                        if ( ! $parent->is_type( 'variable' ) ) { throw new RuntimeException( 'والد باید محصول متغیر موجود باشد.' ); }
+                        $data['attributes'] = json_decode( $data['attributes'] ?? '', true ); if ( ! is_array( $data['attributes'] ) || ! $data['attributes'] ) { throw new RuntimeException( 'attributes باید شیء JSON از ویژگی به مقدار باشد.' ); }
+                        if ( isset( $data['manage_stock'] ) ) { if ( ! in_array( $data['manage_stock'], array( '0','1','false','true' ), true ) ) { throw new RuntimeException( 'manage_stock فقط ۰/۱.' ); } $data['manage_stock'] = in_array( $data['manage_stock'], array( '1','true' ), true ); }
+                        $variations[] = $data; if ( count( $variations ) > 100 ) { throw new RuntimeException( 'حداکثر ۱۰۰ ورییشن جدید در فایل.' ); } continue;
+                    }
                     $data['token'] = substr( hash( 'sha256', $b['id'] . ':' . $i . ':' . get_current_user_id() ), 0, 32 );
                     $data['type'] = $data['type'] ?? 'simple'; $data['status'] = 'draft';
                     if ( isset( $data['attributes'] ) ) { $data['attributes'] = json_decode( $data['attributes'], true ); }
@@ -159,9 +168,10 @@ final class NIL_Sheet {
                     if ( $p->is_type( 'variable' ) && in_array( $key, array( 'regular_price','sale_price' ), true ) ) { continue; }
                     if ( is_array( $value ) ? $value !== $row['values'][$key] : (string) $value !== (string) $row['values'][$key] ) { $changes[$key] = $value; }
                 }
-                if ( $changes ) { $updates[] = array( 'id' => $id, 'version' => $row['version'], 'changes' => $changes ); }
+                if ( $changes ) { $updates[] = array( 'id' => $id, 'version' => $row['version'], 'changes' => $changes, 'parent' => $p->is_type( 'variable' ) ); }
             } catch ( Throwable $e ) { $errors[] = array( 'line' => $i + 2, 'error' => $e->getMessage() ); }
         }
-        return array( 'updates' => $updates, 'creates' => $creates, 'errors' => $errors );
+        usort( $updates, function( $a, $b ) { return (int) $a['parent'] <=> (int) $b['parent']; } ); foreach ( $updates as &$u ) { unset( $u['parent'] ); } unset( $u );
+        return array( 'updates' => $updates, 'creates' => $creates, 'variations' => $variations, 'errors' => $errors );
     }
 }

@@ -36,7 +36,7 @@ allowed = {'.php', '.js', '.css', '.html', '.txt', '.woff2'}
 files = sorted((ROOT / 'nilwears-bulk-manager').rglob('*'))
 with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as bundle:
     for file in files:
-        if file.name in {'admin.js','suite.js','admin.css'}:
+        if file.name in {'admin.js','suite.js','advanced.js','admin.css'}:
             continue  # Reviewable sources stay in git; WordPress receives production assets only.
         if not file.is_file():
             continue

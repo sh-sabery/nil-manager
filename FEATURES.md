@@ -1,4 +1,4 @@
-# Selected feature coverage — v1.1.0
+# Selected feature coverage — v1.3.0
 
 The 21 selected numbers refer to the feature list discussed with the user. This is an independent implementation in the Nilwears plugin.
 
@@ -13,10 +13,10 @@ The 21 selected numbers refer to the feature list discussed with the user. This 
 | 9 | Bulk price and stock | Fixed/percentage/set/round price rules and stock previews; shared parent stock and independent variation stock respected. |
 | 10 | Automated pricing | Once/daily/weekly cost-based WP-Cron rules; bounded batches and recorded jobs. Traffic or a server cron is needed. |
 | 11 | Rounding | Up/down/nearest, configurable step and ending; the original 10% + ending 9000 example remains supported. |
-| 12 | Purchase cost | Per-product/per-variation cost metadata, editable in the grid or file; blank means unknown, zero is valid. |
-| 13 | Profit and margin reports | Indicative inventory profit/margin and export; historical order-line gross profit based on immutable captured cost, net of refunds. Unknown historical costs remain unknown. |
+| 12 | Purchase cost | Native WooCommerce COGS when enabled, including inherited/additive variation costs; otherwise legacy per-product metadata. Explicit preview migration; no conflicting native overwrite. |
+| 13 | Profit and margin reports | Indicative inventory profit/margin and export; historical order-line gross profit based on recorded native COGS or legacy captured cost, net of refunds. Unknown historical costs remain unknown. |
 | 15 | XLSX / CSV | Product and report export, values-only import; bounded size/rows, formula protection, numeric report cells and text SKU cells. |
-| 16 | Column mapping / file roundtrip | Map input headers, match ID/SKU, preserve version conflict checks, preview existing edits. New simple/variable rows become drafts; create new variation combinations with the variable-product form. |
+| 16 | Column mapping / file roundtrip | Map input headers, match ID/SKU, preserve version conflict checks, preview existing edits. New simple/variable rows become drafts; new variation rows target existing parents by ID/SKU and have a separate preview. |
 | 17 | Image management / optimization | Page/selection bulk actions; main JPG/PNG/WebP optimization with size/quality controls. Original files remain; thumbnail files are copied rather than recompressed. |
 | 18 | Real file rename | Rename the active main image and generated size copies, update attachment metadata, retain old URLs. |
 | 19 | Bulk ALT | Templates using title, ID or filename; preview and per-image version checks. |
@@ -27,3 +27,6 @@ The 21 selected numbers refer to the feature list discussed with the user. This 
 | 50 | Dashboard updates | Private GitHub release updater; server-side repository read token required. Metadata caching, safe redirect handling and digest checks. |
 
 See [README.md](README.md) for use and [CONTRIBUTING.md](CONTRIBUTING.md) for validation evidence and reproducible tests. This release updates the repository and installation package; it does not install itself on the live store.
+
+
+Additional v1.3 requests (numbers 2 and 5 refer to the later improvement suggestions, separately from the original comparison list): append missing color/size combinations to existing variable products and save per-user filters, visible/ordered columns and reusable bulk-price rules. Existing variation wildcard coverage, duplicate SKU checks, stale-parent checks and transactional rollback are covered by disposable fixtures. See README.md for limits and cost-source switching semantics.

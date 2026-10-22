@@ -9,7 +9,7 @@ const rows=[{id:10,parent:0,type:'variable',name:'بارونی نیل',values:{.
 {id:12,parent:10,type:'variation',name:'بارونی سفید L',values:{...base,type:'variation',parent_id:10,parent_stock:true,regular_price:'695000'},version:'b'},
 {id:20,parent:0,type:'simple',name:'تیشرت ساده',values:{...base,regular_price:'200000'},version:'s'}];
 rows.forEach(r=>{r.sku='sku'+r.id;r.attributes='رنگ و سایز';r.url='https://nil.test/edit/'+r.id;});
-let job=null,payload=null;
+let job=null,payload=null,presetList=[];
 async function fetchMock(url,options={}){
 const parsed=new URL(url),path=parsed.pathname.replace('/nil/',''),body=options.body?JSON.parse(options.body):null;let result;
 if(path==='products')result={rows:structuredClone(rows),page:1,pages:1,total:2};
@@ -21,6 +21,10 @@ else if(path==='preview'){
 }else if(path.endsWith('/seal')){job.state='ready';result={count:job.items.length};}
 else if(path.endsWith('/run')){job.state=body.mode==='undo'?'undone':'done';job.items.forEach(i=>{i.state=body.mode==='undo'?'undone':'applied';rows.find(r=>r.id===i.product_id).values={...(body.mode==='undo'?i.before:i.after)};});result={done:true,processed:job.items.length};}
 else if(path.startsWith('job/')){const counts={};job.items.forEach(i=>counts[i.state]=(counts[i.state]||0)+1);result={job:{id:job.id,state:job.state},items:job.items,counts:Object.entries(counts).map(([state,n])=>({state,n}))};}
+else if(path==='presets'){if(body){payload=body;if(body.delete)presetList=presetList.filter(p=>p.id!==body.id);else presetList.push({id:'p'+presetList.length,...body});}result=presetList;}
+else if(path==='variation-parent')result={id:10,name:'والد',version:'v',count:2,attributes:[{name:'color',options:['black']},{name:'size',options:['M']}]};
+else if(path==='variations/preview'){payload=body;result={token:'v-token',rows:[{parent_id:10,attributes:{color:'blue',size:'M'},sku:'new',regular_price:'300000'}],skipped:[]};}
+else if(path==='variations/apply'){payload=body;result={created:[40]};}
 else if(path==='create'){payload=body;result={id:30,created:[30,31,32,33,34]};}
 else if(path==='branding'){payload=body;result=body;}
 else if(path==='updater')result={configured:false,current:'1.2.0',available:null};
@@ -29,7 +33,7 @@ else if(path==='sheet/prepare'){payload=body;result={updates:[],creates:[],error
 else throw new Error('Unknown endpoint: '+path);
 return{ok:true,json:async()=>structuredClone(result)};
 }
-const context=vm.createContext({window,document,NIL_BULK:{api:'https://nil.test/nil/',nonce:'test',currency:'تومان',currencyCode:'IRT',decimals:0,categories:[]},fetch:fetchMock,Intl,Map,Set,URLSearchParams,URL,Blob,setTimeout,console,crypto:require('crypto').webcrypto,atob,Uint8Array,FileReader:class{readAsDataURL(){this.result='data:text/csv;base64,aWQscHJpY2U=';this.onload();}}});
+const context=vm.createContext({window,document,Event:window.Event,NIL_BULK:{api:'https://nil.test/nil/',nonce:'test',currency:'تومان',currencyCode:'IRT',decimals:0,categories:[]},fetch:fetchMock,Intl,Map,Set,URLSearchParams,URL,Blob,setTimeout,console,crypto:require('crypto').webcrypto,atob,Uint8Array,FileReader:class{readAsDataURL(){this.result='data:text/csv;base64,aWQscHJpY2U=';this.onload();}}});
 vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/admin'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
 const $=s=>document.querySelector(s),change=el=>el.dispatchEvent(new window.Event('change',{bubbles:true}));
 async function idle(){for(let i=0;i<200;i++){await new Promise(r=>setTimeout(r,1));if(!$('#nil-bulk-app').hasAttribute('aria-busy'))return;}throw new Error('busy timeout: '+$('#nil-message').textContent);}
@@ -53,5 +57,10 @@ $('#nil-create-name').value='محصول جدید';$('#nil-create-attrs').value='
 $('#nil-create-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await idle();assert.equal(payload.name,'محصول جدید');assert.deepEqual(Object.keys(payload.attributes),['رنگ','سایز']);assert($('#nil-create-result').textContent.includes('#30'));
 const fileInput=$('#nil-import-file');Object.defineProperty(fileInput,'files',{value:[{name:'test.csv',size:20}]});$('#nil-file-read').click();await idle();assert(!$('#nil-file-prepare').disabled,'mapping action becomes enabled after async load');assert.equal(document.querySelectorAll('[data-map]').length,2);$('#nil-file-prepare').click();await idle();assert.equal(payload.mapping[0],'id');assert.equal(payload.mapping[1],'regular_price');
 $('#nil-brand-title').value='فروشگاه من';$('#nil-brand-save').click();await idle();assert.equal(payload.title,'فروشگاه من');$('#nil-update-status').click();await idle();assert($('#nil-update-result').textContent.includes('1.2.0'));
-console.log('PASS: suite forms, attribute parsing, import column mapping, async button state, branding, updater; DOM table, inherited stock, parent selection, preview, apply, undo, manual stock, preservation of post-preview edits, reset');
+vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/advanced'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
+const unrelated=document.createElement('table');unrelated.className='nil-table';unrelated.innerHTML='<tr>'+Array.from({length:9},(_,i)=>'<td>'+i+'</td>').join('')+'</tr>';document.getElementById('nil-bulk-app').append(unrelated);
+const costColumn=$('#nil-columns [data-col="cost"]');costColumn.checked=false;change(costColumn);assert($('th[data-column="cost"]').hidden,'hidden cost column');assert(!unrelated.querySelector('[data-column]'),'column layout scoped to product grid');
+$('#nil-p-name').value='نمای من';$('#nil-p-view').click();await idle();assert.equal(payload.kind,'view');assert(!payload.data.columns.includes('cost'));$('#nil-p-apply').click();await idle();assert($('th[data-column="cost"]').hidden,'saved columns survive reload');
+$('#nil-v-parent').value='10';$('#nil-v-load').click();await idle();assert($('#nil-v-options').value.includes('color: black'));$('#nil-v-options').value='color: blue\nsize: M';$('#nil-v-price').value='300000';$('#nil-v-preview').click();await idle();assert.equal(payload.options.color[0],'blue');assert(!$('#nil-v-apply').hidden);$('#nil-v-apply').click();await idle();assert.equal(payload.token,'v-token');assert($('#nil-v-result').textContent.includes('#40'));
+console.log('PASS: suite forms, attribute parsing, import column mapping, async button state, branding, updater, saved views/columns and append-variation preview/apply; DOM table, inherited stock, parent selection, preview, apply, undo, manual stock, preservation of post-preview edits, reset');
 })().catch(e=>{console.error(e);process.exit(1);});

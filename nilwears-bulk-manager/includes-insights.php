@@ -8,14 +8,14 @@ final class NIL_Insights {
     }
     public static function checkout_cost( $item, $cart_key, $values, $order ) { self::capture( $item, $order ); }
     public static function new_item_cost( $id, $item, $order_id ) {
-        if ( $item instanceof WC_Order_Item_Product && '' === $item->get_meta( '_nil_unit_cost', true ) ) {
+        if ( ! NIL_Cost::native() && $item instanceof WC_Order_Item_Product && '' === $item->get_meta( '_nil_unit_cost', true ) ) {
             self::capture( $item, wc_get_order( $order_id ) ); $item->save_meta_data();
         }
     }
     private static function capture( $item, $order ) {
-        if ( ! $order || '' !== $item->get_meta( '_nil_unit_cost', true ) ) { return; }
+        if ( NIL_Cost::native() || ! $order || '' !== $item->get_meta( '_nil_unit_cost', true ) ) { return; }
         $product = $item->get_product(); if ( ! $product ) { return; }
-        $cost = $product->get_meta( '_nil_cost_price', true );
+        $cost = NIL_Cost::read( $product );
         if ( '' === $cost || $order->get_currency() !== get_woocommerce_currency() ) { return; }
         $item->add_meta_data( '_nil_unit_cost', (string) $cost, true ); $item->add_meta_data( '_nil_cost_currency', $order->get_currency(), true );
     }
@@ -44,8 +44,10 @@ final class NIL_Insights {
                     if ( ! isset( $state['products'][$pid] ) ) { $state['products'][$pid] = array( 'id' => $pid, 'name' => $item->get_name(), 'quantity' => 0, 'revenue' => 0.0, 'known_revenue' => 0.0, 'cost' => 0.0, 'unknown_lines' => 0 ); }
                     $p =& $state['products'][$pid]; $p['quantity'] += $qty; $p['revenue'] += $revenue;
                     $c['products'][(string) $pid] = ( $c['products'][(string) $pid] ?? 0 ) + $qty;
-                    $cost = $item->get_meta( '_nil_unit_cost', true );
-                    if ( '' !== $cost && $item->get_meta( '_nil_cost_currency', true ) === $state['currency'] ) {
+                    $native_data = NIL_Cost::native() ? $item->get_data() : array();
+                    $native_cost = array_key_exists( 'cogs_value', $native_data ) && null !== $native_data['cogs_value'] ? $item->get_cogs_value( 'edit' ) : null;
+                    $cost = null !== $native_cost && $item->get_quantity() > 0 ? (string) ( $native_cost / $item->get_quantity() ) : $item->get_meta( '_nil_unit_cost', true );
+                    if ( '' !== $cost && ( null !== $native_cost || $item->get_meta( '_nil_cost_currency', true ) === $state['currency'] ) ) {
                         $total_cost = (float) $cost * $qty; $p['cost'] += $total_cost; $p['known_revenue'] += $revenue; $state['known_cost'] += $total_cost; $state['known_revenue'] += $revenue;
                     } else { $p['unknown_lines']++; $state['unknown_cost_lines']++; }
                     unset( $p );
