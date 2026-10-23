@@ -118,7 +118,7 @@ final class NIL_Media {
                         if ( ! current_user_can( 'delete_post', $id ) || ! self::unused( $id ) ) { throw new RuntimeException( 'تصویر ارجاع دارد یا مجوز حذف ندارید.' ); }
                         // Do not call wp_delete_attachment: MEDIA_TRASH=false would destroy files.
                         update_post_meta( $id, '_nil_media_trashed', time() ); $result = wp_update_post( array( 'ID' => $id, 'post_status' => 'trash' ), true ); if ( is_wp_error( $result ) ) { throw new RuntimeException( $result->get_error_message() ); }
-                    } elseif ( 'restore' === $action ) { if ( ! get_post_meta( $id, '_nil_media_trashed', true ) ) { throw new RuntimeException( 'این تصویر توسط نیل بایگانی نشده است.' ); } wp_update_post( array( 'ID' => $id, 'post_status' => 'inherit' ) ); delete_post_meta( $id, '_nil_media_trashed' ); }
+                    } elseif ( 'restore' === $action ) { if ( ! get_post_meta( $id, '_nil_media_trashed', true ) ) { throw new RuntimeException( 'این تصویر توسط نیل منجر بایگانی نشده است.' ); } wp_update_post( array( 'ID' => $id, 'post_status' => 'inherit' ) ); delete_post_meta( $id, '_nil_media_trashed' ); }
                     $results[] = array( 'id' => $id, 'state' => 'applied', 'detail' => $detail );
                 } catch ( Throwable $e ) { $results[] = array( 'id' => $id, 'state' => 'skipped', 'error' => $e->getMessage() ); }
             }

@@ -12,7 +12,7 @@
         if(brand.logo){const img=document.createElement('img');img.src=brand.logo;img.alt='';img.onerror=()=>img.remove();mark.append(img);}
         document.querySelectorAll('#toplevel_page_woocommerce a[href$="page=nil-bulk"]').forEach(el=>{el.textContent=brand.title;});
     }
-    applyBranding({title:b.title||'مدیریت محصولات نیل',accent:b.accent||'#6941c6',logo:b.logo||''});
+    applyBranding({title:b.title||'نیل منجر',accent:b.accent||'#6941c6',logo:b.logo||''});
     const panel=document.createElement('div');panel.append(document.getElementById('nil-suite-template').content.cloneNode(true));
     root.append(panel);a.table=table;a.scoped=scoped;
     // Focused workspaces, no UI framework and no background report requests.
@@ -99,7 +99,7 @@
     on('profit-export',async()=>{if(!insights)throw new Error(a.text.reportFirst);download(await api('sheet/export',{format:$('file-format').value,headers:['id','name','net_quantity','net_revenue_ex_tax','known_cost','known_cost_profit','known_margin_percent','unknown_cost_lines'],report:insights.products.map(p=>[p.id,p.name,p.quantity,p.revenue,p.cost,p.profit,p.margin,p.unknown_lines])}));});
     on('clean-drafts',async()=>{const out=await api('maintenance',{history:false});$('clean-result').textContent=`${fmt(out.deleted)} پیش‌نویس پاک شد.${out.more?' برای بستهٔ بعد دوباره بزنید.':''}`;});
     on('clean-history',async()=>{if(!window.confirm('گزارش‌های تکمیل‌شدهٔ بیش از ۹۰ روز حذف می‌شوند و بازگردانی آن‌ها دیگر ممکن نیست. ادامه؟'))return;const out=await api('maintenance',{history:true,days:90});$('clean-result').textContent=`${fmt(out.deleted)} گزارش قدیمی حذف شد.${out.more?' برای بستهٔ بعد دوباره بزنید.':''}`;});
-    $('brand-title').value=b.title||'مدیریت محصولات نیل';$('brand-accent').value=b.accent||'#6941c6';$('brand-logo').value=b.logo||'';
+    $('brand-title').value=b.title||'نیل منجر';$('brand-accent').value=b.accent||'#6941c6';$('brand-logo').value=b.logo||'';
     function brandPreview(){const box=$('brand-preview');paint(box,$('brand-accent').value);box.querySelector('strong').textContent=$('brand-title').value;box.querySelector('small').textContent='پیش‌نمایش؛ برای اعمال ذخیره کنید.';const mark=box.querySelector('.nil-mark');mark.replaceChildren(document.getElementById('nil-mark-template').content.cloneNode(true));if(/^https:\/\//.test($('brand-logo').value)){const img=document.createElement('img');img.src=$('brand-logo').value;img.alt='';img.onerror=()=>{if(mark.contains(img)){img.remove();box.querySelector('small').textContent='لوگو بارگذاری نشد؛ آدرس مستقیم تصویر را بررسی کنید.';}};mark.append(img);}}
     for(const key of ['title','accent'])$('brand-'+key).oninput=brandPreview;$('brand-logo').onchange=brandPreview;brandPreview();
     if(cfg.canBrand===false){$('brand-save').disabled=true;$('brand-preview').querySelector('small').textContent='ذخیرهٔ برندینگ فقط برای مدیر سایت فعال است.';}

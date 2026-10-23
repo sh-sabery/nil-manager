@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: Nilwears — Price & Stock Manager
+ * Plugin Name: Nil Manager — مدیریت قیمت و موجودی ووکامرس
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.8.0
+ * Version: 1.8.1
  * Update URI: https://github.com/sh-sabery/nilwears-bulk-manager
- * Author: Nilwears
+ * Author: Nil Web
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Requires Plugins: woocommerce
@@ -22,7 +22,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.8.0';
+    const VERSION = '1.8.1';
     const VARIATION_LIMIT = 500;
     /** Prime a bounded batch; reuse WordPress caches instead of per-product reads. */
     public static function prime( $ids ) {
@@ -68,7 +68,7 @@ final class NIL_Bulk_Manager {
     public static function boot() {
         if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) { NIL_Updater::boot(); }
         if ( ! class_exists( 'WooCommerce' ) ) {
-            add_action( 'admin_notices', function() { echo '<div class="notice notice-warning"><p>مدیریت قیمت نیل به ووکامرس فعال نیاز دارد.</p></div>'; } );
+            add_action( 'admin_notices', function() { echo '<div class="notice notice-warning"><p>نیل منجر به ووکامرس فعال نیاز دارد.</p></div>'; } );
             return;
         }
         add_action( 'admin_init', function() {
@@ -84,7 +84,7 @@ final class NIL_Bulk_Manager {
 
     public static function page() {
         if ( current_user_can( 'manage_woocommerce' ) ) {
-            echo '<div id="nil-bulk-app" class="wrap" dir="rtl"><p>در حال آماده‌سازی جدول نیل…</p></div>';
+            echo '<div id="nil-bulk-app" class="wrap" dir="rtl"><p>در حال آماده‌سازی نیل منجر…</p></div>';
             require __DIR__ . '/includes-grid.php';
             require __DIR__ . '/includes-view.php';
             require __DIR__ . '/includes-help.php';

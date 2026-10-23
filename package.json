@@ -1,8 +1,8 @@
 {
   "name": "nilwears-bulk-manager",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
-  "description": "Development tools for the Nilwears WooCommerce price and stock plugin",
+  "description": "Development tools for Nil Manager by Nil Web",
   "license": "GPL-2.0-or-later",
   "scripts": {
     "test:ui": "node tests/ui-dom.cjs",

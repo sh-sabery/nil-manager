@@ -1,9 +1,9 @@
-=== Nilwears Product Operations ===
+=== Nil Manager by Nil Web ===
 Contributors: sh-sabery
 Requires at least: 6.4
 Tested up to: 7.1.3
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 Requires Plugins: woocommerce
 License: GPL-2.0-or-later
 
@@ -15,6 +15,8 @@ Manage products, prices, stock, purchase cost, XLSX/CSV, images and customer rep
 See README-fa.html for usage, and the repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Public-repository updates need no token from v1.4. Older versions without a token require one manual v1.4 ZIP installation. An optional token supports private access.
 
 == Changelog ==
+= 1.8.1 =
+Adopt the Nil Manager product identity and Nil Web publisher across the admin defaults, plugin metadata, update details, banner, guide and worksheet. Preserve custom branding, installed plugin identity and stored data. Commercial licensing and Zhaket distribution are not included.
 = 1.8.0 =
 Persian date inputs/displays/exports in the site time zone; bounded resource processing and batched product reads; REST/taxonomy/CSV/XML/media/update hardening. See the repository AUDIT.md for measured results and limits.
 = 1.7.0 =

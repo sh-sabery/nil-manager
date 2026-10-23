@@ -2,7 +2,7 @@
 (()=>{
 'use strict';const a=window.NIL_APP,cfg=NIL_BULK,{api,task,esc,fmt,message}=a;
 const $=id=>document.getElementById('nil-'+id),importButton=$('v-import');
-$('cost-source').textContent=cfg.costBackend==='native'?'COGS ووکامرس':'قیمت خرید نیل';
+$('cost-source').textContent=cfg.costBackend==='native'?'COGS ووکامرس':'قیمت خرید افزونه';
 const on=(id,fn)=>{$(id).onclick=()=>task(fn);};let parent=null,plan=null,presets=[];
 function columns(){const view=a.getView(),labels={cost:'خرید',profit:'سود',regular:'اصلی',sale:'حراج',manage:'مدیریت تعداد',quantity:'تعداد',stock:'وضعیت'};$('columns').innerHTML=view.order.map((key,i)=>`<label><span><input type="checkbox" data-col="${key}" ${view.columns.includes(key)?'checked':''}>${labels[key]}</span><span><button type="button" class="button" data-move="${key}" data-dir="-1" aria-label="جابجایی ${labels[key]} به قبل" ${i===0?'disabled':''}>→</button><button type="button" class="button" data-move="${key}" data-dir="1" aria-label="جابجایی ${labels[key]} به بعد" ${i===view.order.length-1?'disabled':''}>←</button></span></label>`).join('');}
 $('columns').onchange=()=>{const v=a.getView();a.setColumns([...$('columns').querySelectorAll('[data-col]')].filter(e=>e.checked).map(e=>e.dataset.col),v.order);};
@@ -18,5 +18,5 @@ on('v-preview',async()=>{if(!parent||String(parent.id)!==$('v-parent').value)thr
 showPlan(await api('variations/preview',{parent_id:parent.id,version:parent.version,options,sku_prefix:$('v-sku').value||undefined,defaults:{regular_price:$('v-price').value,sale_price:$('v-sale').value,stock_quantity:$('v-qty').value,...($('v-cost').value!==''?{cost_price:$('v-cost').value}:{})}}));});
 on('v-apply',async()=>{if(!plan)throw new Error(a.text.previewFirst);const result=await api('variations/apply',{token:plan.token});$('v-result').textContent=`ورییشن‌های افزوده‌شده: ${result.created.map(id=>'#'+id).join('، ')}`;$('v-apply').hidden=true;await a.load();message('ورییشن‌ها اضافه شدند. ترکیب‌های قبلی حفظ شدند.');});
 document.addEventListener('nil-import-ready',()=>{importButton.hidden=!(a.importVariations||[]).length;});on('v-import',async()=>showPlan(await api('variations/preview',{rows:a.importVariations})));
-on('cogs-migrate',async()=>{const rows=await a.scoped(),out=await api('cogs/migration',{ids:rows.map(r=>r.id)});$('cogs-result').innerHTML=`${fmt(out.updates.length)} هزینه آمادهٔ انتقال؛ ${fmt(out.conflicts.length)} اختلاف با مقدار موجود ووکامرس کنار گذاشته شد. اختلاف‌ها:`+a.table(['ID','نیل','COGS'],out.conflicts.map(r=>[r.id,r.legacy,r.native]));if(out.updates.length)await a.buildPreview(out.updates);});
+on('cogs-migrate',async()=>{const rows=await a.scoped(),out=await api('cogs/migration',{ids:rows.map(r=>r.id)});$('cogs-result').innerHTML=`${fmt(out.updates.length)} هزینه آمادهٔ انتقال؛ ${fmt(out.conflicts.length)} اختلاف با مقدار موجود ووکامرس کنار گذاشته شد. اختلاف‌ها:`+a.table(['ID','افزونه','COGS'],out.conflicts.map(r=>[r.id,r.legacy,r.native]));if(out.updates.length)await a.buildPreview(out.updates);});
 })();

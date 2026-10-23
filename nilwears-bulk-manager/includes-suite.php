@@ -29,7 +29,9 @@ final class NIL_Suite {
         } );
     }
     public static function branding() {
-        $b = wp_parse_args( get_option( 'nil_bulk_branding', array() ), array( 'title' => 'مدیریت محصولات نیل', 'accent' => '#6941c6', 'logo' => '' ) );
+        $b = wp_parse_args( get_option( 'nil_bulk_branding', array() ), array( 'title' => 'نیل منجر', 'accent' => '#6941c6', 'logo' => '' ) );
+        // Resolve the former stock title without rewriting saved customer branding.
+        if ( '' === trim( (string) $b['title'] ) || 'مدیریت محصولات نیل' === $b['title'] ) { $b['title'] = 'نیل منجر'; }
         $b['accent'] = self::accent( $b['accent'] ); return $b;
     }
     private static function accent( $color ) {

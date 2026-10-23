@@ -2,6 +2,12 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.8.1] - 2026-10-24
+
+- Adopt Nil Manager (نیل منجر) as the product and Nil Web (نیل وب) as its publisher. Update plugin metadata, default admin identity, update-details author/description, banner, guide, archive/cost labels and XLSX worksheet name. Keep the current N mark until separate visual branding is chosen.
+- Resolve the former stock admin title to the new default on read; preserve custom titles, logos and accents without rewriting saved options. Retain the plugin basename, repository, ZIP naming, REST identifiers, metadata and cron hooks for installed-version compatibility. Add BRAND.md to record the independent product identity and remaining commercialization work. No Zhaket licensing, distribution, repository visibility or live-store change is included.
+- Validation: PHP 8.3.33 parsed 34 files; 3,273 calendar, 1,566 price/stock, 58 market, 23 spreadsheet, 63 private-updater and 61 public-updater assertions passed. Source/minified DOM suites and JavaScript syntax/asset checks passed. An isolated branding read probe verified new, former-default and empty titles plus custom title/logo/accent preservation without option writes. Shipped CSS/JS is 59,683 bytes, below the existing 60,000-byte cap. The build validates version identity and the plugin-only ZIP. No full WooCommerce, real MySQL concurrency, live-store installation or visual browser test was rerun for this display-only release.
+
 ## [1.8.0] - 2026-10-23
 
 - Add Persian calendar inputs for report ranges and cost scheduling, explicit site-time-zone browser formatting for history/rates/next runs/sale-date previews, and Persian customer/export dates and filenames. Accept Persian/Arabic/Latin digits, strip harmless bidi date marks, validate days/leaps/clocks/DST gaps, and retain strict Gregorian/ISO REST compatibility plus standard WooCommerce/UTC storage. Support Persian UI years 1200–1499; use an on-demand PHP year-start implementation adapted from MIT jalaali-js with the bundled license, no PHP intl requirement. Test with independent ICU vectors and boundary/time-zone cases.
