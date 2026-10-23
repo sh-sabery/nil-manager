@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.6.0
+ * Version: 1.7.0
  * Update URI: https://github.com/sh-sabery/nilwears-bulk-manager
  * Author: Nilwears
  * Requires at least: 6.4
@@ -22,7 +22,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.6.0';
+    const VERSION = '1.7.0';
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {
@@ -210,6 +210,16 @@ final class NIL_Bulk_Manager {
     private static function proposal( $p, $before, $input, $rule ) {
         $after = $before;
         if ( ! is_array( $input ) ) { throw new InvalidArgumentException( 'تغییرات نامعتبر است.' ); }
+        if ( is_array( $rule ) && isset( $rule['kind'] ) ) {
+            if ( $input ) { throw new InvalidArgumentException( 'عملیات گروهی را با ویرایش دستی ترکیب نکنید.' ); }
+            if ( 'discount' === $rule['kind'] ) {
+                if ( $p->is_type( 'variable' ) ) { throw new InvalidArgumentException( 'تخفیف روی ورییشن اعمال می‌شود.' ); }
+                $after['sale_price'] = NIL_Bulk_Price::discount( $before['regular_price'], $rule, wc_get_price_decimals() );
+                $after['sale_from'] = $after['sale_to'] = null;
+            } elseif ( 'stock' === $rule['kind'] ) { $input = NIL_Bulk_Price::stock( $before, $rule ); }
+            else { throw new InvalidArgumentException( 'نوع عملیات گروهی نامعتبر است.' ); }
+            $rule = null;
+        }
         $allowed = array( 'regular_price','sale_price','manage_stock','stock_quantity','stock_status','name','sku','description','short_description','cost_price','category_ids','brand_ids' );
         foreach ( $input as $key => $value ) {
             if ( ! in_array( $key, $allowed, true ) ) { throw new InvalidArgumentException( 'فیلد غیرمجاز.' ); }
@@ -356,6 +366,8 @@ final class NIL_Bulk_Manager {
             // Keep the log aligned with actual WooCommerce values after save.
             if ( in_array( 'regular_price', $fields, true ) ) { $p->set_regular_price( $desired['regular_price'] ); }
             if ( in_array( 'sale_price', $fields, true ) ) { $p->set_sale_price( $desired['sale_price'] ); }
+            if ( in_array( 'sale_from', $fields, true ) ) { $p->set_date_on_sale_from( $desired['sale_from'] ); }
+            if ( in_array( 'sale_to', $fields, true ) ) { $p->set_date_on_sale_to( $desired['sale_to'] ); }
             $regular = $p->get_regular_price( 'edit' ); $sale = $p->get_sale_price( 'edit' );
             if ( ( in_array( 'regular_price', $fields, true ) || in_array( 'sale_price', $fields, true ) ) && '' !== $sale && ( '' === $regular || (float) $sale >= (float) $regular ) ) { throw new RuntimeException( 'قیمت حراج با قیمت اصلی فعلی سازگار نیست.' ); }
             if ( in_array( 'manage_stock', $fields, true ) ) { $p->set_manage_stock( $desired['manage_stock'] ); }

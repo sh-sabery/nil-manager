@@ -52,7 +52,17 @@
     }
     on('scope-review',async()=>{const rows=(await scoped()).filter(r=>r.type!=='variable');$('scope-count').textContent=fmt(rows.length)+' کالا / ورییشن؛ نمایش ۵۰ ردیف نخست';$('scope-results').innerHTML=table(['کالای مشمول','شناسه','قیمت اصلی','حراج'],rows.slice(0,50).map(r=>[r.name,r.id,fmt(r.values.regular_price),fmt(r.values.sale_price)]));$('scope-results').hidden=false;});
     function download(file){const bytes=Uint8Array.from(atob(file.data),x=>x.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:file.mime})),link=document.createElement('a');link.href=url;link.download=file.name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-    on('stock-preview',async()=>{const all=await scoped(), ids=new Set(all.map(r=>r.id));const rows=all.filter(r=>!(r.type==='variation'&&r.values.parent_stock&&!r.values.manage_stock&&ids.has(r.parent)));for(const r of rows)if(r.type==='variation'&&r.values.parent_stock&&!r.values.manage_stock)throw new Error('ورییشن موجودی مشترک دارد؛ ردیف والد را انتخاب کنید.');await a.buildPreview(rows.map(r=>({id:r.id,version:r.version,changes:{manage_stock:true,stock_quantity:$('stock-value').value}})));});
+    function toolControls(){const remove=$('discount-operation').value==='remove';$('stock-value').disabled=$('stock-operation').value==='out';$('discount-value').disabled=remove;$('discount-rounding').disabled=remove;for(const key of ['step','ending'])$('discount-'+key).disabled=remove||$('discount-rounding').value==='none';}
+    root.addEventListener('change',e=>{if(['nil-stock-operation','nil-discount-operation','nil-discount-rounding'].includes(e.target.id))toolControls();});toolControls();
+    async function toolPreview(kind){
+        if(a.dirtyCount())throw Error($('tools-note').textContent);
+        let rows=await scoped();const ids=new Set(rows.map(r=>r.id));
+        rows=rows.filter(r=>kind==='discount'?r.type!=='variable':!(r.type==='variable'&&!r.values.manage_stock)&&!(r.type==='variation'&&r.values.parent_stock&&!r.values.manage_stock&&ids.has(r.parent)));
+        const rule={kind,operation:$(kind+'-operation').value,value:$(kind+'-value').value};
+        if(kind==='discount')for(const key of ['rounding','step','ending'])rule[key]=$('discount-'+key).value;
+        await a.buildPreview(rows.map(r=>({id:r.id,version:r.version,changes:{}})),rule);
+    }
+    on('stock-preview',()=>toolPreview('stock'));on('discount-preview',()=>toolPreview('discount'));
     let createToken=null;
     $('create-form').onsubmit=e=>{e.preventDefault();task(async()=>{const attrs={};for(const line of $('create-attrs').value.split('\n').filter(x=>x.trim())){const at=line.indexOf(':');if(at<1)throw new Error('ویژگی: رنگ: مشکی، سفید');attrs[line.slice(0,at).trim()]=line.slice(at+1).split(/[,،|]/).map(x=>x.trim()).filter(Boolean);}
         const token=createToken||(createToken=crypto.randomUUID());const out=await api('create',{token,name:$('create-name').value,sku:$('create-sku').value,type:$('create-type').value,regular_price:$('create-price').value,cost_price:$('create-cost').value,stock_quantity:$('create-qty').value,status:$('create-status').value,attributes:attrs});createToken=null;$('create-result').textContent=`محصول #${out.id} ایجاد شد؛ ${fmt(out.created.length-1)} ورییشن.`;await a.load(1);});};

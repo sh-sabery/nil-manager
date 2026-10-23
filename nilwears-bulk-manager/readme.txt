@@ -3,7 +3,7 @@ Contributors: sh-sabery
 Requires at least: 6.4
 Tested up to: 7.1.3
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 Requires Plugins: woocommerce
 License: GPL-2.0-or-later
 
@@ -15,6 +15,8 @@ Manage products, prices, stock, purchase cost, XLSX/CSV, images and customer rep
 See README-fa.html for usage, and the repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Public-repository updates need no token from v1.4. Older versions without a token require one manual v1.4 ZIP installation. An optional token supports private access.
 
 == Changelog ==
+= 1.7.0 =
+Dedicated regular-price discount creation/removal with rounding and exact sale-date undo. Stock set/add/subtract/unavailable with shared-parent protection. Softer inputs/buttons and grouped action cards.
 = 1.6.0 =
 Select a category or multiple named products directly in Pricing, with variation-aware scope review. Updated responsive navigation, selection/edit counters, and local WordPress update icons/details banner.
 = 1.5.1 =

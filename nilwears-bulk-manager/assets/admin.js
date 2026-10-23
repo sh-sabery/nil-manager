@@ -3,10 +3,7 @@
     'use strict';
     const cfg = NIL_BULK, root = document.getElementById('nil-bulk-app');
     const state = { rows: [], selected: new Set(), changes: new Map(), page: 1, pages: 1, busy: false, job: null, jobPage: 1, detail: null, previewChanges: null, columns:['cost','profit','regular','sale','manage','quantity','stock'], order:['cost','profit','regular','sale','manage','quantity','stock'] };
-    const labels = {cost_defined:'هزینه تعریف‌شده COGS',cost_additive:'جمع‌شونده با والد',name:'نام',sku:'SKU',description:'توضیحات',short_description:'توضیح کوتاه',cost_price:'قیمت خرید',category_ids:'دسته‌ها',brand_ids:'برندها',regular_price:'قیمت اصلی', sale_price:'قیمت حراج', manage_stock:'مدیریت موجودی', stock_quantity:'تعداد', stock_status:'وضعیت موجودی'};
-    const publication = {publish:'منتشرشده',private:'خصوصی',draft:'پیش‌نویس',pending:'در انتظار بررسی',future:'زمان‌بندی‌شده'};
-    const statuses = {pending:'در انتظار', applied:'ذخیره‌شده', skipped:'ردشده', undone:'بازگردانده‌شده', undo_failed:'بازگردانی ناموفق'};
-    const jobs = {ready:'آماده ذخیره', running:'در حال ذخیره', done:'ذخیره پایان یافته', undoing:'در حال بازگردانی', undone:'بازگردانی پایان یافته'};
+    const {labels,publication,statuses,jobs,text}=JSON.parse(document.getElementById('nil-words-template').innerHTML);
     const esc = value => String(value ?? '').replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
     const fmt = value => value === '' || value == null ? '—' : new Intl.NumberFormat('fa-IR', {maximumFractionDigits:cfg.decimals}).format(Number(value));
     root.replaceChildren(document.getElementById('nil-grid-template').content.cloneNode(true));
@@ -35,7 +32,7 @@
     async function api(path, data) {
         const response = await fetch(cfg.api+path, {method:data ? 'POST':'GET', credentials:'same-origin', headers:{'X-WP-Nonce':cfg.nonce, ...(data?{'Content-Type':'application/json'}:{})}, ...(data?{body:JSON.stringify(data)}:{})});
         let result;
-        try { result = await response.json(); } catch (_) { throw new Error('پاسخ سرور قابل خواندن نیست. تاریخچه را بررسی و در صورت نیاز ادامه دهید.'); }
+        try { result = await response.json(); } catch (_) { throw new Error(text.response); }
         if (!response.ok) throw new Error(result.message || 'ارتباط با سرور برقرار نشد.');
         return result;
     }
@@ -112,9 +109,9 @@
     $('select-all').addEventListener('change', e=> { state.selected = new Set(e.target.checked?state.rows.map(r=>r.id):[]); renderRows(); });
     $('filter').addEventListener('submit', e=> {e.preventDefault(); task(()=>load(1));});
     $('prev').onclick=()=>task(()=>load(state.page-1)); $('next').onclick=()=>task(()=>load(state.page+1));
-    $('reset').onclick=()=>{state.changes.clear(); renderRows(); message('ویرایش‌های ذخیره‌نشده پاک شد.');};
+    $('reset').onclick=()=>{state.changes.clear(); renderRows(); message(text.reset);};
     async function buildPreview(rows, rule=null) {
-        if (!rows.length) throw new Error('ابتدا ردیف موردنظر را انتخاب یا ویرایش کنید.');
+        if (!rows.length) throw new Error(text.empty);
         if(cfg.costBackend==='native'){rows=[...rows].sort((a,b)=>Number(state.rows.find(r=>r.id===a.id)?.type==='variable')-Number(state.rows.find(r=>r.id===b.id)?.type==='variable'));}
         let jobId=null, count=0, unchanged=0, errors=[];
         $('preview').hidden=true; state.job=null; state.detail=null;
@@ -138,13 +135,14 @@
     }
     $('manual').onclick=()=>task(()=>buildPreview([...state.changes.values()]));
     $('bulk').onclick=()=>task(async()=>{
-        if (state.changes.size) throw new Error('ابتدا ویرایش‌های جدول را ذخیره یا پاک کنید تا با عملیات گروهی ترکیب نشوند.');
+        if (state.changes.size) throw new Error(text.unsaved);
         let rows=window.NIL_APP?.scoped?await window.NIL_APP.scoped():state.rows.filter(r=>state.selected.has(r.id)||state.selected.has(r.parent));
         rows=rows.filter(r=>r.type!=='variable');
         const rule={source:$('source').value, target:$('target').value, operation:$('operation').value, value:$('value').value, rounding:$('rounding').value, step:$('step').value, ending:$('ending').value};
         await buildPreview(rows.map(r=>({id:r.id,version:r.version,changes:{}})),rule);
     });
     function display(field,value) {
+        if(field==='sale_from'||field==='sale_to')return value?new Date(value*1000).toLocaleString('fa-IR'):'بدون زمان‌بندی';
         if(field==='manage_stock'||field==='cost_additive') return value?'روشن':'خاموش';
         if(field==='stock_status') return ({instock:'موجود',outofstock:'ناموجود',onbackorder:'پیش‌خرید'})[value] || value;
         if (Array.isArray(value)) return value.join(' | ');
@@ -211,7 +209,7 @@
         const blob=new Blob(['\ufeff'+lines.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
         const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=`nilwears-${state.job}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
-    window.NIL_APP={dirtyCount:()=>state.changes.size,openJob:async id=>{state.job=id;state.jobPage=1;state.previewChanges=null;await showJob();window.NIL_APP.activatePanel('pricing');$('preview').scrollIntoView({block:'start'});},refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error('واحد پول یا دقت الگو تغییر کرده است.');controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
+    window.NIL_APP={dirtyCount:()=>state.changes.size,openJob:async id=>{state.job=id;state.jobPage=1;state.previewChanges=null;await showJob();window.NIL_APP.activatePanel('pricing');$('preview').scrollIntoView({block:'start'});},refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error(text.currency);controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
     window.addEventListener('beforeunload',e=>{if(state.changes.size||state.busy){e.preventDefault();e.returnValue='';}});
-    task(async()=>{await load(1);await history();message('جدول آماده است. ابتدا تغییرات را پیش‌نمایش بگیرید.');});
+    task(async()=>{await load(1);await history();message(text.ready);});
 })();

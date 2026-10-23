@@ -1,4 +1,4 @@
-# Selected feature coverage — v1.6.0
+# Selected feature coverage — v1.7.0
 
 The 21 selected numbers refer to the feature list discussed with the user. This is an independent implementation in the Nilwears plugin.
 
@@ -38,3 +38,5 @@ Version 1.5 adds the later market-pricing request independently of the original 
 Version 1.5.1 repairs update discovery: explicit cache-bypassing checks and dashboard Check Again, persisted WordPress update entries, cached-read detection independent of WordPress.org connectivity, safe error diagnostics, bounded public fallback for an invalid optional token, and update hooks even when WooCommerce is inactive. It does not enable automatic installation or install itself on the live store.
 
 Version 1.6 adds an explicit Pricing scope selector for a category (including descendants, independent of grid filters) or a persistent-in-session multi-product/variation picker. Fresh bounded resolution, parent expansion/deduplication and scope review feed both manual pricing and market rules. The old cost scheduler keeps its separate table-filter scope and rejects the new modes. Desktop sidebar/mobile horizontal navigation, live local counters, and bundled SVG update/detail artwork complete the interface update.
+
+Version 1.7 adds dedicated discount creation from regular price (percent/fixed), rounding and removal with immediate clearing/exact undo of prior sale dates. Group stock supports set/add/subtract/unavailable, existing numeric tracking for relative operations, explicit shared-parent ownership, rejection of negative results and backorders-aware unavailable behavior. Both reuse the selection and immutable preview/apply/history/undo pipeline. Softer inputs/buttons and grouped operation cards use the existing CSS/JS budget, without a new module, schema, endpoint or periodic task.

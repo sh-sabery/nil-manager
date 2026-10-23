@@ -48,4 +48,31 @@ foreach (array(0,2) as $decimals) {
         }
     }
 }
+// Discounts always derive from regular price; zero is a valid sale.
+$d=array('operation'=>'percent','value'=>'۱۵','rounding'=>'up','step'=>'10000','ending'=>'9000');
+same(NIL_Bulk_Price::discount('495000',$d,0),'429000','discount rounding from regular');
+$d['rounding']='none';same(NIL_Bulk_Price::discount('495000',$d,0),'420750','discount percent');
+$d['operation']='fixed';$d['value']='50000';same(NIL_Bulk_Price::discount('495000',$d,0),'445000','fixed discount');
+$d['operation']='percent';$d['value']='100';same(NIL_Bulk_Price::discount('495000',$d,0),'0','free sale');
+same(NIL_Bulk_Price::discount('',array('operation'=>'remove'),0),'','remove empty sale');
+same(NIL_Bulk_Price::discount('9.99',array('operation'=>'percent','value'=>'10'),2),'8.99','discount currency precision');
+foreach(array('0','-1','101',true,array()) as $bad)rejects(function()use($bad){NIL_Bulk_Price::discount('100',array('operation'=>'percent','value'=>$bad),0);},'invalid discount');
+foreach(array('',null,'0') as $bad)rejects(function()use($bad){NIL_Bulk_Price::discount($bad,array('operation'=>'percent','value'=>'10'),0);},'missing regular');
+rejects(function(){NIL_Bulk_Price::discount('100',array('operation'=>'fixed','value'=>'101'),0);},'discount below zero');
+rejects(function(){NIL_Bulk_Price::discount('100',array('operation'=>'percent','value'=>'1','rounding'=>'up','step'=>'100','ending'=>'0'),0);},'rounded discount must reduce');
+rejects(function(){NIL_Bulk_Price::discount('100',array('operation'=>'set','value'=>'1'),0);},'invalid discount mode');
+$stock=array('type'=>'simple','parent_stock'=>false,'manage_stock'=>true,'stock_quantity'=>5,'backorders'=>'no');
+foreach(array('set'=>3,'add'=>8,'subtract'=>2) as $op=>$n)same(NIL_Bulk_Price::stock($stock,array('operation'=>$op,'value'=>'۳')),array('manage_stock'=>true,'stock_quantity'=>$n),'stock '.$op);
+same(NIL_Bulk_Price::stock($stock,array('operation'=>'out')),array('stock_quantity'=>0),'managed unavailable');
+$unmanaged=$stock;$unmanaged['manage_stock']=false;$unmanaged['stock_quantity']=null;
+same(NIL_Bulk_Price::stock($unmanaged,array('operation'=>'out')),array('stock_status'=>'outofstock'),'status without enabling count');
+same(NIL_Bulk_Price::stock($unmanaged,array('operation'=>'set','value'=>'0')),array('manage_stock'=>true,'stock_quantity'=>0),'enable zero count');
+foreach(array('-1','1.5','100000001',true,array()) as $bad)rejects(function()use($stock,$bad){NIL_Bulk_Price::stock($stock,array('operation'=>'set','value'=>$bad));},'invalid stock quantity');
+rejects(function()use($stock){NIL_Bulk_Price::stock($stock,array('operation'=>'subtract','value'=>'6'));},'no negative inventory');
+rejects(function()use($unmanaged){NIL_Bulk_Price::stock($unmanaged,array('operation'=>'add','value'=>'1'));},'relative needs tracking');
+$shared=$unmanaged;$shared['type']='variation';$shared['parent_stock']=true;
+rejects(function()use($shared){NIL_Bulk_Price::stock($shared,array('operation'=>'set','value'=>'2'));},'shared child cannot become independent');
+$variable=$unmanaged;$variable['type']='variable';rejects(function()use($variable){NIL_Bulk_Price::stock($variable,array('operation'=>'set','value'=>'2'));},'unmanaged parent cannot become shared');
+$stock['backorders']='yes';rejects(function()use($stock){NIL_Bulk_Price::stock($stock,array('operation'=>'out'));},'do not silently disable backorders');
+rejects(function()use($stock){NIL_Bulk_Price::stock($stock,array('operation'=>'evil','value'=>'1'));},'invalid stock operation');
 echo "PASS: $checks price checks\n";
