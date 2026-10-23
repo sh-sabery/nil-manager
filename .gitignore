@@ -17,3 +17,5 @@ tests/updater-result.txt
 tests/selection-result.txt
 tests/icons-result.txt
 tests/bulk-tools-result.txt
+tests/resources-*.json
+tests/audit-result.txt

@@ -15,7 +15,7 @@ function wp_remote_get($url,$args){global $calls,$bytes,$bad_host,$bad_bytes,$ba
   if(is_int($mode))return array('response'=>array('code'=>$mode));
   if($mode==='auth'&&!empty($args['headers']['Authorization']))return array('response'=>array('code'=>401));
   if($mode==='malformed')return array('response'=>array('code'=>200),'body'=>'[broken');
-  return array('response'=>array('code'=>200),'body'=>json_encode(array('tag_name'=>'v'.$tag,'body'=>'test','assets'=>$mode==='missing'?array():array(array('id'=>123,'name'=>'nilwears-bulk-manager-v'.$tag.'.zip','size'=>strlen($bytes),'digest'=>'sha256:'.hash('sha256',$bytes))))));
+  return array('response'=>array('code'=>200),'body'=>json_encode(array('tag_name'=>'v'.$tag,'body'=>'test','assets'=>$mode==='missing'?array():array(array('id'=>123,'name'=>'nilwears-bulk-manager-v'.$tag.'.zip','size'=>$mode==='huge'?20971521:strlen($bytes),'digest'=>$mode==='no-digest'?'':'sha256:'.hash('sha256',$bytes))))));
  }
  if(strpos($url,'api.github.com')!==false)return array('response'=>array('code'=>302),'headers'=>array('location'=>$bad_host?'https://evil.example/file.zip':'https://release-assets.githubusercontent.com/example/file.zip'));
  file_put_contents($args['filename'],$bad_size?'x':($bad_bytes?str_repeat('x',strlen($bytes)):$bytes));return array('response'=>array('code'=>200));
@@ -41,4 +41,6 @@ $mode='network';$s=NIL_Updater::check();expect_update($s['available']===null&&$s
 $mode=403;$s=NIL_Updater::check();expect_update($s['error']['http_status']===403,'HTTP failure visible');$mode='malformed';$s=NIL_Updater::check();expect_update($s['error']['code']==='metadata','bad metadata visible');$mode='missing';$s=NIL_Updater::check();expect_update($s['error']['code']==='asset','missing ZIP visible');
 $mode='ok';$s=NIL_Updater::check();expect_update($s['available']==='1.2.3'&&$s['error']===null,'forced recovery clears failure cache');
 $mode='auth';$count=count($calls);$s=NIL_Updater::check();expect_update($s['available']==='1.2.3'&&$s['access']==='public','invalid optional token falls back to public');expect_update(count($calls)===$count+(getenv('NIL_PUBLIC_UPDATES')?1:2),'bounded public fallback');$file=NIL_Updater::download(false,$package,null,array());expect_update(is_string($file),'public fallback download works');if(is_string($file))unlink($file);expect_update(empty($calls[count($calls)-2]['args']['headers']['Authorization']),'fallback asset request has no invalid token');
+$mode='no-digest';$s=NIL_Updater::check();expect_update($s['error']['code']==='integrity','missing SHA-256 rejected');$mode='huge';$s=NIL_Updater::check();expect_update($s['error']['code']==='integrity','oversized asset metadata rejected');$mode='ok';NIL_Updater::check();
+foreach($calls as $c)expect_update(!empty($c['args']['reject_unsafe_urls']),'every HTTP hop rejects unsafe URLs');
 echo "PASS: $n ".(getenv('NIL_PUBLIC_UPDATES')?'public':'private')." updater checks\n";

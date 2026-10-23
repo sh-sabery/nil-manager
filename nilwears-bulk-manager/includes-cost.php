@@ -34,11 +34,15 @@ final class NIL_Cost {
         if ( ! self::native() ) { throw new RuntimeException( 'ابتدا COGS ووکامرس را فعال کنید.' ); }
         $b = $r->get_json_params(); $ids = $b['ids'] ?? array(); if ( ! is_array( $ids ) || count( $ids ) > 5000 ) { throw new InvalidArgumentException( 'حداکثر ۵۰۰۰ محصول.' ); }
         $updates = array(); $conflicts = array();
-        foreach ( array_unique( array_map( 'absint', $ids ) ) as $id ) {
+        $ids = array_unique( array_map( 'absint', $ids ) );
+        foreach ( array_chunk( $ids, 100 ) as $batch ) {
+        NIL_Bulk_Manager::prime( $batch );
+        foreach ( $batch as $id ) {
             $p = NIL_Bulk_Manager::editable( wc_get_product( $id ) ); $legacy = (string) get_post_meta( $id, '_nil_cost_price', true ); if ( '' === $legacy ) { continue; }
             $current = self::read( $p ); if ( (float) $current === (float) $legacy ) { continue; }
             if ( null !== $p->get_cogs_value() || ( $p->is_type( 'variation' ) && $p->get_parent_cogs_effective_value() != 0 ) ) { $conflicts[] = array( 'id' => $id, 'legacy' => $legacy, 'native' => $current ); continue; }
             $row = NIL_Bulk_Manager::row( $p ); $updates[] = array( 'id' => $id, 'version' => $row['version'], 'changes' => array( 'cost_price' => $legacy ), 'parent' => $p->is_type( 'variable' ) );
+        }
         }
         usort( $updates, function( $a, $b ) { return (int) $a['parent'] <=> (int) $b['parent']; } ); foreach ( $updates as &$row ) { unset( $row['parent'] ); } unset( $row );
         return array( 'updates' => $updates, 'conflicts' => $conflicts );

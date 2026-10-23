@@ -5,7 +5,12 @@
     const state = { rows: [], selected: new Set(), changes: new Map(), page: 1, pages: 1, busy: false, job: null, jobPage: 1, detail: null, previewChanges: null, columns:['cost','profit','regular','sale','manage','quantity','stock'], order:['cost','profit','regular','sale','manage','quantity','stock'] };
     const {labels,publication,statuses,jobs,text}=JSON.parse(document.getElementById('nil-words-template').innerHTML);
     const esc = value => String(value ?? '').replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
-    const fmt = value => value === '' || value == null ? '—' : new Intl.NumberFormat('fa-IR', {maximumFractionDigits:cfg.decimals}).format(Number(value));
+    const numberFormat=new Intl.NumberFormat('fa-IR',{maximumFractionDigits:cfg.decimals});
+    const fmt = value => value === '' || value == null ? '—' : numberFormat.format(Number(value));
+    let zone=cfg.timeZone||'Asia/Tehran',shift=0;
+    if(/^[+-]\d{2}:\d{2}$/.test(zone)){shift=(Number(zone.slice(1,3))*60+Number(zone.slice(4)))*60000*(zone[0]==='-'?-1:1);zone='UTC';}
+    const dates=[false,true].map(clock=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',...(clock?{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{})}));
+    function date(t,clock=true){if(!t)return '—';const ms=typeof t==='number'?t*1000:Date.parse(t.includes('T')?t:t.replace(' ','T')+'Z');return Number.isFinite(ms)?dates[+clock].format(ms+shift):'—';}
     root.replaceChildren(document.getElementById('nil-grid-template').content.cloneNode(true));
     document.getElementById('nil-currency').textContent=cfg.currency+' ('+cfg.currencyCode+')';
     for(const [name,items] of [['category',cfg.categories],['brand',cfg.brands||[]]])document.getElementById('nil-'+name).insertAdjacentHTML('beforeend',items.map(c=>`<option value="${Number(c.id)}">${esc(c.name)}</option>`).join(''));
@@ -142,7 +147,7 @@
         await buildPreview(rows.map(r=>({id:r.id,version:r.version,changes:{}})),rule);
     });
     function display(field,value) {
-        if(field==='sale_from'||field==='sale_to')return value?new Date(value*1000).toLocaleString('fa-IR'):'بدون زمان‌بندی';
+        if(field==='sale_from'||field==='sale_to')return value?date(value):'بدون زمان‌بندی';
         if(field==='manage_stock'||field==='cost_additive') return value?'روشن':'خاموش';
         if(field==='stock_status') return ({instock:'موجود',outofstock:'ناموجود',onbackorder:'پیش‌خرید'})[value] || value;
         if (Array.isArray(value)) return value.join(' | ');
@@ -192,7 +197,7 @@
     $('undo').onclick=()=>{if(window.confirm('تغییرات همین عملیات بازگردانده شود؟ ردیف‌هایی که بعداً تغییر کرده‌اند رد خواهند شد.')) task(()=>run('undo'));};
     async function history() {
         const list=await api('jobs');
-        $('history').innerHTML=list.length ? list.map(j=>`<button type="button" class="button nil-history-item" data-job="${esc(j.id)}">${esc(j.created_at)} UTC · ${esc(jobs[j.state]||j.state)} · ${esc(j.id.slice(0,8))}</button>`).join(''):'<p class="nil-muted">هنوز عملیاتی ثبت نشده است.</p>';
+        $('history').innerHTML=list.length ? list.map(j=>`<button type="button" class="button nil-history-item" data-job="${esc(j.id)}">${esc(date(j.created_at))} · ${esc(jobs[j.state]||j.state)} · ${esc(j.id.slice(0,8))}</button>`).join(''):'<p class="nil-muted">هنوز عملیاتی ثبت نشده است.</p>';
     }
     $('history').onclick=e=>{const button=e.target.closest('[data-job]'); if(button) task(async()=>{state.job=button.dataset.job;state.jobPage=1;state.previewChanges=null;await showJob();});};
     $('history-refresh').onclick=()=>task(history);
@@ -202,14 +207,14 @@
         let page=1,total=1;
         do {
             const d=await api(`job/${state.job}?page=${page}`); total=d.counts.reduce((s,c)=>s+Number(c.n),0);
-            d.items.forEach(item=>item.fields.forEach(field=>lines.push([item.product_id,item.label,labels[field],item.before[field],item.after[field],statuses[item.state],item.error])));
+            d.items.forEach(item=>item.fields.forEach(field=>lines.push([item.product_id,item.label,labels[field],['sale_from','sale_to'].includes(field)?display(field,item.before[field]):item.before[field],['sale_from','sale_to'].includes(field)?display(field,item.after[field]):item.after[field],statuses[item.state],item.error])));
             page++;
         } while((page-1)*50<total);
-        const cell=value=>{let text=String(value??'');if(/^[=+@\-\t\r]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';};
+        const cell=value=>{let text=String(value??'');if(/^(?:[\x00-\x20]*[=+@\-]|[\t\r\n])/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';};
         const blob=new Blob(['\ufeff'+lines.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
         const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=`nilwears-${state.job}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
-    window.NIL_APP={dirtyCount:()=>state.changes.size,openJob:async id=>{state.job=id;state.jobPage=1;state.previewChanges=null;await showJob();window.NIL_APP.activatePanel('pricing');$('preview').scrollIntoView({block:'start'});},refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error(text.currency);controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
+    window.NIL_APP={dirtyCount:()=>state.changes.size,openJob:async id=>{state.job=id;state.jobPage=1;state.previewChanges=null;await showJob();window.NIL_APP.activatePanel('pricing');$('preview').scrollIntoView({block:'start'});},refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error(text.currency);controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,date,text,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
     window.addEventListener('beforeunload',e=>{if(state.changes.size||state.busy){e.preventDefault();e.returnValue='';}});
     task(async()=>{await load(1);await history();message(text.ready);});
 })();

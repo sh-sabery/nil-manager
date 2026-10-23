@@ -25,7 +25,7 @@ final class NIL_Updater {
         $cached = get_site_transient( self::token() ? 'nil_release' : 'nil_release_public' ); if ( is_array( $cached ) ) { return $cached; }
         if ( 'none' === $cached ) { return false; }
         $url = 'https://api.github.com/repos/' . self::REPO . '/releases/latest'; $auth = '' !== self::token();
-        $args = array( 'timeout' => 15, 'redirection' => 0, 'limit_response_size' => 1048576, 'headers' => self::headers( 'application/vnd.github+json', $auth ) );
+        $args = array( 'reject_unsafe_urls' => true, 'timeout' => 15, 'redirection' => 0, 'limit_response_size' => 1048576, 'headers' => self::headers( 'application/vnd.github+json', $auth ) );
         $response = wp_remote_get( $url, $args );
         if ( $auth && ! is_wp_error( $response ) && in_array( wp_remote_retrieve_response_code( $response ), array( 401,403,404 ), true ) ) {
             // An expired optional token must not hide a public release.
@@ -38,6 +38,7 @@ final class NIL_Updater {
         if ( ! is_array( $data ) || ! is_string( $tag ) || ! preg_match( '/^v(\d+\.\d+\.\d+)$/', $tag, $m ) || ! empty( $data['prerelease'] ) || ! empty( $data['draft'] ) || ! is_array( $data['assets'] ?? null ) ) { return self::failure( 'metadata', 'اطلاعات نسخهٔ منتشرشده معتبر نیست.' ); }
         foreach ( $data['assets'] ?? array() as $asset ) {
             if ( is_array( $asset ) && ( $asset['name'] ?? '' ) === 'nilwears-bulk-manager-' . $tag . '.zip' && ! empty( $asset['id'] ) && ! empty( $asset['size'] ) ) {
+                if ( ! is_string( $asset['digest'] ?? null ) || ! preg_match( '/^sha256:[a-f0-9]{64}$/D', $asset['digest'] ) || ! filter_var( $asset['size'], FILTER_VALIDATE_INT, array( 'options' => array( 'min_range' => 1, 'max_range' => 20 * 1024 * 1024 ) ) ) ) { return self::failure( 'integrity', 'هش SHA-256 یا اندازهٔ بستهٔ به‌روزرسانی معتبر نیست.' ); }
                 $release = array( 'version' => $m[1], 'asset' => absint( $asset['id'] ), 'size' => absint( $asset['size'] ), 'digest' => $asset['digest'] ?? '', 'notes' => wp_strip_all_tags( $data['body'] ?? '' ), 'access' => $auth ? 'token' : 'public', 'checked_at' => time() );
                 delete_site_transient( 'nil_release_error' ); set_site_transient( self::token() ? 'nil_release' : 'nil_release_public', $release, 6 * HOUR_IN_SECONDS ); return $release;
             }
@@ -72,7 +73,7 @@ final class NIL_Updater {
         $r = self::release(); if ( ! $r || $package !== self::package( $r ) ) { return new WP_Error( 'nil_update_auth', 'ریلیز مورد درخواست معتبر نیست.' ); }
         if ( ! function_exists( 'wp_tempnam' ) ) { require_once ABSPATH . 'wp-admin/includes/file.php'; }
         $tmp = wp_tempnam( 'nil-update.zip' );
-        $args = array( 'timeout' => 60, 'redirection' => 0, 'headers' => self::headers( 'application/octet-stream', 'public' !== ( $r['access'] ?? '' ) ), 'stream' => true, 'filename' => $tmp, 'limit_response_size' => 20 * 1024 * 1024 );
+        $args = array( 'reject_unsafe_urls' => true, 'timeout' => 60, 'redirection' => 0, 'headers' => self::headers( 'application/octet-stream', 'public' !== ( $r['access'] ?? '' ) ), 'stream' => true, 'filename' => $tmp, 'limit_response_size' => 20 * 1024 * 1024 );
         $response = wp_remote_get( $package, $args );
         if ( ! is_wp_error( $response ) && in_array( wp_remote_retrieve_response_code( $response ), array( 301,302,303,307 ), true ) ) {
             $url = wp_remote_retrieve_header( $response, 'location' ); $parts = wp_parse_url( $url );
@@ -81,7 +82,7 @@ final class NIL_Updater {
             $args['headers'] = array(); $response = wp_remote_get( $url, $args );
         }
         if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) || ! is_file( $tmp ) || filesize( $tmp ) !== $r['size'] ) { @unlink( $tmp ); return new WP_Error( 'nil_update_download', 'دانلود کامل نشد.' ); }
-        if ( preg_match( '/^sha256:([a-f0-9]{64})$/', $r['digest'], $m ) && ! hash_equals( $m[1], hash_file( 'sha256', $tmp ) ) ) { @unlink( $tmp ); return new WP_Error( 'nil_update_hash', 'امضای هش فایل مطابقت ندارد.' ); }
+        if ( ! preg_match( '/^sha256:([a-f0-9]{64})$/D', $r['digest'], $m ) || ! hash_equals( $m[1], hash_file( 'sha256', $tmp ) ) ) { @unlink( $tmp ); return new WP_Error( 'nil_update_hash', 'هش SHA-256 فایل مطابقت ندارد.' ); }
         return $tmp;
     }
 }

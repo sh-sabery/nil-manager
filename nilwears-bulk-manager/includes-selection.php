@@ -13,8 +13,8 @@ final class NIL_Selection {
         foreach ( $ids as $id ) { $p = NIL_Bulk_Manager::editable( wc_get_product( $id ) ); $requested[$id] = $p; if ( $p->is_type( 'variable' ) ) { $variable[] = $id; } }
         $children = array();
         if ( $variable ) {
-            $q = new WP_Query( array( 'post_type' => 'product_variation', 'post_parent__in' => $variable, 'post_status' => array( 'publish','private','draft','pending','future' ), 'posts_per_page' => 5001, 'no_found_rows' => true, 'orderby' => array( 'menu_order' => 'ASC', 'ID' => 'ASC' ) ) );
-            if ( count( $q->posts ) > 5000 ) { throw new RuntimeException( 'بیش از ۵۰۰۰ ورییشن؛ انتخاب را محدود کنید.' ); }
+            $q = new WP_Query( array( 'post_type' => 'product_variation', 'post_parent__in' => $variable, 'post_status' => array( 'publish','private','draft','pending','future' ), 'posts_per_page' => NIL_Bulk_Manager::VARIATION_LIMIT + 1, 'no_found_rows' => true, 'orderby' => array( 'menu_order' => 'ASC', 'ID' => 'ASC' ) ) );
+            if ( count( $q->posts ) > NIL_Bulk_Manager::VARIATION_LIMIT ) { throw new RuntimeException( 'بیش از ۵۰۰ ورییشن در یک درخواست؛ انتخاب را محدود کنید.' ); }
             foreach ( $q->posts as $post ) { if ( current_user_can( 'edit_post', $post->ID ) ) { $children[$post->post_parent][] = wc_get_product( $post->ID ); } }
         }
         $out = array();

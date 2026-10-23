@@ -3,16 +3,32 @@
 defined( 'ABSPATH' ) || exit;
 final class NIL_Sheet {
     const LIMIT = 5000;
+    const CELLS = 150000;
+    private static function memory_budget( $expanded ) {
+        $limit = trim( ini_get( 'memory_limit' ) );
+        if ( preg_match( '/^(\d+)([KMG]?)$/i', $limit, $m ) ) {
+            $bytes = (int) $m[1] * ( 1024 ** ( $m[2] ? strpos( 'KMG', strtoupper( $m[2] ) ) + 1 : 0 ) );
+            if ( memory_get_usage( true ) + $expanded * 8 + 16 * 1024 * 1024 > $bytes ) { throw new RuntimeException( 'رم آزاد برای این فایل کافی نیست؛ فایل را کوچک‌تر کنید یا CSV وارد کنید.' ); }
+        }
+    }
+    private static function cell( $value, &$cells, &$bytes ) {
+        if ( ! is_scalar( $value ) && null !== $value ) { throw new InvalidArgumentException( 'سلول باید متن یا عدد باشد.' ); }
+        $length = strlen( (string) $value ); $bytes += $length;
+        if ( ++$cells > self::CELLS || $length > 32768 || $bytes > 8 * 1024 * 1024 ) { throw new RuntimeException( 'فایل بیش از ۱۵۰۰۰۰ سلول یا ۸ مگابایت متن است؛ هر سلول حداکثر ۳۲ کیلوبایت.' ); }
+    }
     public static function columns() {
         return array( 'id','sku','version','type','parent_id','name','regular_price','sale_price','cost_price','manage_stock','stock_quantity','stock_status','category_ids','brand_ids','description','short_description','attributes','parent_sku','profit','margin','currency' );
     }
     public static function file( $headers, $rows, $format, $name ) {
         if ( ! function_exists( 'wp_tempnam' ) ) { require_once ABSPATH . 'wp-admin/includes/file.php'; }
         if ( count( $rows ) > self::LIMIT ) { throw new RuntimeException( 'حداکثر ۵۰۰۰ ردیف در هر فایل.' ); }
-        $all = array_merge( array( $headers ), $rows );
+        if ( ! in_array( $format, array( 'xlsx','csv' ), true ) || ! is_array( $headers ) || count( $headers ) > 100 ) { throw new InvalidArgumentException( 'فرمت یا ستون‌های خروجی نامعتبر است.' ); }
+        self::memory_budget( 1024 * 1024 );
+        $all = array_merge( array( $headers ), $rows ); $cells = 0; $text_bytes = 0;
+        foreach ( $all as $line ) { if ( ! is_array( $line ) || count( $line ) > 100 ) { throw new InvalidArgumentException( 'حداکثر ۱۰۰ ستون.' ); } foreach ( $line as $value ) { self::cell( $value, $cells, $text_bytes ); } }
         if ( 'xlsx' !== $format ) {
             $f = fopen( 'php://temp', 'w+' ); fwrite( $f, "\xEF\xBB\xBF" );
-            foreach ( $all as $row ) { fputcsv( $f, array_map( function( $v ) { $s = (string) $v; if ( is_int( $v ) || is_float( $v ) ) { return $s; } return preg_match( '/^[=+@\-\t\r]/u', $s ) ? "'" . $s : $s; }, $row ), ',', '"', '' ); }
+            foreach ( $all as $row ) { $written = fputcsv( $f, array_map( function( $v ) { $s = (string) $v; if ( is_int( $v ) || is_float( $v ) ) { return $s; } return preg_match( '/^(?:[\x00-\x20]*[=+@\-]|[\t\r\n])/', $s ) ? "'" . $s : $s; }, $row ), ',', '"', '' ); if ( $written > 65536 ) { fclose( $f ); throw new RuntimeException( 'هر ردیف CSV حداکثر ۶۴ کیلوبایت؛ از XLSX یا ردیف کوچک‌تر استفاده کنید.' ); } }
             rewind( $f ); $bytes = stream_get_contents( $f ); fclose( $f ); $format = 'csv';
         } else {
             if ( ! class_exists( 'ZipArchive' ) ) { throw new RuntimeException( 'برای XLSX افزونه PHP zip لازم است؛ CSV در دسترس است.' ); }
@@ -32,7 +48,7 @@ final class NIL_Sheet {
                         if ( ( is_int( $value ) || is_float( $value ) ) && is_finite( (float) $value ) ) {
                             $xml .= '<c r="' . $column . ( $n + 1 ) . '" t="n"><v>' . (string) $value . '</v></c>';
                         } else { $xml .= '<c r="' . $column . ( $n + 1 ) . '" t="inlineStr"><is><t xml:space="preserve">' . htmlspecialchars( $text, ENT_XML1 | ENT_QUOTES, 'UTF-8' ) . '</t></is></c>'; }
-                    } $xml .= '</row>';
+                    } $xml .= '</row>'; if ( strlen( $xml ) > 8 * 1024 * 1024 ) { throw new RuntimeException( 'برگه خروجی بزرگ است؛ محدوده را کوچک کنید.' ); }
                 }
                 $zip->addFromString( 'xl/worksheets/sheet1.xml', $xml . '</sheetData></worksheet>' ); $zip->close(); $zip = null; $bytes = file_get_contents( $tmp );
             } finally { if ( $zip instanceof ZipArchive ) { $zip->close(); } @unlink( $tmp ); }
@@ -45,11 +61,13 @@ final class NIL_Sheet {
         if ( isset( $b['report'] ) ) {
             if ( ! is_array( $b['report'] ) || ! is_array( $b['headers'] ?? null ) || count( $b['headers'] ) > 40 ) { throw new InvalidArgumentException( 'گزارش نامعتبر است.' ); }
             foreach ( $b['report'] as $row ) { if ( ! is_array( $row ) || count( $row ) > 40 ) { throw new InvalidArgumentException( 'ردیف نامعتبر است.' ); } foreach ( $row as $v ) { if ( ! is_scalar( $v ) && null !== $v ) { throw new InvalidArgumentException( 'سلول نامعتبر است.' ); } } }
-            return self::file( $b['headers'], $b['report'], $b['format'] ?? 'xlsx', 'nil-report-' . gmdate( 'Ymd' ) );
+            return self::file( $b['headers'], $b['report'], $b['format'] ?? 'xlsx', 'nil-report-' . str_replace( '/', '-', NIL_Dates::format( time(), false, false ) ) );
         }
         $ids = $b['ids'] ?? array(); if ( ! is_array( $ids ) || count( $ids ) > self::LIMIT ) { throw new InvalidArgumentException( 'حداکثر ۵۰۰۰ محصول در هر فایل.' ); }
         $rows = array(); $headers = self::columns();
-        foreach ( array_unique( array_map( 'absint', $ids ) ) as $id ) {
+        $ids = array_unique( array_map( 'absint', $ids ) );
+        foreach ( array_chunk( $ids, 100 ) as $batch ) { self::memory_budget( 1024 * 1024 ); NIL_Bulk_Manager::prime( $batch );
+        foreach ( $batch as $id ) {
             $p = NIL_Bulk_Manager::editable( wc_get_product( $id ) ); $row = NIL_Bulk_Manager::row( $p ); $data = $row['values'];
             $parent = $p->get_parent_id() ? wc_get_product( $p->get_parent_id() ) : false; $data['parent_sku'] = $parent ? $parent->get_sku( 'edit' ) : '';
             $data['id'] = $id; $data['version'] = $row['version']; $attrs = array();
@@ -63,10 +81,12 @@ final class NIL_Sheet {
             $data['category_ids'] = implode( '|', $data['category_ids'] ); $data['brand_ids'] = implode( '|', $data['brand_ids'] );
             $line = array(); foreach ( $headers as $key ) { $value = $data[$key] ?? ''; if ( '' !== $value && null !== $value && in_array( $key, array( 'id','parent_id','regular_price','sale_price','cost_price','stock_quantity','manage_stock' ), true ) ) { $value = (float) $value; } $line[] = $value; } $rows[] = $line;
         }
-        return self::file( $headers, $rows, $b['format'] ?? 'xlsx', 'nil-products-' . gmdate( 'Ymd' ) );
+        }
+        return self::file( $headers, $rows, $b['format'] ?? 'xlsx', 'nil-products-' . str_replace( '/', '-', NIL_Dates::format( time(), false, false ) ) );
     }
     private static function xml( $text ) {
-        if ( false !== stripos( $text, '<!DOCTYPE' ) || false !== stripos( $text, '<!ENTITY' ) || strlen( $text ) > 24 * 1024 * 1024 ) { throw new RuntimeException( 'ساختار XML مجاز نیست.' ); }
+        if ( false !== stripos( $text, '<!DOCTYPE' ) || false !== stripos( $text, '<!ENTITY' ) || strlen( $text ) > 8 * 1024 * 1024 ) { throw new RuntimeException( 'ساختار XML مجاز نیست.' ); }
+        if ( substr_count( $text, '<' ) > 1000000 ) { throw new RuntimeException( 'تعداد اجزای XML بیش از حد مجاز است.' ); }
         $old = libxml_use_internal_errors( true );
         try { $xml = simplexml_load_string( $text, 'SimpleXMLElement', LIBXML_NONET ); if ( false === $xml ) { throw new RuntimeException( 'ساختار فایل اکسل خراب است.' ); } return $xml; }
         finally { libxml_clear_errors(); libxml_use_internal_errors( $old ); }
@@ -74,33 +94,34 @@ final class NIL_Sheet {
     public static function parse( $bytes, $format ) {
         if ( ! function_exists( 'wp_tempnam' ) ) { require_once ABSPATH . 'wp-admin/includes/file.php'; }
         if ( strlen( $bytes ) > 8 * 1024 * 1024 ) { throw new RuntimeException( 'حداکثر حجم فایل ۸ مگابایت.' ); }
-        $rows = array();
+        $rows = array(); $cells = 0; $text_bytes = 0;
         if ( 'xlsx' === $format ) {
             if ( ! class_exists( 'ZipArchive' ) || ! function_exists( 'simplexml_load_string' ) ) { throw new RuntimeException( 'برای XLSX افزونه‌های zip و SimpleXML لازم است.' ); }
             $tmp = wp_tempnam( 'nil-import' ); file_put_contents( $tmp, $bytes ); $z = new ZipArchive(); $opened = false;
             try {
                 if ( true !== $z->open( $tmp ) ) { throw new RuntimeException( 'فایل اکسل باز نشد.' ); } $opened = true;
                 $size = 0; if ( $z->numFiles > 1000 ) { throw new RuntimeException( 'تعداد اجزای فایل زیاد است.' ); }
-                for ( $i = 0; $i < $z->numFiles; $i++ ) { $stat = $z->statIndex( $i ); $size += $stat['size']; } if ( $size > 32 * 1024 * 1024 ) { throw new RuntimeException( 'حجم بازشده فایل بیش از حد مجاز است.' ); }
-                $shared = array(); $strings = $z->getFromName( 'xl/sharedStrings.xml' );
-                if ( false !== $strings ) { foreach ( self::xml( $strings )->xpath( '//*[local-name()="si"]' ) as $si ) { $text = ''; foreach ( $si->xpath( './/*[local-name()="t"]' ) as $t ) { $text .= (string) $t; } $shared[] = $text; } }
-                $workbook = self::xml( (string) $z->getFromName( 'xl/workbook.xml' ) );
+                for ( $i = 0; $i < $z->numFiles; $i++ ) { $stat = $z->statIndex( $i ); $size += $stat['size']; } if ( $size > 16 * 1024 * 1024 ) { throw new RuntimeException( 'حجم بازشده فایل بیش از حد مجاز است.' ); }
+                self::memory_budget( $size );
+                $shared = array(); $strings = $z->getFromName( 'xl/sharedStrings.xml', 8 * 1024 * 1024 + 1 );
+                if ( false !== $strings ) { foreach ( self::xml( $strings )->xpath( '//*[local-name()="si"]' ) as $si ) { $text = ''; foreach ( $si->xpath( './/*[local-name()="t"]' ) as $t ) { $text .= (string) $t; } if ( count( $shared ) >= self::CELLS || strlen( $text ) > 32768 ) { throw new RuntimeException( 'فهرست متن اکسل بزرگ است.' ); } $shared[] = $text; } }
+                $workbook = self::xml( (string) $z->getFromName( 'xl/workbook.xml', 8 * 1024 * 1024 + 1 ) );
                 $sheets = $workbook->xpath( '//*[local-name()="sheet"]' ); if ( ! $sheets ) { throw new RuntimeException( 'برگه‌ای پیدا نشد.' ); }
                 $relation = (string) $sheets[0]->attributes( 'http://schemas.openxmlformats.org/officeDocument/2006/relationships' )['id'];
-                $rels = self::xml( (string) $z->getFromName( 'xl/_rels/workbook.xml.rels' ) ); $path = '';
+                $rels = self::xml( (string) $z->getFromName( 'xl/_rels/workbook.xml.rels', 8 * 1024 * 1024 + 1 ) ); $path = '';
                 foreach ( $rels->xpath( '//*[local-name()="Relationship"]' ) as $rel ) { if ( (string) $rel['Id'] === $relation && 'External' !== (string) $rel['TargetMode'] ) { $path = (string) $rel['Target']; } }
                 $path = '/' === substr( $path, 0, 1 ) ? ltrim( $path, '/' ) : 'xl/' . $path;
                 if ( ! preg_match( '#^xl/worksheets/[A-Za-z0-9_/-]+\.xml$#', $path ) || false !== strpos( $path, '..' ) ) { throw new RuntimeException( 'مسیر برگه مجاز نیست.' ); }
-                $xml = self::xml( (string) $z->getFromName( $path ) );
+                $xml = self::xml( (string) $z->getFromName( $path, 8 * 1024 * 1024 + 1 ) );
                 foreach ( $xml->xpath( '//*[local-name()="sheetData"]/*[local-name()="row"]' ) as $row ) {
                     $line = array(); foreach ( $row->xpath( './*[local-name()="c"]' ) as $cell ) {
                         if ( $cell->xpath( './*[local-name()="f"]' ) ) { throw new RuntimeException( 'فایل شامل فرمول است؛ پیش از ورود، Paste Values کنید.' ); }
-                        if ( ! preg_match( '/^([A-Z]+)[0-9]+$/', (string) $cell['r'], $m ) ) { throw new RuntimeException( 'نشانی سلول نامعتبر است.' ); }
+                        if ( ! preg_match( '/^([A-Z]{1,2})[1-9][0-9]{0,6}$/D', (string) $cell['r'], $m ) ) { throw new RuntimeException( 'نشانی سلول نامعتبر است.' ); }
                         $col = 0; foreach ( str_split( $m[1] ) as $c ) { $col = $col * 26 + ord( $c ) - 64; } if ( $col > 100 ) { throw new RuntimeException( 'حداکثر ۱۰۰ ستون.' ); }
                         $v = $cell->xpath( './*[local-name()="v"]' ); $value = $v ? (string) $v[0] : '';
                         if ( 's' === (string) $cell['t'] ) { $value = $shared[(int) $value] ?? ''; }
                         elseif ( 'inlineStr' === (string) $cell['t'] ) { $value = ''; foreach ( $cell->xpath( './/*[local-name()="t"]' ) as $t ) { $value .= (string) $t; } }
-                        $line[$col - 1] = $value;
+                        self::cell( $value, $cells, $text_bytes ); $line[$col - 1] = $value;
                     }
                     if ( $line ) { $out = array_fill( 0, max( array_keys( $line ) ) + 1, '' ); foreach ( $line as $key => $v ) { $out[$key] = $v; } $rows[] = $out; }
                     if ( count( $rows ) > self::LIMIT + 1 ) { throw new RuntimeException( 'حداکثر ۵۰۰۰ ردیف.' ); }
@@ -110,8 +131,13 @@ final class NIL_Sheet {
             $f = fopen( 'php://temp', 'w+' ); fwrite( $f, preg_replace( '/^\xEF\xBB\xBF/', '', $bytes ) ); rewind( $f );
             try {
                 $sample = fgets( $f ); rewind( $f ); $delimiter = substr_count( (string) $sample, ';' ) > substr_count( (string) $sample, ',' ) ? ';' : ',';
-                while ( false !== ( $line = fgetcsv( $f, 0, $delimiter, '"', '' ) ) ) {
+                $csv_size = fstat( $f )['size'];
+                while ( ! feof( $f ) ) {
+                    $begin = ftell( $f ); $line = fgetcsv( $f, 65537, $delimiter, '"', '' ); if ( false === $line ) { break; } $end = ftell( $f );
+                    if ( $end - $begin > 65536 ) { throw new RuntimeException( 'هر ردیف CSV حداکثر ۶۴ کیلوبایت.' ); }
+                    if ( $end < $csv_size ) { fseek( $f, $end - 1 ); $tail = fgetc( $f ); fseek( $f, $end ); if ( ! in_array( $tail, array( "\r", "\n" ), true ) ) { throw new RuntimeException( 'ردیف CSV طولانی یا ناقص است.' ); } }
                     if ( count( $line ) > 100 ) { throw new RuntimeException( 'حداکثر ۱۰۰ ستون.' ); }
+                    foreach ( $line as $value ) { self::cell( $value, $cells, $text_bytes ); }
                     if ( array( null ) !== $line ) { $rows[] = $line; } if ( count( $rows ) > self::LIMIT + 1 ) { throw new RuntimeException( 'حداکثر ۵۰۰۰ ردیف.' ); }
                 }
             } finally { fclose( $f ); }
@@ -120,7 +146,7 @@ final class NIL_Sheet {
         $headers = array_shift( $rows ); return array( 'headers' => $headers, 'rows' => $rows );
     }
     public static function read_request( $r ) {
-        $b = $r->get_json_params(); $bytes = base64_decode( $b['data'] ?? '', true ); if ( false === $bytes ) { throw new InvalidArgumentException( 'داده فایل نامعتبر است.' ); }
+        $b = $r->get_json_params(); $data = $b['data'] ?? ''; if ( ! is_string( $data ) || strlen( $data ) > 11184812 ) { throw new InvalidArgumentException( 'داده فایل بزرگ یا نامعتبر است.' ); } $bytes = base64_decode( $data, true ); if ( false === $bytes ) { throw new InvalidArgumentException( 'داده فایل نامعتبر است.' ); }
         $out = self::parse( $bytes, $b['format'] ?? '' ); $id = wp_generate_uuid4();
         set_transient( 'nil_sheet_' . get_current_user_id(), array_merge( $out, array( 'id' => $id ) ), HOUR_IN_SECONDS );
         return array( 'id' => $id, 'headers' => $out['headers'], 'sample' => array_slice( $out['rows'], 0, 3 ), 'count' => count( $out['rows'] ) );
@@ -162,7 +188,7 @@ final class NIL_Sheet {
                 if ( ! empty( $data['version'] ) && $data['version'] !== $row['version'] ) { throw new RuntimeException( 'محصول پس از خروجی گرفتن تغییر کرده است.' ); }
                 foreach ( $data as $key => $value ) {
                     if ( ! array_key_exists( $key, $row['values'] ) || in_array( $key, array( 'type','parent_id' ), true ) ) { continue; }
-                    if ( ! empty( $data['version'] ) && is_string( $row['values'][$key] ) && $row['values'][$key] !== $value && preg_match( "/^'[=+@\\-\\t\\r]/", $value ) ) { $value = substr( $value, 1 ); }
+                    if ( ! empty( $data['version'] ) && is_string( $row['values'][$key] ) && $row['values'][$key] !== $value && preg_match( "/^'(?:[\\x00-\\x20]*[=+@\\-]|[\\t\\r\\n])/", $value ) ) { $value = substr( $value, 1 ); }
                     if ( 'manage_stock' === $key ) { if ( ! in_array( strtolower( $value ), array( '1','0','true','false' ), true ) ) { throw new RuntimeException( 'manage_stock فقط ۰/۱.' ); } $value = in_array( strtolower( $value ), array( '1','true' ), true ); }
                     elseif ( in_array( $key, array( 'category_ids','brand_ids' ), true ) ) { $value = '' === $value ? array() : array_map( 'absint', explode( '|', $value ) ); sort( $value ); }
                     if ( $p->is_type( 'variable' ) && in_array( $key, array( 'regular_price','sale_price' ), true ) ) { continue; }

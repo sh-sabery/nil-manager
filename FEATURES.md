@@ -1,4 +1,4 @@
-# Selected feature coverage — v1.7.0
+# Selected feature coverage — v1.8.0
 
 The 21 selected numbers refer to the feature list discussed with the user. This is an independent implementation in the Nilwears plugin.
 
@@ -40,3 +40,5 @@ Version 1.5.1 repairs update discovery: explicit cache-bypassing checks and dash
 Version 1.6 adds an explicit Pricing scope selector for a category (including descendants, independent of grid filters) or a persistent-in-session multi-product/variation picker. Fresh bounded resolution, parent expansion/deduplication and scope review feed both manual pricing and market rules. The old cost scheduler keeps its separate table-filter scope and rejects the new modes. Desktop sidebar/mobile horizontal navigation, live local counters, and bundled SVG update/detail artwork complete the interface update.
 
 Version 1.7 adds dedicated discount creation from regular price (percent/fixed), rounding and removal with immediate clearing/exact undo of prior sale dates. Group stock supports set/add/subtract/unavailable, existing numeric tracking for relative operations, explicit shared-parent ownership, rejection of negative results and backorders-aware unavailable behavior. Both reuse the selection and immutable preview/apply/history/undo pipeline. Softer inputs/buttons and grouped operation cards use the existing CSS/JS budget, without a new module, schema, endpoint or periodic task.
+
+Version 1.8 adds Persian UI date inputs/displays/report exports and filenames in the WordPress site zone, while retaining standard storage and strict Gregorian/ISO REST compatibility. The accepted calendar range is 1200–1499 with leap/day/time and DST-gap checks, without PHP intl. Shared cached browser number/date formatters and product/meta/parent priming remove N+1 reads in previews and exports. Variation/file/XML/image/report/body limits, taxonomy assignment checks, safer CSV/thumbnail handling, unsafe-URL rejection and mandatory update SHA-256 harden existing paths. No new schema, automatic scan, cleanup cron or frontend library. See AUDIT.md for diagnostics and limits.

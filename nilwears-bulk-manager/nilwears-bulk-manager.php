@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.7.0
+ * Version: 1.8.0
  * Update URI: https://github.com/sh-sabery/nilwears-bulk-manager
  * Author: Nilwears
  * Requires at least: 6.4
@@ -22,7 +22,15 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.7.0';
+    const VERSION = '1.8.0';
+    const VARIATION_LIMIT = 500;
+    /** Prime a bounded batch; reuse WordPress caches instead of per-product reads. */
+    public static function prime( $ids ) {
+        $ids = array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) ); if ( ! $ids ) { return; }
+        _prime_post_caches( $ids, true, true ); $parents = array();
+        foreach ( $ids as $id ) { $post = get_post( $id ); if ( $post && $post->post_parent ) { $parents[] = $post->post_parent; } }
+        if ( $parents ) { _prime_post_caches( array_unique( $parents ), true, true ); }
+    }
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {
@@ -99,7 +107,7 @@ final class NIL_Bulk_Manager {
             'api' => esc_url_raw( rest_url( 'nil-bulk/v1/' ) ), 'nonce' => wp_create_nonce( 'wp_rest' ),
             'currency' => html_entity_decode( get_woocommerce_currency_symbol(), ENT_QUOTES, 'UTF-8' ),
             'currencyCode' => get_woocommerce_currency(),
-            'decimals' => wc_get_price_decimals(),
+            'decimals' => wc_get_price_decimals(), 'timeZone' => wp_timezone_string(),
             'costBackend' => NIL_Cost::native() ? 'native' : 'legacy',
             'canBrand' => current_user_can( 'manage_options' ), 'canMarket' => current_user_can( 'manage_options' ), 'canUpdate' => current_user_can( 'update_plugins' ), 'userId' => get_current_user_id(),
             'branding' => NIL_Suite::branding(), 'brands' => NIL_Suite::brands(),
@@ -184,8 +192,9 @@ final class NIL_Bulk_Manager {
         $children = array(); $parent_ids = wp_list_pluck( $query->posts, 'ID' );
         if ( $parent_ids ) {
             $variations = new WP_Query( array( 'post_type' => 'product_variation', 'post_parent__in' => $parent_ids,
-                'post_status' => array( 'publish','private','draft','pending','future' ), 'posts_per_page' => -1,
+                'post_status' => array( 'publish','private','draft','pending','future' ), 'posts_per_page' => self::VARIATION_LIMIT + 1,
                 'no_found_rows' => true, 'update_post_term_cache' => true, 'orderby' => array( 'menu_order' => 'ASC', 'ID' => 'ASC' ) ) );
+            if ( count( $variations->posts ) > self::VARIATION_LIMIT ) { throw new RuntimeException( 'بیش از ۵۰۰ ورییشن در یک صفحه؛ دسته یا جست‌وجو را محدود کنید.' ); }
             foreach ( $variations->posts as $variation_post ) { $children[$variation_post->post_parent][] = $variation_post->ID; }
         }
         foreach ( $query->posts as $post ) {
@@ -292,6 +301,7 @@ final class NIL_Bulk_Manager {
             $job = self::job( $id );
             if ( 'draft' !== $job['state'] || json_decode( $job['config'], true ) !== self::config() ) { throw new RuntimeException( 'پیش‌نمایش بسته شده یا واحد پول تغییر کرده است؛ پیش‌نمایش تازه بسازید.' ); }
             $errors = array(); $added = 0; $unchanged = 0;
+            self::prime( array_column( array_filter( $body['rows'], 'is_array' ), 'id' ) );
             foreach ( $body['rows'] as $row ) {
                 try {
                     if ( ! is_array( $row ) || empty( $row['id'] ) || empty( $row['version'] ) ) { throw new InvalidArgumentException( 'ردیف نامعتبر است.' ); }

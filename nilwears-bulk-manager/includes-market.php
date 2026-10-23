@@ -53,7 +53,7 @@ final class NIL_Market {
         $cached = get_transient( 'nil_market_rates' ); if ( is_array( $cached ) ) { return $cached; }
         if ( get_transient( 'nil_market_rate_error' ) ) { throw new NIL_Market_Feed_Error( 'دریافت نرخ موقتاً ناموفق است؛ قیمت‌ها حفظ شدند.' ); }
         try {
-            $response = wp_remote_get( 'https://wallgold.ir/wp-content/uploads/wallgold/prices.json?_=' . time(), array( 'timeout' => 8, 'redirection' => 0, 'limit_response_size' => 1048576, 'headers' => array( 'Accept' => 'application/json' ) ) );
+            $response = wp_remote_get( 'https://wallgold.ir/wp-content/uploads/wallgold/prices.json?_=' . time(), array( 'reject_unsafe_urls' => true, 'timeout' => 8, 'redirection' => 0, 'limit_response_size' => 1048576, 'headers' => array( 'Accept' => 'application/json' ) ) );
             if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) { throw new NIL_Market_Feed_Error( 'ارتباط با منبع نرخ برقرار نشد؛ قیمت‌ها حفظ شدند.' ); }
             $out = self::parse( json_decode( wp_remote_retrieve_body( $response ), true ) ); set_transient( 'nil_market_rates', $out, 60 ); delete_transient( 'nil_market_rate_error' ); return $out;
         } catch ( Throwable $e ) { set_transient( 'nil_market_rate_error', 1, 15 ); throw new NIL_Market_Feed_Error( $e->getMessage() ); }

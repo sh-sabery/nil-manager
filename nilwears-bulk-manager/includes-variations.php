@@ -7,7 +7,8 @@ final class NIL_Variations {
         if ( ! $p->is_type( 'variable' ) || ! current_user_can( 'publish_products' ) ) { throw new RuntimeException( 'والد باید محصول متغیر قابل‌ویرایش باشد.' ); } return $p;
     }
     private static function children( $id ) {
-        $q = new WP_Query( array( 'post_type' => 'product_variation', 'post_parent' => $id, 'post_status' => array( 'publish','private','draft','pending','future' ), 'posts_per_page' => -1, 'no_found_rows' => true, 'orderby' => 'ID', 'order' => 'ASC' ) );
+        $q = new WP_Query( array( 'post_type' => 'product_variation', 'post_parent' => $id, 'post_status' => array( 'publish','private','draft','pending','future' ), 'posts_per_page' => NIL_Bulk_Manager::VARIATION_LIMIT + 1, 'no_found_rows' => true, 'orderby' => 'ID', 'order' => 'ASC' ) );
+        if ( count( $q->posts ) > NIL_Bulk_Manager::VARIATION_LIMIT ) { throw new RuntimeException( 'بیش از ۵۰۰ ورییشن؛ این والد را در ووکامرس مدیریت کنید.' ); }
         return array_values( array_filter( array_map( function( $post ) { return wc_get_product( $post->ID ); }, $q->posts ) ) );
     }
     private static function definitions( $p ) {

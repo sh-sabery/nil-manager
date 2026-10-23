@@ -4,12 +4,19 @@ defined( 'ABSPATH' ) || exit;
 // Optional tools are parsed only when an endpoint or update hook needs them.
 spl_autoload_register( function( $class ) {
     if ( 0 !== strpos( $class, 'NIL_' ) ) { return; }
-    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market', 'NIL_Selection' => 'selection' );
+    static $map = array( 'NIL_Dates' => 'dates', 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market', 'NIL_Selection' => 'selection' );
     if ( isset( $map[$class] ) ) { require_once __DIR__ . '/includes-' . $map[$class] . '.php'; }
 } );
 final class NIL_Suite {
     public static function boot() {
         add_action( 'rest_api_init', array( __CLASS__, 'routes' ) );
+        add_filter( 'rest_pre_dispatch', function( $reply, $server, $r ) {
+            if ( 0 === strpos( $r->get_route(), '/nil-bulk/v1/' ) ) {
+                $limit = '/nil-bulk/v1/sheet/read' === $r->get_route() ? 12 : ( '/nil-bulk/v1/sheet/export' === $r->get_route() ? 4 : 1 );
+                if ( strlen( $r->get_body() ) > $limit * 1024 * 1024 ) { return new WP_Error( 'nil_body_size', 'درخواست بزرگ است؛ فایل یا محدوده را کوچک کنید.', array( 'status' => 413 ) ); }
+            }
+            return $reply;
+        }, 10, 3 );
         add_action( 'nil_bulk_market', array( 'NIL_Market', 'tick' ), 10, 1 );
         add_action( 'nil_bulk_before_job_run', array( 'NIL_Market', 'guard' ), 10, 2 );
         add_action( 'nil_bulk_schedule', array( __CLASS__, 'tick' ), 10, 1 );
@@ -50,6 +57,7 @@ final class NIL_Suite {
             if ( ! is_array( $value ) ) { throw new InvalidArgumentException( 'شناسه‌های دسته و برند باید فهرست باشند.' ); }
             $tax = 'category_ids' === $key ? 'product_cat' : self::brand_taxonomy();
             if ( ! $tax && $value ) { throw new InvalidArgumentException( 'تاکسونومی برند فعال نیست.' ); }
+            if ( $tax && ! current_user_can( get_taxonomy( $tax )->cap->assign_terms ) ) { throw new RuntimeException( 'اجازه تغییر دسته یا برند را ندارید.' ); }
             $ids = array_values( array_unique( array_map( 'absint', $value ) ) ); sort( $ids );
             foreach ( $ids as $id ) { if ( ! term_exists( $id, $tax ) ) { throw new InvalidArgumentException( 'دسته یا برند پیدا نشد.' ); } }
             return $ids;
@@ -153,6 +161,7 @@ final class NIL_Suite {
                 $input = $b['attributes'] ?? array(); if ( ! is_array( $input ) || ! $input || count( $input ) > 5 ) { throw new InvalidArgumentException( '۱ تا ۵ ویژگی وارد کنید.' ); }
                 $names = array();
                 foreach ( $input as $name => $options ) {
+                    if ( ! is_array( $options ) || count( $options ) > 100 ) { throw new InvalidArgumentException( 'حداکثر ۱۰۰ گزینه برای هر ویژگی.' ); }
                     $name = sanitize_text_field( $name ); $key = sanitize_title( $name );
                     if ( ! $key || isset( $names[$key] ) || ! is_array( $options ) ) { throw new InvalidArgumentException( 'ویژگی نامعتبر یا تکراری است.' ); } $names[$key] = true;
                     $options = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', $options ), 'strlen' ) ) );
@@ -193,13 +202,18 @@ final class NIL_Suite {
         if ( ! empty( $b['delete'] ) ) { unset( $list[$id] ); wp_clear_scheduled_hook( 'nil_bulk_schedule', array( $id ) ); update_option( 'nil_bulk_schedules', $list, false ); return array_values( $list ); }
         if ( count( $list ) >= 20 ) { throw new RuntimeException( 'حداکثر ۲۰ قانون.' ); }
         $rule = $b['rule'] ?? array();
+        if ( ! is_array( $rule ) || strlen( wp_json_encode( $rule ) ) > 1024 ) { throw new InvalidArgumentException( 'قانون زمان‌بندی بزرگ یا نامعتبر است.' ); }
+        $rule = array_intersect_key( $rule, array_flip( array( 'source','target','operation','value','rounding','step','ending' ) ) );
+        $filters = array_intersect_key( (array) ( $b['filters'] ?? array() ), array_flip( array( 'category','brand','search','type','status','stock','min_price','max_price' ) ) );
+        foreach ( $filters as &$value ) { if ( ! is_scalar( $value ) || strlen( (string) $value ) > 200 ) { throw new InvalidArgumentException( 'فیلتر زمان‌بندی نامعتبر است.' ); } $value = sanitize_text_field( $value ); } unset( $value );
+        $name = sanitize_text_field( $b['name'] ?? 'قانون قیمت' ); if ( ! $name || strlen( $name ) > 150 ) { throw new InvalidArgumentException( 'نام کوتاه وارد کنید.' ); }
         if ( ( $rule['source'] ?? '' ) !== 'cost' || ! in_array( $rule['operation'] ?? '', array( 'percent','fixed','set','round' ), true ) ) { throw new InvalidArgumentException( 'قانون خودکار باید بر پایه قیمت خرید باشد تا هر بار افزایش مرکب نشود.' ); }
         NIL_Bulk_Price::calculate( '100000', $rule, wc_get_price_decimals() );
         if ( ! in_array( $rule['target'] ?? '', array( 'regular_price','sale_price' ), true ) ) { throw new InvalidArgumentException( 'ستون قیمت نامعتبر است.' ); }
-        $time = strtotime( $b['start'] ?? '' ); if ( ! $time || $time <= time() ) { throw new InvalidArgumentException( 'زمان شروع باید در آینده باشد (زمان محلی مرورگر).' ); }
+        $time = NIL_Dates::parse( $b['start'] ?? '', $b['calendar'] ?? 'gregorian', true ); if ( $time <= time() ) { throw new InvalidArgumentException( 'زمان شروع باید در آینده و بر اساس منطقهٔ زمانی وردپرس باشد.' ); }
         $frequency = $b['frequency'] ?? 'once'; if ( ! in_array( $frequency, array( 'once','daily','weekly' ), true ) ) { throw new InvalidArgumentException( 'تناوب نامعتبر است.' ); }
         $id = wp_generate_uuid4();
-        $list[$id] = array( 'id' => $id, 'name' => sanitize_text_field( $b['name'] ?? 'قانون قیمت' ), 'owner' => get_current_user_id(), 'rule' => $rule, 'filters' => array_intersect_key( (array) ( $b['filters'] ?? array() ), array_flip( array( 'category','brand','search','type','status','stock','min_price','max_price' ) ) ), 'frequency' => $frequency, 'state' => 'scheduled', 'job' => '', 'page' => 1, 'added' => 0, 'next' => $time, 'error' => '', 'currency' => get_woocommerce_currency(), 'decimals' => wc_get_price_decimals() );
+        $list[$id] = array( 'id' => $id, 'name' => $name, 'owner' => get_current_user_id(), 'rule' => $rule, 'filters' => $filters, 'frequency' => $frequency, 'state' => 'scheduled', 'job' => '', 'page' => 1, 'added' => 0, 'next' => $time, 'error' => '', 'currency' => get_woocommerce_currency(), 'decimals' => wc_get_price_decimals() );
         update_option( 'nil_bulk_schedules', $list, false ); wp_schedule_single_event( $time, 'nil_bulk_schedule', array( $id ) ); return array_values( $list );
     }
     public static function tick( $id ) {

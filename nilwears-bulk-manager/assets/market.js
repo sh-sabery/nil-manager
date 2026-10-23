@@ -2,7 +2,7 @@
 (()=>{
 'use strict';const a=window.NIL_APP,cfg=NIL_BULK,{api,task,fmt,message,esc}=a,$=id=>document.getElementById('nil-market-'+id);
 const assets={gold18k:'طلای ۱۸ عیار',price_dollar_rl:'دلار',price_eur:'یورو'},status={draft:'ثبت مبنا',previewed:'آمادهٔ تأیید',failed:'پیش‌نمایش نامعتبر',active:'فعال',waiting:'در انتظار نرخ تازه',paused:'متوقف'},fields=['name','asset','base','interval','target','rounding','step','ending','decrease'];let draft=null;
-const date=t=>t?new Date(t*1000).toLocaleString('fa-IR'):'—',on=(id,fn)=>{$(id).onclick=()=>task(fn);};
+const date=a.date,on=(id,fn)=>{$(id).onclick=()=>task(fn);};
 document.addEventListener('nil-selection-change',()=>invalidate());
 function invalidate(){draft=null;$('activate').hidden=$('details').hidden=true;}
 for(const name of fields)for(const event of ['input','change'])$(name).addEventListener(event,invalidate);
@@ -14,7 +14,7 @@ function render(list){$('controls')?.remove();$('list').innerHTML=a.table(['قا
  const controls=document.createElement('div');controls.id='nil-market-controls';controls.className='nil-toolbar';for(const s of list){const actions=[['delete','حذف']];if(['active','waiting'].includes(s.status))actions.unshift(['pause','توقف'],['run','نوبت فوری']);if(s.status==='paused')actions.unshift(['resume','ادامه']);if(s.last_job&&(s.last_job_owner??s.owner)===cfg.userId)actions.unshift(['history','گزارش']);if(cfg.canMarket!==false&&['active','waiting','paused'].includes(s.status)){const input=document.createElement('input');input.type='number';input.min='5';input.max='1440';input.value=s.interval;input.style.width='90px';input.setAttribute('aria-label','فاصلهٔ دقیقه‌ای '+s.name);const save=document.createElement('button');save.className='button';save.dataset.marketAction='interval';save.textContent='ذخیرهٔ تناوب · '+s.name;save.onclick=()=>task(async()=>{render(await api('market/rules',{action:'interval',id:s.id,interval:input.value}));message('تناوب تغییر کرد؛ قیمت‌های پایه حفظ شدند.');});controls.append(input,save);}for(const [action,label] of actions){if(action!=='history'&&cfg.canMarket===false)continue;const b=document.createElement('button');b.className='button';b.dataset.marketAction=action;b.dataset.marketId=s.id;b.textContent=label+' · '+s.name;b.onclick=()=>task(async()=>{if(action==='history'){await a.openJob(s.last_job);return;}if(action==='delete'&&!window.confirm('قانون و قیمت‌های پایه‌اش حذف شوند؟ قیمت فعلی کالاها و تاریخچه حفظ می‌شوند.'))return;render(await api('market/rules',{action,id:s.id}));invalidate();message('وضعیت قانون به‌روز شد.');});controls.append(b);}}$('list').after(controls);for(const s of list)if(s.conflicts?.length){const p=document.createElement('p');p.className='nil-hint';p.textContent=s.name+': '+s.conflicts.map(c=>'#'+c.id+' '+c.error).join(' / ');controls.append(p);}}
 on('refresh',async()=>render(await api('market/rules')));
 on('preview',async()=>{
- invalidate();if(a.dirtyCount())throw Error('ابتدا ویرایش‌های باز جدول را ذخیره یا پاک کنید.');
+ invalidate();if(a.dirtyCount())throw Error(a.text.unsavedMarket);
  const rows=(await a.scoped()).filter(r=>r.type!=='variable');if(!rows.length)throw Error('محصول یا ورییشن انتخاب کنید.');
  const made=await api('market/rules',{action:'create',...settings()});
  for(let i=0;i<rows.length;i+=50){message(`ثبت قیمت پایه: ${fmt(i)} از ${fmt(rows.length)}`);await api('market/capture',{id:made.id,rows:rows.slice(i,i+50).map(r=>({id:r.id,version:r.version}))});}
@@ -23,6 +23,6 @@ on('preview',async()=>{
  $('activate').hidden=false;$('details').hidden=!draft.job;message('پیش‌نمایش آماده است؛ هنوز قیمت محصول تغییر نکرده است.');
 });
 on('details',async()=>{if(draft?.job)await a.openJob(draft.job);});
-on('activate',async()=>{if(!draft)throw Error('پیش‌نمایش تازه بسازید.');render(await api('market/rules',{action:'activate',id:draft.id}));invalidate();message('قانون فعال شد؛ اولین نوبت در صف اجراست. وضعیت را تازه کنید.');});
+on('activate',async()=>{if(!draft)throw Error(a.text.previewFresh);render(await api('market/rules',{action:'activate',id:draft.id}));invalidate();message('قانون فعال شد؛ اولین نوبت در صف اجراست. وضعیت را تازه کنید.');});
 if(cfg.canMarket===false){$('refresh').disabled=true;$('form').querySelectorAll('input,select,button').forEach(el=>el.disabled=true);$('preview-result').textContent='ساخت و مدیریت قانون بازار فقط برای مدیر سایت فعال است.';}
 })();

@@ -1,4 +1,4 @@
-# Performance contract — v1.7.0
+# Performance contract — v1.8.0
 
 ## Scope
 
@@ -12,12 +12,12 @@ The latest stable releases verified on 2026-10-22 Tehran time are WordPress 7.1.
 |---|---|
 | Public CSS, JavaScript and fonts | 0 plugin enqueues on public pages; also none on unrelated admin screens |
 | Plugin boot | 0 SQL issued by the plugin's boot function; schema-version work only during authorized admin initialization |
-| Admin assets | Four minified vanilla-JS files and one minified stylesheet, 59,934 bytes total; 22,313 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
+| Admin assets | Four minified vanilla-JS files and one minified stylesheet, 59,709 bytes total; 22,406 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
 | Font | Local Vazirmatn WOFF2, 46,308 bytes, requested only by the plugin admin stylesheet; no CDN font |
 | Build budget | CSS/JS limited to 60,000 uncompressed bytes and checked in CI; readable source files remain in git and are excluded from the installation ZIP |
 | In-app help and static forms | Rendered as templates only on the plugin admin page; 0 additional SQL, no extra script, library or remote asset |
 | Optional PHP tools | Spreadsheet, media, maintenance, variation creation, presets, market pricing and report code load on use; update hooks load in admin/cron contexts |
-| Product pages | 15 parent/simple products per page; variation posts, metadata and taxonomy caches loaded together; legacy cost reads use the primed WordPress metadata cache; native costs use WooCommerce CRUD |
+| Product pages | 15 parent/simple products per page, at most 500 variation posts per request; variation posts, metadata and taxonomy caches loaded together; legacy cost reads use the primed WordPress metadata cache; native costs use WooCommerce CRUD |
 | Media listing | No reference scans; scans require an explicit selection and run in batches of at most 5 images; archive rechecks references |
 | Temporary state | One active XLSX/CSV file, one media preview and one insights report and one new-variation plan per user, each with a one-hour expiry; starting another invalidates the older token |
 | Creation receipts | One small token on its product/created variation instead of an indefinite new WordPress option per creation |
@@ -56,3 +56,11 @@ Advanced form/select/navigation markup now lives in existing admin PHP templates
 ## Version 1.7 group operations
 
 Discount and stock rules reuse the existing preview/apply/history requests and schemas. Relative stock and regular-price discounts calculate on the server using the same fresh snapshot/fingerprint; there is no extra read query for the arithmetic. New forms and fixed UI wording render only in the admin templates. CSS/JS is 59,934 uncompressed / 22,313 deterministic gzip bytes. Essential before/after prices, stock and sale dates remain in existing undo receipts. No new SQL table, endpoint, remote resource, boot request or periodic task is registered. PHP 8.3 / WP 7.1.3 / WC 11.2.1 disposable fixtures passed 343 cumulative assertions each with HPOS enabled and disabled; the existing cold query probes retained 17/17 for the product grid, 25/25 for market capture and 12/12 for explicit selection. These are fixture-specific SQLite/MySQL-lock-shim measurements, not real MySQL concurrency or a live-store performance score.
+
+## Version 1.8 audit
+
+See [AUDIT.md](AUDIT.md) and the committed synthetic [paired diagnostic record](tests/benchmark-v1.8.json). A cold preview of 2/40 simple products now takes 12/12 SQL reads instead of 15/129; a CSV export takes 8/8 instead of 11/125. Bounded priming trades about 0.2 MB additional PHP heap in these samples for fewer database round trips. These single-sample wall times and PHP heap deltas are not host RSS, production latency or CPU percentage. A separate five-sample Node/ICU formatting microbenchmark records shared-formatter CPU cost; no brittle timing assertion runs in CI.
+
+Reads cap variation expansion at 500 (operation scope can span requests), reports read 50 orders per batch with 50,000 lines / 20,000 customer-product pairs / 4 MiB state caps, and incoming REST bodies cap at 12 MiB for file read, 4 MiB for export, 1 MiB otherwise. Spreadsheet caps are 8 MiB compressed input / 16 MiB expanded ZIP / 8 MiB XML / 150,000 cells / 32 KiB per cell / 8 MiB decoded cell text, with a 64 KiB CSV-record limit and estimated free-memory admission checks. Image optimization rejects over 8 MiB / 8 MP and estimates available PHP memory before decoding pixels. These are admission guards, not hard limits on native libraries or all other WordPress code. Media reference scans remain explicit and potentially expensive on large databases. Original image files and required undo/cost history remain intentional storage.
+
+Production admin CSS/JS is 59,709 bytes (22,406 deterministic gzip), still under 60,000. Persian labels/forms stay in non-executing templates; date PHP loads on demand. Public assets and boot SQL remain zero in disposable fixtures. No schema, dependency, background scan or recurring cleanup task was added.

@@ -1,0 +1,92 @@
+{
+  "context": "Paired diagnostic Blueprint: integration.php followed by resource-profile.php, disposable PHP.wasm/SQLite, cold-cache single samples, PHP heap delta not OS RAM.",
+  "before": {
+    "version": "1.7.0",
+    "php": "8.3.33",
+    "wp": "7.1.3",
+    "wc": "11.2.1",
+    "profiles": {
+      "2": {
+        "preview": {
+          "queries": 15,
+          "wall_ms": 28.32,
+          "php_peak_delta_bytes": 246832,
+          "rows": null
+        },
+        "export": {
+          "queries": 11,
+          "wall_ms": 29.18,
+          "php_peak_delta_bytes": 932688,
+          "rows": null
+        }
+      },
+      "40": {
+        "preview": {
+          "queries": 129,
+          "wall_ms": 319.59,
+          "php_peak_delta_bytes": 764384,
+          "rows": null
+        },
+        "export": {
+          "queries": 125,
+          "wall_ms": 310.95,
+          "php_peak_delta_bytes": 752104,
+          "rows": null
+        }
+      }
+    },
+    "note": "Single cold-cache samples in disposable PHP.wasm / SQLite, PHP heap only. Wall time includes emulation and is not production latency or host CPU/RAM."
+  },
+  "after": {
+    "version": "1.8.0",
+    "php": "8.3.33",
+    "wp": "7.1.3",
+    "wc": "11.2.1",
+    "profiles": {
+      "2": {
+        "preview": {
+          "queries": 12,
+          "wall_ms": 21.57,
+          "php_peak_delta_bytes": 246296,
+          "rows": null
+        },
+        "export": {
+          "queries": 8,
+          "wall_ms": 26.43,
+          "php_peak_delta_bytes": 857856,
+          "rows": null
+        }
+      },
+      "40": {
+        "preview": {
+          "queries": 12,
+          "wall_ms": 51.42,
+          "php_peak_delta_bytes": 963568,
+          "rows": null
+        },
+        "export": {
+          "queries": 8,
+          "wall_ms": 56.12,
+          "php_peak_delta_bytes": 937976,
+          "rows": null
+        }
+      }
+    },
+    "note": "Single cold-cache samples in disposable PHP.wasm / SQLite, PHP heap only. Wall time includes emulation and is not production latency or host CPU/RAM."
+  },
+  "formatting": {
+    "node": "v24.19.0",
+    "icu": "78.3",
+    "values": 2000,
+    "samples": 5,
+    "per_cell": {
+      "wall_ms": 43.470488,
+      "cpu_ms": 44.556
+    },
+    "cached": {
+      "wall_ms": 0.9009980000000155,
+      "cpu_ms": 0.9
+    },
+    "note": "Node/ICU microbenchmark, not live browser, PHP or host CPU%. No performance threshold assertion."
+  }
+}

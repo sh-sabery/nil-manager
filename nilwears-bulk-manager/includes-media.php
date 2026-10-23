@@ -66,9 +66,18 @@ final class NIL_Media {
         $meta = wp_get_attachment_metadata( $id ); if ( ! is_array( $meta ) ) { throw new RuntimeException( 'متادیتای تصویر ناقص است.' ); }
         $ext = strtolower( pathinfo( $old, PATHINFO_EXTENSION ) );
         if ( ! in_array( $ext, array( 'jpg','jpeg','png','webp' ), true ) ) { throw new RuntimeException( 'فقط JPG، PNG و WebP.' ); }
+        if ( ! $optimize && $basename === pathinfo( $real, PATHINFO_FILENAME ) ) { return array( 'file' => basename( $real ), 'saved_bytes' => 0 ); }
         $name = wp_unique_filename( dirname( $real ), $basename . '.' . $ext ); $new = dirname( $real ) . '/' . $name; $written = array();
         try {
+            if ( count( $meta['sizes'] ?? array() ) > 50 ) { throw new RuntimeException( 'بیش از ۵۰ اندازهٔ تصویر؛ متادیتا را بررسی کنید.' ); }
             if ( $optimize ) {
+                $dimensions = @getimagesize( $real );
+                if ( ! $dimensions || filesize( $real ) > 8 * 1024 * 1024 || $dimensions[0] * $dimensions[1] > 8000000 ) { throw new RuntimeException( 'تصویر برای پردازش بزرگ است؛ حداکثر ۸ مگابایت و ۸ مگاپیکسل.' ); }
+                $limit = trim( ini_get( 'memory_limit' ) );
+                if ( preg_match( '/^(\d+)([KMG]?)$/i', $limit, $m ) ) {
+                    $bytes = (int) $m[1] * ( 1024 ** ( $m[2] ? strpos( 'KMG', strtoupper( $m[2] ) ) + 1 : 0 ) );
+                    if ( memory_get_usage( true ) + $dimensions[0] * $dimensions[1] * 8 + 16 * 1024 * 1024 > $bytes ) { throw new RuntimeException( 'رم آزاد برای پردازش این تصویر کافی نیست؛ تصویر را کوچک کنید.' ); }
+                }
                 require_once ABSPATH . 'wp-admin/includes/image.php';
                 $editor = wp_get_image_editor( $real ); if ( is_wp_error( $editor ) ) { throw new RuntimeException( $editor->get_error_message() ); }
                 $size = $editor->get_size(); if ( $size['width'] > $width ) { $resized = $editor->resize( $width, null, false ); if ( is_wp_error( $resized ) ) { throw new RuntimeException( $resized->get_error_message() ); } }
@@ -80,7 +89,8 @@ final class NIL_Media {
             } else { if ( ! copy( $real, $new ) ) { throw new RuntimeException( 'کپی فایل انجام نشد.' ); } $written[] = $new; }
             // Rename all generated sizes too. Keep old URLs valid for custom page builders.
             foreach ( $meta['sizes'] ?? array() as $size_key => $info ) {
-                $source = dirname( $real ) . '/' . basename( $info['file'] ); if ( ! is_file( $source ) ) { continue; }
+                $source = realpath( dirname( $real ) . '/' . basename( $info['file'] ) ); if ( ! $source || ! is_file( $source ) ) { continue; }
+                if ( 0 !== strpos( $source, $base . DIRECTORY_SEPARATOR ) || dirname( $source ) !== dirname( $real ) ) { throw new RuntimeException( 'مسیر اندازهٔ تصویر خارج از پوشهٔ مجاز است.' ); }
                 $target_name = wp_unique_filename( dirname( $real ), pathinfo( basename( $new ), PATHINFO_FILENAME ) . '-' . $info['width'] . 'x' . $info['height'] . '.' . pathinfo( $source, PATHINFO_EXTENSION ) );
                 $target = dirname( $real ) . '/' . $target_name; if ( ! copy( $source, $target ) ) { throw new RuntimeException( 'کپی اندازه‌های تصویر ناموفق بود.' ); } $written[] = $target; $meta['sizes'][$size_key]['file'] = $target_name;
             }

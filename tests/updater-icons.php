@@ -1,9 +1,9 @@
 <?php
 // Real WordPress metadata contract using its cached core; no WooCommerce or network required.
 require_once WP_PLUGIN_DIR.'/nilwears-bulk-manager/nilwears-bulk-manager.php';NIL_Bulk_Manager::boot();wp_set_current_user(1);
-$n=0;$nil_icon_http=0;$nil_icon_version='1.7.1';
+$n=0;$nil_icon_http=0;$nil_icon_version='1.8.1';
 function nil_icon_check($ok,$why){global $n;$n++;if(!$ok)throw new Exception($why);}
-add_filter('pre_http_request',function($pre,$args,$url){global $nil_icon_http,$nil_icon_version;if(strpos($url,'https://api.github.com/repos/sh-sabery/nilwears-bulk-manager/releases/latest')!==0)return new WP_Error('fixture_http','Unrelated HTTP blocked');$nil_icon_http++;return array('response'=>array('code'=>200),'body'=>wp_json_encode(array('tag_name'=>'v'.$nil_icon_version,'assets'=>array(array('name'=>'nilwears-bulk-manager-v'.$nil_icon_version.'.zip','id'=>12,'size'=>100)))));},10,3);
+add_filter('pre_http_request',function($pre,$args,$url){global $nil_icon_http,$nil_icon_version;if(strpos($url,'https://api.github.com/repos/sh-sabery/nilwears-bulk-manager/releases/latest')!==0)return new WP_Error('fixture_http','Unrelated HTTP blocked');$nil_icon_http++;return array('response'=>array('code'=>200),'body'=>wp_json_encode(array('tag_name'=>'v'.$nil_icon_version,'assets'=>array(array('name'=>'nilwears-bulk-manager-v'.$nil_icon_version.'.zip','id'=>12,'size'=>100,'digest'=>'sha256:'.str_repeat('0',64))))));},10,3);
 $plugin='nilwears-bulk-manager/nilwears-bulk-manager.php';$url=plugins_url('assets/icon.svg',WP_PLUGIN_DIR.'/'.$plugin);$s=NIL_Updater::check();$t=get_site_transient('update_plugins');nil_icon_check($t->response[$plugin]->icons['svg']===$url,'real transient has local SVG icon');
 require_once ABSPATH.'wp-admin/includes/update.php';$updates=get_plugin_updates();nil_icon_check($updates[$plugin]->update->icons['svg']===$url,'WordPress dashboard update aggregation retains icon');
 require_once ABSPATH.'wp-admin/includes/plugin-install.php';$info=plugins_api('plugin_information',(object)array('slug'=>'nilwears-bulk-manager'));nil_icon_check($info->icons['svg']===$url,'WordPress plugin information retains icon');nil_icon_check(strpos($info->banners['low'],'/assets/banner.svg')!==false,'WordPress plugin information retains banner');
