@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 // Optional tools are parsed only when an endpoint or update hook needs them.
 spl_autoload_register( function( $class ) {
     if ( 0 !== strpos( $class, 'NIL_' ) ) { return; }
-    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market' );
+    static $map = array( 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market', 'NIL_Selection' => 'selection' );
     if ( isset( $map[$class] ) ) { require_once __DIR__ . '/includes-' . $map[$class] . '.php'; }
 } );
 final class NIL_Suite {
@@ -86,6 +86,7 @@ final class NIL_Suite {
     }
     public static function routes() {
         $routes = array(
+            'pricing/selection' => array( 'POST', 'NIL_Selection', 'rows' ),
             'market/rates' => array( 'GET', 'NIL_Market', 'rates' ),
             'market/rules' => array( 'GET,POST', 'NIL_Market', 'endpoint' ),
             'market/capture' => array( 'POST', 'NIL_Market', 'capture' ),

@@ -3,6 +3,7 @@
 'use strict';const a=window.NIL_APP,cfg=NIL_BULK,{api,task,fmt,message,esc}=a,$=id=>document.getElementById('nil-market-'+id);
 const assets={gold18k:'طلای ۱۸ عیار',price_dollar_rl:'دلار',price_eur:'یورو'},status={draft:'ثبت مبنا',previewed:'آمادهٔ تأیید',failed:'پیش‌نمایش نامعتبر',active:'فعال',waiting:'در انتظار نرخ تازه',paused:'متوقف'},fields=['name','asset','base','interval','target','rounding','step','ending','decrease'];let draft=null;
 const date=t=>t?new Date(t*1000).toLocaleString('fa-IR'):'—',on=(id,fn)=>{$(id).onclick=()=>task(fn);};
+document.addEventListener('nil-selection-change',()=>invalidate());
 function invalidate(){draft=null;$('activate').hidden=$('details').hidden=true;}
 for(const name of fields)for(const event of ['input','change'])$(name).addEventListener(event,invalidate);
 function rounding(){if(cfg.canMarket!==false)$('step').disabled=$('ending').disabled=$('rounding').value==='none';} $('rounding').addEventListener('change',rounding);rounding();

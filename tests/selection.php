@@ -1,0 +1,19 @@
+<?php
+// Disposable fixture following market.php. Never run on a store.
+function nil_selection_fixture(){
+ global $wpdb,$checks;
+ $a=wp_insert_term('Nil scope A','product_cat');$b=wp_insert_term('Nil scope B','product_cat');$sub=wp_insert_term('Nil scope child','product_cat',array('parent'=>$a['term_id']));
+ $parent=new WC_Product_Variable();$parent->set_name('Scope variable');$parent->set_status('publish');$parent->set_category_ids(array($a['term_id']));$pid=$parent->save();$children=array();
+ foreach(array('50000','70000') as $price){$v=new WC_Product_Variation();$v->set_parent_id($pid);$v->set_status('publish');$v->set_regular_price($price);$children[]=$v->save();}WC_Product_Variable::sync($pid);
+ $x=new WC_Product_Simple();$x->set_name('Scope simple A');$x->set_status('publish');$x->set_regular_price('90000');$x->set_category_ids(array($sub['term_id']));$aid=$x->save();
+ $y=new WC_Product_Simple();$y->set_name('Scope simple B');$y->set_status('publish');$y->set_regular_price('110000');$y->set_category_ids(array($b['term_id']));$bid=$y->save();
+ $rows=request_nil('GET','products?category='.$a['term_id'])['rows'];$ids=array_column($rows,'id');check(in_array($pid,$ids,true)&&in_array($aid,$ids,true),'category includes parent and subcategory simple');check(in_array($children[0],$ids,true)&&in_array($children[1],$ids,true)&&!in_array($bid,$ids,true),'category includes variations and excludes other category');
+ $rows=request_nil('POST','pricing/selection',array('ids'=>array($pid,$children[0],$bid,$pid)))['rows'];$ids=array_column($rows,'id');check(count($ids)===4&&count(array_unique($ids))===4,'explicit parents expand with deduplication');check(in_array($bid,$ids,true)&&!in_array($aid,$ids,true),'explicit scope independent of table category');
+ $one=request_nil('POST','pricing/selection',array('ids'=>array($children[0])))['rows'];check(count($one)===1&&$one[0]['id']===$children[0]&&$one[0]['parent']===$pid,'single variation does not select its siblings');$before=$one[0]['version'];
+ $v=fresh_nil($children[0]);$v->set_regular_price('80000');$v->save();$one=request_nil('POST','pricing/selection',array('ids'=>array($children[0])))['rows'];check($one[0]['values']['regular_price']==='80000'&&$one[0]['version']!==$before,'selection resolves fresh prices and versions');check(fresh_nil($bid)->get_regular_price()==='110000','selection causes no product price write');
+ foreach(array(array(),array_fill(0,51,$aid),array('x'),array(0),array(true),array($aid,99999999)) as $bad)check(rejected_nil('POST','pricing/selection',array('ids'=>$bad)),'invalid/oversize/missing selection rejected');
+ $y=fresh_nil($bid);$y->delete(false);check(rejected_nil('POST','pricing/selection',array('ids'=>array($bid))),'trashed selection rejected');wp_set_current_user(0);check(rejected_nil('POST','pricing/selection',array('ids'=>array($aid))),'anonymous selection denied');wp_set_current_user(1);
+ $counts=array();foreach(array(2,40) as $n){$p=new WC_Product_Variable();$p->set_name('Selection query probe');$p->set_status('publish');$id=$p->save();for($i=0;$i<$n;$i++){$v=new WC_Product_Variation();$v->set_parent_id($id);$v->set_status('publish');$v->set_regular_price('50000');$v->save();}WC_Product_Variable::sync($id);wp_cache_flush();$q=$wpdb->num_queries;$out=request_nil('POST','pricing/selection',array('ids'=>array($id)));$counts[]=$wpdb->num_queries-$q;check(count($out['rows'])===$n+1,'all requested parent variations resolved');}check($counts[1]<=$counts[0]+6,'selection read queries bounded: '.wp_json_encode($counts));
+ $msg='PASS: '.$checks.' combined assertions; cold selection queries '.wp_json_encode($counts).'; category/subcategory, explicit parents/variations, fresh prices, deduplication, bounds and permissions; HPOS '.get_option('woocommerce_custom_orders_table_enabled')."\n";file_put_contents('/nil-tests/selection-result.txt',$msg);echo $msg;
+}
+nil_selection_fixture();

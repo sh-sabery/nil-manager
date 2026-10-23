@@ -32,7 +32,7 @@ if not section or not section.group(1).strip():
 out = ROOT / 'dist'
 out.mkdir(exist_ok=True)
 archive = out / f'nilwears-bulk-manager-v{version}.zip'
-allowed = {'.php', '.js', '.css', '.html', '.txt', '.woff2'}
+allowed = {'.php', '.js', '.css', '.html', '.txt', '.woff2', '.svg'}
 files = sorted((ROOT / 'nilwears-bulk-manager').rglob('*'))
 with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as bundle:
     for file in files:

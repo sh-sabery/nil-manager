@@ -9,17 +9,7 @@
     const jobs = {ready:'آماده ذخیره', running:'در حال ذخیره', done:'ذخیره پایان یافته', undoing:'در حال بازگردانی', undone:'بازگردانی پایان یافته'};
     const esc = value => String(value ?? '').replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
     const fmt = value => value === '' || value == null ? '—' : new Intl.NumberFormat('fa-IR', {maximumFractionDigits:cfg.decimals}).format(Number(value));
-    const select = (id, options, value) => `<select id="${id}">${options.map(([v,t]) => `<option value="${v}" ${String(v)===String(value)?'selected':''}>${esc(t)}</option>`).join('')}</select>`;
     root.replaceChildren(document.getElementById('nil-grid-template').content.cloneNode(true));
-    document.getElementById('nil-type').outerHTML=select('nil-type',[['','همه'],['simple','ساده'],['variable','متغیر']],'');
-    document.getElementById('nil-status').outerHTML=select('nil-status',[['','همه'],...Object.entries(publication)],'');
-    document.getElementById('nil-stock').outerHTML=select('nil-stock',[['','همه'],['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']],'');
-    document.getElementById('nil-sort').outerHTML=select('nil-sort',[['ID','شناسه'],['modified','آخرین تغییر'],['title','نام']],'modified');
-    document.getElementById('nil-scope').outerHTML=select('nil-scope', [['selected','ردیف‌های انتخاب‌شدهٔ همین صفحه'],['page','همهٔ ورییشن‌ها و ساده‌های همین صفحه'],['all','همهٔ محصولاتِ فیلتر فعلی']], 'selected');
-    document.getElementById('nil-source').outerHTML=select('nil-source',[['current','قیمت فعلی'],['cost','قیمت خرید + درصد یا مبلغ']],'current');
-    document.getElementById('nil-target').outerHTML=select('nil-target', [['regular_price','قیمت اصلی'],['sale_price','قیمت حراج موجود'],['both','اصلی و حراج موجود']], 'regular_price');
-    document.getElementById('nil-operation').outerHTML=select('nil-operation', [['percent','تغییر درصدی'],['fixed','افزودن مبلغ ثابت'],['set','تعیین قیمت ثابت'],['round','فقط رندکردن']], 'percent');
-    document.getElementById('nil-rounding').outerHTML=select('nil-rounding', [['up','رو به بالا'],['nearest','نزدیک‌ترین؛ تساوی رو به بالا'],['down','رو به پایین'],['none','بدون رندکردن']], 'up');
     document.getElementById('nil-currency').textContent=cfg.currency+' ('+cfg.currencyCode+')';
     for(const [name,items] of [['category',cfg.categories],['brand',cfg.brands||[]]])document.getElementById('nil-'+name).insertAdjacentHTML('beforeend',items.map(c=>`<option value="${Number(c.id)}">${esc(c.name)}</option>`).join(''));
     const $ = id => document.getElementById(`nil-${id}`);
@@ -65,7 +55,7 @@
         const result = await api('products?'+filters(page));
         state.page = result.page; state.pages = result.pages; state.rows = result.rows;
         state.selected.clear(); $('select-all').checked = false;
-        $('total').textContent = `${fmt(result.total)} محصول والد یا ساده`;
+        $('total').textContent = fmt(result.total);
         renderRows();
     }
     function renderRows() {
@@ -79,7 +69,7 @@
             const effective=activeSale&&values.sale_price!==''&&values.sale_price!=null&&Number(values.sale_price)<Number(values.regular_price)?values.sale_price:values.regular_price;
             const profit=values.cost_price!==''&&values.cost_price!=null&&effective!==''?Number(effective)-Number(values.cost_price):null;
             const editText=field=>`<label>${esc(labels[field])}<${field.includes('description')?'textarea':'input'} data-field="${field}" data-id="${row.id}" ${field.includes('description')?'':`value="${esc(values[field]??(field==='name'?row.name:field==='sku'?row.sku:''))}"`}>${field.includes('description')?esc(values[field]||'')+'</textarea>':''}</label>`;
-            return `<tr class="${variable?'nil-parent':''} ${row.type==='variation'?'nil-variation':''} ${state.changes.has(row.id)?'nil-changed':''}"><td><input type="checkbox" data-select="${row.id}" ${state.selected.has(row.id)?'checked':''} aria-label="انتخاب ${esc(row.name)}"></td><td class="nil-name"><a href="${esc(row.url)}" target="_blank" rel="noopener">${esc(row.name)}</a><small>${row.type==='variation'?esc(row.attributes):variable?'محصول ورییشن‌دار':'محصول ساده'} · ${esc(publication[row.values.status]||row.values.status)} · #${row.id} ${row.sku?'· '+esc(row.sku):''}</small>${inherited?'<span class="nil-badge">موجودی مشترک؛ ویرایش روی والد</span>':''}<details><summary>ویرایش اطلاعات</summary>${['name','sku','description','short_description'].map(editText).join('')}${variable||row.type==='simple'?['category_ids','brand_ids'].map(field=>`<label>${esc(labels[field])} (شناسه‌ها با |)<input data-field="${field}" data-id="${row.id}" value="${esc((values[field]||[]).join('|'))}"></label>`).join(''):''}</details></td><td><input data-id="${row.id}" data-field="cost_price" inputmode="decimal" value="${esc(values.cost_price??'')}" aria-label="قیمت خرید ${esc(row.name)}"></td><td>${variable?'از ورییشن‌ها':profit==null?'هزینه نامشخص':`${fmt(profit)}<small>${Number(effective)>0?fmt(100*profit/Number(effective))+'٪':'—'}</small>`}</td><td>${price('regular_price')}</td><td>${price('sale_price')}</td><td><input data-id="${row.id}" data-field="manage_stock" type="checkbox" ${values.manage_stock?'checked':''} aria-label="مدیریت موجودی مستقل ${esc(row.name)}"></td><td><input data-id="${row.id}" data-field="stock_quantity" inputmode="numeric" value="${esc(values.stock_quantity)}" ${quantityDisabled?'disabled':''} aria-label="تعداد ${esc(row.name)}"></td><td><select data-id="${row.id}" data-field="stock_status" ${statusDisabled?'disabled':''} aria-label="وضعیت ${esc(row.name)}">${[['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']].map(([v,t])=>`<option value="${v}" ${v===values.stock_status?'selected':''}>${t}</option>`).join('')}</select></td></tr>`;
+            return `<tr class="${variable?'nil-parent':''} ${row.type==='variation'?'nil-variation':''} ${state.changes.has(row.id)?'nil-changed':''} ${state.selected.has(row.id)||state.selected.has(row.parent)?'nil-selected':''}"><td><input type="checkbox" data-select="${row.id}" ${state.selected.has(row.id)?'checked':''} aria-label="انتخاب ${esc(row.name)}"></td><td class="nil-name"><a href="${esc(row.url)}" target="_blank" rel="noopener">${esc(row.name)}</a><small>${row.type==='variation'?esc(row.attributes):variable?'محصول ورییشن‌دار':'محصول ساده'} · ${esc(publication[row.values.status]||row.values.status)} · #${row.id} ${row.sku?'· '+esc(row.sku):''}</small>${inherited?'<span class="nil-badge">موجودی مشترک؛ ویرایش روی والد</span>':''}<details><summary>ویرایش اطلاعات</summary>${['name','sku','description','short_description'].map(editText).join('')}${variable||row.type==='simple'?['category_ids','brand_ids'].map(field=>`<label>${esc(labels[field])} (شناسه‌ها با |)<input data-field="${field}" data-id="${row.id}" value="${esc((values[field]||[]).join('|'))}"></label>`).join(''):''}</details></td><td><input data-id="${row.id}" data-field="cost_price" inputmode="decimal" value="${esc(values.cost_price??'')}" aria-label="قیمت خرید ${esc(row.name)}"></td><td>${variable?'از ورییشن‌ها':profit==null?'هزینه نامشخص':`${fmt(profit)}<small>${Number(effective)>0?fmt(100*profit/Number(effective))+'٪':'—'}</small>`}</td><td>${price('regular_price')}</td><td>${price('sale_price')}</td><td><input data-id="${row.id}" data-field="manage_stock" type="checkbox" ${values.manage_stock?'checked':''} aria-label="مدیریت موجودی مستقل ${esc(row.name)}"></td><td><input data-id="${row.id}" data-field="stock_quantity" inputmode="numeric" value="${esc(values.stock_quantity)}" ${quantityDisabled?'disabled':''} aria-label="تعداد ${esc(row.name)}"></td><td><select data-id="${row.id}" data-field="stock_status" ${statusDisabled?'disabled':''} aria-label="وضعیت ${esc(row.name)}">${[['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']].map(([v,t])=>`<option value="${v}" ${v===values.stock_status?'selected':''}>${t}</option>`).join('')}</select></td></tr>`;
         }).join('') : '<tr><td colspan="9">محصولی پیدا نشد.</td></tr>';
         decorateColumns(); renderTableMeta();
         if (state.busy) $('rows').querySelectorAll('input,select').forEach(e=>{e.disabled=true;});
@@ -98,8 +88,9 @@
     function renderTableMeta() {
         $('pagination').textContent = `صفحه ${fmt(state.page)} از ${fmt(Math.max(1,state.pages))}`;
         $('prev').disabled = state.busy || state.page <= 1; $('next').disabled = state.busy || state.page >= state.pages;
+        $('selected-count').textContent=fmt(state.selected.size);$('dirty-count').textContent=fmt(state.changes.size);$('dirty-count').parentElement.classList.toggle('nil-pending',state.changes.size>0);$('select-all').checked=state.rows.length>0&&state.rows.every(r=>state.selected.has(r.id));$('select-all').indeterminate=state.selected.size>0&&!$('select-all').checked;
         $('dirty').textContent = `${fmt(state.changes.size)} ویرایش باز · ${fmt(state.selected.size)} انتخاب`;
-        const scope=$('scope').value;$('scope-summary').textContent=scope==='selected'?`${fmt(state.selected.size)} ردیف انتخاب شده؛ انتخاب والد شامل ورییشن‌هاست.`:scope==='page'?'محدوده: همهٔ محصولات همین صفحه.':'محدوده: همهٔ صفحات فیلتر فعلی؛ جست‌وجو و فیلترها را بررسی کنید.';
+        const scope=$('scope').value;if(!['category','picked'].includes(scope))$('scope-summary').textContent=scope==='selected'?`${fmt(state.selected.size)} ردیف انتخاب شده؛ انتخاب والد شامل ورییشن‌هاست.`:scope==='page'?'محدوده: همهٔ محصولات همین صفحه.':'محدوده: همهٔ صفحات فیلتر فعلی؛ جست‌وجو و فیلترها را بررسی کنید.';
         $('manual').disabled = state.busy || !state.changes.size;
     }
     root.addEventListener('change', event => {
@@ -148,13 +139,7 @@
     $('manual').onclick=()=>task(()=>buildPreview([...state.changes.values()]));
     $('bulk').onclick=()=>task(async()=>{
         if (state.changes.size) throw new Error('ابتدا ویرایش‌های جدول را ذخیره یا پاک کنید تا با عملیات گروهی ترکیب نشوند.');
-        let rows=[...state.rows]; const scope=$('scope').value;
-        if(scope==='all') {
-            rows=[]; let pages=1;
-            for(let page=1;page<=pages;page++) {progress(`دریافت محصولات: صفحه ${fmt(page)} از ${fmt(pages)}…`); const result=await api('products?'+filters(page)); pages=result.pages; rows.push(...result.rows);}
-        } else if(scope==='selected') {
-            rows=rows.filter(r=>state.selected.has(r.id) || (r.type==='variation' && state.selected.has(r.parent)));
-        }
+        let rows=window.NIL_APP?.scoped?await window.NIL_APP.scoped():state.rows.filter(r=>state.selected.has(r.id)||state.selected.has(r.parent));
         rows=rows.filter(r=>r.type!=='variable');
         const rule={source:$('source').value, target:$('target').value, operation:$('operation').value, value:$('value').value, rounding:$('rounding').value, step:$('step').value, ending:$('ending').value};
         await buildPreview(rows.map(r=>({id:r.id,version:r.version,changes:{}})),rule);

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Nilwears — Price & Stock Manager
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.5.1
+ * Version: 1.6.0
  * Update URI: https://github.com/sh-sabery/nilwears-bulk-manager
  * Author: Nilwears
  * Requires at least: 6.4
@@ -22,7 +22,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.5.1';
+    const VERSION = '1.6.0';
     private static function table( $name ) { global $wpdb; return $wpdb->prefix . 'nil_bulk_' . $name; }
 
     public static function install() {

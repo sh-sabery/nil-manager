@@ -28,7 +28,7 @@
     },
     {
       "step": "runPHP",
-      "code": "<?php require '/wordpress/wp-load.php'; try { require '/nil-tests/frontend.php'; require '/nil-tests/integration.php'; require '/nil-tests/suite-integration.php'; require '/nil-tests/performance.php'; require '/nil-tests/advanced.php'; require '/nil-tests/market.php'; } catch (Throwable $e) { $message = 'FAIL: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine().'\\n'.$e->getTraceAsString(); file_put_contents('/nil-tests/suite-result.txt', $message); echo $message; exit(1); }"
+      "code": "<?php require '/wordpress/wp-load.php'; try { require '/nil-tests/frontend.php'; require '/nil-tests/integration.php'; require '/nil-tests/suite-integration.php'; require '/nil-tests/performance.php'; require '/nil-tests/advanced.php'; require '/nil-tests/market.php'; require '/nil-tests/selection.php'; } catch (Throwable $e) { $message = 'FAIL: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine().'\\n'.$e->getTraceAsString(); file_put_contents('/nil-tests/suite-result.txt', $message); echo $message; exit(1); }"
     }
   ]
 }

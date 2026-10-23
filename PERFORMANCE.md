@@ -1,4 +1,4 @@
-# Performance contract — v1.5.1
+# Performance contract — v1.6.0
 
 ## Scope
 
@@ -12,7 +12,7 @@ The latest stable releases verified on 2026-10-22 Tehran time are WordPress 7.1.
 |---|---|
 | Public CSS, JavaScript and fonts | 0 plugin enqueues on public pages; also none on unrelated admin screens |
 | Plugin boot | 0 SQL issued by the plugin's boot function; schema-version work only during authorized admin initialization |
-| Admin assets | Four minified vanilla-JS files and one minified stylesheet, 59,625 bytes total; 22,363 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
+| Admin assets | Four minified vanilla-JS files and one minified stylesheet, 59,974 bytes total; 22,435 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
 | Font | Local Vazirmatn WOFF2, 46,308 bytes, requested only by the plugin admin stylesheet; no CDN font |
 | Build budget | CSS/JS limited to 60,000 uncompressed bytes and checked in CI; readable source files remain in git and are excluded from the installation ZIP |
 | In-app help and static forms | Rendered as templates only on the plugin admin page; 0 additional SQL, no extra script, library or remote asset |
@@ -46,3 +46,9 @@ Deleting a rule removes its baseline records and pending event but preserves cur
 ## Update discovery
 
 Updater hooks stay confined to admin, cron and WP-CLI contexts and are registered before the WooCommerce dependency gate. Reading WordPress's plugin-update transient merges this plugin's verified release metadata, including a no-update entry when current; it does not require a successful WordPress.org update response. Cached ordinary reads retain the six-hour metadata cache and five-minute failure throttle. An authorized explicit check or dashboard Check Again bypasses those caches once, without periodic extra jobs, storefront work, installing software or replacing other plugins' update entries. Failed optional-token requests can retry anonymously once for a public release. Error metadata is one five-minute site transient containing only a safe category/message, status and timestamp.
+
+## Pricing selections and local identity
+
+Pricing searches, category expansion and explicit-ID resolution happen only on user actions; no startup selection fetch, persisted pick cache, new cron or new database table is added. Explicit IDs resolve in at most 50-ID requests, with post/meta/taxonomy and parent priming, a 5,000-row response cap and fresh fingerprints. The UI retains at most 500 direct picks in memory, caps collected cohorts at 5,000 rows and renders at most 50 scope-review rows. The disposable HPOS fixture measured 12 queries for resolving a parent with 2 variations and 12 for 40. These are endpoint-specific counts, not zero SQL during editing.
+
+Advanced form/select/navigation markup now lives in existing admin PHP templates, without added rendering SQL or a runtime framework. Four minified JS files plus CSS remain under the same 60,000-byte cap. The local icon/banner SVG files together are 949 bytes, have no script or external asset references, and are requested only by WordPress admin update/detail views; app navigation/marks are inline SVG. No public storefront enqueues are added. Product picker data is not sent to any external host.
