@@ -8,7 +8,7 @@ for(const name of ['admin','suite','advanced','market']){
  const result=await minify(source,{ecma:2020,compress:{passes:2},mangle:true,format:{comments:false,ascii_only:false}});
  generated.push([name+'.min.js',result.code+'\n']);
 }
-const css=fs.readFileSync(path.join(dir,'admin.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'').replace(/\s+/g,' ').replace(/\s*([{}:;,])\s*/g,'$1').trim()+'\n';
+const css=fs.readFileSync(path.join(dir,'admin.css'),'utf8').replace(/\/\*[\s\S]*?\*\//g,'').replace(/\s+/g,' ').replace(/\s*([{};,])\s*/g,'$1').replace(/:\s+/g,':').trim()+'\n';
 generated.push(['admin.min.css',css]);
 for(const [file,content] of generated){const target=path.join(dir,file);if(check){if(!fs.existsSync(target)||fs.readFileSync(target,'utf8')!==content)throw new Error(file+' is stale; run npm run build:assets');}else fs.writeFileSync(target,content);}
 const bytes=generated.reduce((sum,[,content])=>sum+Buffer.byteLength(content),0);

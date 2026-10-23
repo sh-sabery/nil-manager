@@ -26,7 +26,7 @@
             if(n<0||n>1e11)throw Error();n=Math.round(n*scale);
             if(mode!=='none'){const step=Math.round(number('step')*scale),end=Math.round(number('ending')*scale);if(step<=0||end<0||end>=step)throw Error();const pos=(n-end)/step;n=(mode==='up'?Math.ceil(pos):mode==='down'?Math.floor(pos):Math.floor(pos+.5))*step+end;if(n<0&&mode==='down')throw Error();n=Math.max(end,n);}
             if(n/scale>1e11)throw Error();out.textContent=fmt(n/scale)+' '+cfg.currency;out.className='';
-        }catch(_){out.textContent='عدد، گام و پایان قیمت را بررسی کنید.';out.className='nil-error-text';}
+        }catch(_){out.textContent=text.u7;out.className='nil-error-text';}
     }
     const ruleInputs=['operation','value','rounding','step','ending','demo-price'];
     root.addEventListener('input',e=>{if(ruleInputs.includes(e.target.id.replace('nil-','')))demo();});
@@ -38,7 +38,7 @@
         const response = await fetch(cfg.api+path, {method:data ? 'POST':'GET', credentials:'same-origin', headers:{'X-WP-Nonce':cfg.nonce, ...(data?{'Content-Type':'application/json'}:{})}, ...(data?{body:JSON.stringify(data)}:{})});
         let result;
         try { result = await response.json(); } catch (_) { throw new Error(text.response); }
-        if (!response.ok) throw new Error(result.message || 'ارتباط با سرور برقرار نشد.');
+        if (!response.ok) throw new Error(result.message || text.u26);
         return result;
     }
     async function task(fn) {
@@ -58,21 +58,21 @@
         state.page = result.page; state.pages = result.pages; state.rows = result.rows;
         state.selected.clear(); $('select-all').checked = false;
         $('total').textContent = fmt(result.total);
-        renderRows();
+        renderRows(); document.dispatchEvent(new Event('nil-table-loaded'));
     }
     function renderRows() {
         $('rows').innerHTML = state.rows.length ? state.rows.map(row => {
             const values = {...row.values, ...(state.changes.get(row.id)?.changes || {})};
             const variable = row.type === 'variable', inherited = row.type === 'variation' && values.parent_stock && !values.manage_stock;
-            const price = field => variable ? '<span class="nil-muted">از ورییشن‌ها</span>' : `<input data-field="${field}" data-id="${row.id}" aria-label="${labels[field]} ${esc(row.name)}" inputmode="decimal" value="${esc(values[field])}">`;
+            const price = field => variable ? text.u27 : `<input data-field="${field}" data-id="${row.id}" aria-label="${labels[field]} ${esc(row.name)}" inputmode="decimal" value="${esc(values[field])}">`;
             const quantityDisabled = !values.manage_stock;
             const statusDisabled = values.manage_stock || inherited || variable;
             const now=Date.now()/1000, activeSale=(!values.sale_from||values.sale_from<=now)&&(!values.sale_to||values.sale_to>=now);
             const effective=activeSale&&values.sale_price!==''&&values.sale_price!=null&&Number(values.sale_price)<Number(values.regular_price)?values.sale_price:values.regular_price;
             const profit=values.cost_price!==''&&values.cost_price!=null&&effective!==''?Number(effective)-Number(values.cost_price):null;
             const editText=field=>`<label>${esc(labels[field])}<${field.includes('description')?'textarea':'input'} data-field="${field}" data-id="${row.id}" ${field.includes('description')?'':`value="${esc(values[field]??(field==='name'?row.name:field==='sku'?row.sku:''))}"`}>${field.includes('description')?esc(values[field]||'')+'</textarea>':''}</label>`;
-            return `<tr class="${variable?'nil-parent':''} ${row.type==='variation'?'nil-variation':''} ${state.changes.has(row.id)?'nil-changed':''} ${state.selected.has(row.id)||state.selected.has(row.parent)?'nil-selected':''}"><td><input type="checkbox" data-select="${row.id}" ${state.selected.has(row.id)?'checked':''} aria-label="انتخاب ${esc(row.name)}"></td><td class="nil-name"><a href="${esc(row.url)}" target="_blank" rel="noopener">${esc(row.name)}</a><small>${row.type==='variation'?esc(row.attributes):variable?'محصول ورییشن‌دار':'محصول ساده'} · ${esc(publication[row.values.status]||row.values.status)} · #${row.id} ${row.sku?'· '+esc(row.sku):''}</small>${inherited?'<span class="nil-badge">موجودی مشترک؛ ویرایش روی والد</span>':''}<details><summary>ویرایش اطلاعات</summary>${['name','sku','description','short_description'].map(editText).join('')}${variable||row.type==='simple'?['category_ids','brand_ids'].map(field=>`<label>${esc(labels[field])} (شناسه‌ها با |)<input data-field="${field}" data-id="${row.id}" value="${esc((values[field]||[]).join('|'))}"></label>`).join(''):''}</details></td><td><input data-id="${row.id}" data-field="cost_price" inputmode="decimal" value="${esc(values.cost_price??'')}" aria-label="قیمت خرید ${esc(row.name)}"></td><td>${variable?'از ورییشن‌ها':profit==null?'هزینه نامشخص':`${fmt(profit)}<small>${Number(effective)>0?fmt(100*profit/Number(effective))+'٪':'—'}</small>`}</td><td>${price('regular_price')}</td><td>${price('sale_price')}</td><td><input data-id="${row.id}" data-field="manage_stock" type="checkbox" ${values.manage_stock?'checked':''} aria-label="مدیریت موجودی مستقل ${esc(row.name)}"></td><td><input data-id="${row.id}" data-field="stock_quantity" inputmode="numeric" value="${esc(values.stock_quantity)}" ${quantityDisabled?'disabled':''} aria-label="تعداد ${esc(row.name)}"></td><td><select data-id="${row.id}" data-field="stock_status" ${statusDisabled?'disabled':''} aria-label="وضعیت ${esc(row.name)}">${[['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']].map(([v,t])=>`<option value="${v}" ${v===values.stock_status?'selected':''}>${t}</option>`).join('')}</select></td></tr>`;
-        }).join('') : '<tr><td colspan="9">محصولی پیدا نشد.</td></tr>';
+            return `<tr class="${variable?'nil-parent':''} ${row.type==='variation'?'nil-variation':''} ${state.changes.has(row.id)?'nil-changed':''} ${state.selected.has(row.id)||state.selected.has(row.parent)?'nil-selected':''}"><td><input type="checkbox" data-select="${row.id}" ${state.selected.has(row.id)?'checked':''} aria-label="انتخاب ${esc(row.name)}"></td><td class="nil-name"><a href="${esc(row.url)}" target="_blank" rel="noopener">${esc(row.name)}</a><small>${row.type==='variation'?esc(row.attributes):variable?'محصول ورییشن‌دار':'محصول ساده'} · ${esc(publication[row.values.status]||row.values.status)} · #${row.id} ${row.sku?'· '+esc(row.sku):''}</small>${inherited?text.u8:''}<details><summary>ویرایش اطلاعات</summary>${['name','sku','description','short_description'].map(editText).join('')}${variable||row.type==='simple'?['category_ids','brand_ids'].map(field=>`<label>${esc(labels[field])} (شناسه‌ها با |)<input data-field="${field}" data-id="${row.id}" value="${esc((values[field]||[]).join('|'))}"></label>`).join(''):''}</details></td><td><input data-id="${row.id}" data-field="cost_price" inputmode="decimal" value="${esc(values.cost_price??'')}" aria-label="قیمت خرید ${esc(row.name)}"></td><td>${variable?'از ورییشن‌ها':profit==null?'هزینه نامشخص':`${fmt(profit)}<small>${Number(effective)>0?fmt(100*profit/Number(effective))+'٪':'—'}</small>`}</td><td>${price('regular_price')}</td><td>${price('sale_price')}</td><td><input data-id="${row.id}" data-field="manage_stock" type="checkbox" ${values.manage_stock?'checked':''} aria-label="مدیریت موجودی مستقل ${esc(row.name)}"></td><td><input data-id="${row.id}" data-field="stock_quantity" inputmode="numeric" value="${esc(values.stock_quantity)}" ${quantityDisabled?'disabled':''} aria-label="تعداد ${esc(row.name)}"></td><td><select data-id="${row.id}" data-field="stock_status" ${statusDisabled?'disabled':''} aria-label="وضعیت ${esc(row.name)}">${[['instock','موجود'],['outofstock','ناموجود'],['onbackorder','پیش‌خرید']].map(([v,t])=>`<option value="${v}" ${v===values.stock_status?'selected':''}>${t}</option>`).join('')}</select></td></tr>`;
+        }).join('') : text.u28;
         decorateColumns(); renderTableMeta();
         if (state.busy) $('rows').querySelectorAll('input,select').forEach(e=>{e.disabled=true;});
     }
@@ -83,7 +83,7 @@
             for(const key of state.order){const cell=cells.find(c=>c.dataset.column===key);cell.hidden=!state.columns.includes(key);tr.append(cell);}
         }
     }
-    function controls(data){for(const [key,value] of Object.entries(data)){const el=$(key);if(!el)continue;if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===String(value)))throw new Error('گزینهٔ ذخیره‌شده دیگر موجود نیست: '+key);}
+    function controls(data){for(const [key,value] of Object.entries(data)){const el=$(key);if(!el)continue;if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===String(value)))throw new Error(text.u9+key);}
         for(const [key,value] of Object.entries(data)){const el=$(key);if(el){if(el.tagName==='SELECT'){[...el.options].forEach(o=>{o.selected=false;});[...el.options].find(o=>o.value===String(value)).selected=true;}else el.value=String(value);}}
         document.dispatchEvent(new Event('nil-rule-ready'));
     }
@@ -92,9 +92,10 @@
         $('prev').disabled = state.busy || state.page <= 1; $('next').disabled = state.busy || state.page >= state.pages;
         $('selected-count').textContent=fmt(state.selected.size);$('dirty-count').textContent=fmt(state.changes.size);$('dirty-count').parentElement.classList.toggle('nil-pending',state.changes.size>0);$('select-all').checked=state.rows.length>0&&state.rows.every(r=>state.selected.has(r.id));$('select-all').indeterminate=state.selected.size>0&&!$('select-all').checked;
         $('dirty').textContent = `${fmt(state.changes.size)} ویرایش باز · ${fmt(state.selected.size)} انتخاب`;
-        const scope=$('scope').value;if(!['category','picked'].includes(scope))$('scope-summary').textContent=scope==='selected'?`${fmt(state.selected.size)} ردیف انتخاب شده؛ انتخاب والد شامل ورییشن‌هاست.`:scope==='page'?'محدوده: همهٔ محصولات همین صفحه.':'محدوده: همهٔ صفحات فیلتر فعلی؛ جست‌وجو و فیلترها را بررسی کنید.';
+        const scope=$('scope').value;if(!['category','picked'].includes(scope))$('scope-summary').textContent=scope==='selected'?`${fmt(state.selected.size)} ردیف انتخاب شده؛ انتخاب والد شامل ورییشن‌هاست.`:scope==='page'?text.u29:text.u0;
         $('manual').disabled = state.busy || !state.changes.size;
     }
+    function closePreview(pendingOnly=false){if(pendingOnly&&state.detail&&state.detail.job.state!=='ready')return;state.job=null;state.detail=null;state.previewChanges=null;$('preview').hidden=true;$('preview-empty').hidden=false;updatePreviewButtons();}
     root.addEventListener('change', event => {
         const el = event.target;
         if (el.dataset.select) {
@@ -117,9 +118,10 @@
     $('reset').onclick=()=>{state.changes.clear(); renderRows(); message(text.reset);};
     async function buildPreview(rows, rule=null) {
         if (!rows.length) throw new Error(text.empty);
+        window.NIL_APP?.setFlow?.(rule?.kind?'stock':'manual');
         if(cfg.costBackend==='native'){rows=[...rows].sort((a,b)=>Number(state.rows.find(r=>r.id===a.id)?.type==='variable')-Number(state.rows.find(r=>r.id===b.id)?.type==='variable'));}
         let jobId=null, count=0, unchanged=0, errors=[];
-        $('preview').hidden=true; state.job=null; state.detail=null;
+        closePreview();
         for(let i=0;i<rows.length;i+=50) {
             progress(`ساخت پیش‌نمایش: ${fmt(i)} از ${fmt(rows.length)} ردیف…`);
             const result=await api('preview',{job_id:jobId, rows:rows.slice(i,i+50), rule});
@@ -158,8 +160,9 @@
         state.detail=await api(`job/${state.job}?page=${state.jobPage}`);
         const detail=state.detail;
         $('preview').hidden=false;
+        $('preview-empty').hidden=true;
         $('job-state').textContent=jobs[detail.job.state]||detail.job.state;
-        $('summary').textContent=detail.counts.map(c=>`${statuses[c.state]||c.state}: ${fmt(c.n)}`).join(' · ')+(detail.market?' · قانون بازار: '+detail.market.name+'؛ اجرا از بخش قانون بازار، بازگردانی پس از توقف قانون.':'');
+        $('summary').textContent=detail.counts.map(c=>`${statuses[c.state]||c.state}: ${fmt(c.n)}`).join(' · ')+(detail.market?' · قانون بازار: '+detail.market.name+text.u10:'');
         $('preview-table').innerHTML=`<table class="widefat nil-report"><thead><tr><th>محصول</th><th>فیلد</th><th>قبل</th><th>بعد</th><th>نتیجه</th></tr></thead><tbody>${detail.items.map(item=>item.fields.map((field,i)=>`<tr><td>${i===0?`${esc(item.label)} <small>#${item.product_id}</small>`:''}</td><td>${esc(labels[field]||field)}</td><td>${esc(display(field,item.before[field]))}</td><td>${esc(display(field,item.after[field]))}</td><td>${i===0?`${esc(statuses[item.state]||item.state)}${item.error?'<br><span class="nil-error-text">'+esc(item.error)+'</span>':''}`:''}</td></tr>`).join('')).join('')}</tbody></table>`;
         const total=detail.counts.reduce((sum,c)=>sum+Number(c.n),0);
         $('job-pagination').textContent=`${fmt(state.jobPage)} / ${fmt(Math.max(1,Math.ceil(total/50)))}`;
@@ -178,6 +181,7 @@
     $('job-prev').onclick=()=>task(async()=>{state.jobPage--;await showJob();});
     $('job-next').onclick=()=>task(async()=>{state.jobPage++;await showJob();});
     async function run(mode) {
+        if(!state.job||!state.detail||(mode==='apply'&&state.detail.market))throw Error(text.previewFresh);
         // The preview remains immutable on the server. Repeated requests resume safely.
         let done=false, processed=0;
         while(!done) {
@@ -194,12 +198,12 @@
         message(`عملیات پایان یافت. ${$('summary').textContent}؛ جزئیات ردیف‌های ردشده در گزارش است.`);
     }
     $('apply').onclick=()=>task(()=>run('apply'));
-    $('undo').onclick=()=>{if(window.confirm('تغییرات همین عملیات بازگردانده شود؟ ردیف‌هایی که بعداً تغییر کرده‌اند رد خواهند شد.')) task(()=>run('undo'));};
+    $('undo').onclick=()=>{if(window.confirm(text.u1)) task(()=>run('undo'));};
     async function history() {
         const list=await api('jobs');
-        $('history').innerHTML=list.length ? list.map(j=>`<button type="button" class="button nil-history-item" data-job="${esc(j.id)}">${esc(date(j.created_at))} · ${esc(jobs[j.state]||j.state)} · ${esc(j.id.slice(0,8))}</button>`).join(''):'<p class="nil-muted">هنوز عملیاتی ثبت نشده است.</p>';
+        $('history').innerHTML=list.length ? list.map(j=>`<button type="button" class="button nil-history-item" data-job="${esc(j.id)}">${esc(date(j.created_at))} · ${esc(jobs[j.state]||j.state)} · ${esc(j.id.slice(0,8))}</button>`).join(''):text.u11;
     }
-    $('history').onclick=e=>{const button=e.target.closest('[data-job]'); if(button) task(async()=>{state.job=button.dataset.job;state.jobPage=1;state.previewChanges=null;await showJob();});};
+    $('history').onclick=e=>{const button=e.target.closest('[data-job]'); if(button) task(()=>window.NIL_APP.openJob(button.dataset.job));};
     $('history-refresh').onclick=()=>task(history);
     $('export').onclick=()=>task(async()=>{
         if(!state.job) return;
@@ -214,7 +218,7 @@
         const blob=new Blob(['\ufeff'+lines.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
         const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=`nilwears-${state.job}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
-    window.NIL_APP={dirtyCount:()=>state.changes.size,openJob:async id=>{state.job=id;state.jobPage=1;state.previewChanges=null;await showJob();window.NIL_APP.activatePanel('pricing');$('preview').scrollIntoView({block:'start'});},refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error(text.currency);controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,date,text,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
+    window.NIL_APP={closePreview,history,dirtyCount:()=>state.changes.size,openJob:async id=>{state.job=id;state.jobPage=1;state.previewChanges=null;await showJob();window.NIL_APP.activatePanel('pricing');$('preview').scrollIntoView({block:'start'});},refreshMeta:renderTableMeta,getView:()=>({filters:Object.fromEntries([...filters(1)].filter(([key])=>key!=='page')),columns:[...state.columns],order:[...state.order]}),setColumns:(columns,order)=>{state.columns=columns;state.order=order;decorateColumns();},applyView:async view=>{controls(view.filters);state.columns=view.columns;state.order=view.order;decorateColumns();await load(1);},applyRule:rule=>{if(rule.currency&&rule.currency!==cfg.currencyCode||rule.decimals!=null&&Number(rule.decimals)!==cfg.decimals)throw new Error(text.currency);controls(Object.fromEntries(Object.entries(rule).filter(([k])=>!['currency','decimals'].includes(k))));},api,task,load,buildPreview,filters,message,esc,fmt,date,text,getRows:()=>state.rows,getSelected:()=>new Set(state.selected),getRule:()=>({source:$('source').value,target:$('target').value,operation:$('operation').value,value:$('value').value,rounding:$('rounding').value,step:$('step').value,ending:$('ending').value})};
     window.addEventListener('beforeunload',e=>{if(state.changes.size||state.busy){e.preventDefault();e.returnValue='';}});
-    task(async()=>{await load(1);await history();message(text.ready);});
+    task(async()=>{await load(1);});
 })();

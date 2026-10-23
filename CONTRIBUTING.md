@@ -109,3 +109,19 @@ The updater lifecycle Blueprint passed 23 actual WordPress Plugin_Upgrader asser
 `tests/benchmark-v1.8.json` records the paired cold-cache diagnostics from the minimal integration + resource-profile Blueprint before and after optimization; full Blueprints generate additional ignored `resources-VERSION.json` diagnostics after their larger fixtures, which are not the paired sample. PHP memory figures are peak heap deltas, not process RSS or native-library memory. The Node formatting diagnostic `node tests/format-profile.cjs` has five samples, a checksum-equivalence assertion and no speed threshold. The source/minified DOM suites assert one shared number formatter per document, Persian text inputs, configured IANA/fixed-offset zones, untouched Persian request strings with `calendar=persian`, escaped product names and no raw UTC history.
 
 Assets total 59,709 bytes (22,406 deterministic gzip) under the unchanged cap. `includes-dates.php` stays lazy, zero boot SQL/public assets and existing 17/17 grid, 25/25 market capture and 12/12 selection probes passed. The paired 2/40-product previews use 12/12 queries and exports 8/8. Do not present single-run diagnostic timings or the formatter microbenchmark as production latency, host CPU percentage, RAM reduction or a GTmetrix guarantee.
+
+
+## Version 1.9 UX and optional browser verification
+
+`PRODUCT-PLAN.md` records commercial scope, journeys, empty/error states and acceptance. The UI-only update adds no REST endpoint or database migration. Source/minified DOM tests cover home entry without rate/report/write requests, explicit picker fallback, preserved variation membership, isolated forms, stale-preview closure without running/deleting the saved job, invalidated market activation and on-demand history reopening.
+
+For real Chromium rendering of the **disconnected generated fixture**, install Playwright as optional development tooling (not a WordPress runtime dependency), generate the preview and run:
+
+```sh
+python3 scripts/preview.py
+node tests/ui-browser.cjs
+```
+
+If Playwright or Chromium is installed outside this repository, set `NIL_PLAYWRIGHT_MODULE` to its module path and optionally `NIL_CHROMIUM_BIN` to the browser executable. The runner only opens the generated local fixture and aborts HTTP(S) browser requests; product/rate/report calls use deterministic mocks. It checks 1440px/390px layouts, actual rounded input styles, primary-button hover background, category selection, previews, stale-setting closure, stock/market forms and table containment. It writes ignored screenshots to `dist/`. This is isolated layout/interaction evidence, not a full WordPress admin/theme/plugin compatibility test, production installation, MySQL concurrency check or real-user usability study.
+
+The CSS builder must preserve descendant whitespace before pseudo-classes: `#nil-bulk-app :is(...)` must not become `#nil-bulk-app:is(...)`. The browser regression checks computed input corner radius/min-height, so DOM assertions alone cannot conceal that error. Keep the 60,000-byte production CSS/JS cap.
