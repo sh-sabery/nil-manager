@@ -15,6 +15,8 @@ Manage products, prices, stock, purchase cost, XLSX/CSV, images and customer rep
 See README-fa.html for usage, and the repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Public-repository updates need no token from v1.4. Older versions without a token require one manual v1.4 ZIP installation. An optional token supports private access.
 
 == Changelog ==
+= 1.9.1 =
+Guarded native MySQL/MariaDB functional and concurrency validation with HPOS on/off; publication now requires the database matrix. No pricing/UI/runtime dependency change. See SQL-VALIDATION.md and BETA-GUIDE.md in the repository.
 = 1.9.0 =
 A local start screen with manual price, stock/discount and market journeys; shared product scope, isolated forms, stale-preview closure and an independent on-demand history workspace. Preserve descendant pseudo-class spacing in production CSS so rounded input/focus styles apply. See PRODUCT-PLAN.md in the repository for commercial scope and remaining work.
 = 1.8.1 =

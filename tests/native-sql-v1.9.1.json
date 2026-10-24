@@ -1,0 +1,296 @@
+{
+  "date": "2026-10-24",
+  "run": "https://github.com/sh-sabery/nilwears-bulk-manager/actions/runs/40090616769",
+  "commit": "e6c3e48268d66558c59bc42fd121f1583bef86ed",
+  "phase": "initial native validation; final release repeats with output buffering and memory_limit=256M",
+  "environments": [
+    {
+      "job": 120862338650,
+      "name": "database (mariadb114, mariadb:11.4, yes)",
+      "conclusion": "success",
+      "functional": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "database": "11.4.13-MariaDB-ubu2404",
+        "hpos": "yes",
+        "assertions": 382,
+        "sqlite_lock_shim": false
+      },
+      "concurrency": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "database": "11.4.13-MariaDB-ubu2404",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "hpos": "yes",
+        "assertions": 41,
+        "cases": [
+          "price apply, advisory exclusion, real row-lock wait, order/job retries",
+          "price undo versus order stock reduction",
+          "stock set versus order reduction and guarded undo",
+          "committed order versus stale preview",
+          "transaction rollback after product writes",
+          "variation pricing versus shared-parent order stock"
+        ],
+        "sqlite_lock_shim": false,
+        "scope": "Separate native PHP/database connections, observed server lock waits and WooCommerce order-stock reduction. Not an HTTP checkout/payment or production load test."
+      },
+      "resources": {
+        "version": "1.9.1",
+        "php": "8.3.36",
+        "wp": "7.1.3",
+        "wc": "11.2.1",
+        "profiles": {
+          "2": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 5.46,
+              "php_peak_delta_bytes": 324168,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 4.39,
+              "php_peak_delta_bytes": 304816,
+              "rows": null
+            }
+          },
+          "40": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 18.68,
+              "php_peak_delta_bytes": 928920,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 18.47,
+              "php_peak_delta_bytes": 865120,
+              "rows": null
+            }
+          }
+        },
+        "database": "11.4.13",
+        "note": "native SQL, no SQLite lock shim; concurrency is reported separately; cold-cache diagnostics, PHP heap only; not production latency or host CPU/RAM."
+      }
+    },
+    {
+      "job": 120862338754,
+      "name": "database (mysql84, mysql:8.4, yes)",
+      "conclusion": "success",
+      "functional": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "database": "8.4.13",
+        "hpos": "yes",
+        "assertions": 382,
+        "sqlite_lock_shim": false
+      },
+      "concurrency": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "database": "8.4.13",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "hpos": "yes",
+        "assertions": 41,
+        "cases": [
+          "price apply, advisory exclusion, real row-lock wait, order/job retries",
+          "price undo versus order stock reduction",
+          "stock set versus order reduction and guarded undo",
+          "committed order versus stale preview",
+          "transaction rollback after product writes",
+          "variation pricing versus shared-parent order stock"
+        ],
+        "sqlite_lock_shim": false,
+        "scope": "Separate native PHP/database connections, observed server lock waits and WooCommerce order-stock reduction. Not an HTTP checkout/payment or production load test."
+      },
+      "resources": {
+        "version": "1.9.1",
+        "php": "8.3.36",
+        "wp": "7.1.3",
+        "wc": "11.2.1",
+        "profiles": {
+          "2": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 5.5,
+              "php_peak_delta_bytes": 324128,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 3.85,
+              "php_peak_delta_bytes": 304776,
+              "rows": null
+            }
+          },
+          "40": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 18.76,
+              "php_peak_delta_bytes": 928880,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 18.54,
+              "php_peak_delta_bytes": 865080,
+              "rows": null
+            }
+          }
+        },
+        "database": "8.4.13",
+        "note": "native SQL, no SQLite lock shim; concurrency is reported separately; cold-cache diagnostics, PHP heap only; not production latency or host CPU/RAM."
+      }
+    },
+    {
+      "job": 120862338762,
+      "name": "database (mariadb114, mariadb:11.4, no)",
+      "conclusion": "success",
+      "functional": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "database": "11.4.13-MariaDB-ubu2404",
+        "hpos": "no",
+        "assertions": 382,
+        "sqlite_lock_shim": false
+      },
+      "concurrency": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "database": "11.4.13-MariaDB-ubu2404",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "hpos": "no",
+        "assertions": 41,
+        "cases": [
+          "price apply, advisory exclusion, real row-lock wait, order/job retries",
+          "price undo versus order stock reduction",
+          "stock set versus order reduction and guarded undo",
+          "committed order versus stale preview",
+          "transaction rollback after product writes",
+          "variation pricing versus shared-parent order stock"
+        ],
+        "sqlite_lock_shim": false,
+        "scope": "Separate native PHP/database connections, observed server lock waits and WooCommerce order-stock reduction. Not an HTTP checkout/payment or production load test."
+      },
+      "resources": {
+        "version": "1.9.1",
+        "php": "8.3.36",
+        "wp": "7.1.3",
+        "wc": "11.2.1",
+        "profiles": {
+          "2": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 3.9,
+              "php_peak_delta_bytes": 324168,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 2.96,
+              "php_peak_delta_bytes": 304816,
+              "rows": null
+            }
+          },
+          "40": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 14.13,
+              "php_peak_delta_bytes": 928920,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 14.63,
+              "php_peak_delta_bytes": 865120,
+              "rows": null
+            }
+          }
+        },
+        "database": "11.4.13",
+        "note": "native SQL, no SQLite lock shim; concurrency is reported separately; cold-cache diagnostics, PHP heap only; not production latency or host CPU/RAM."
+      }
+    },
+    {
+      "job": 120862338864,
+      "name": "database (mysql84, mysql:8.4, no)",
+      "conclusion": "success",
+      "functional": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "database": "8.4.13",
+        "hpos": "no",
+        "assertions": 382,
+        "sqlite_lock_shim": false
+      },
+      "concurrency": {
+        "plugin": "1.9.1",
+        "php": "8.3.36",
+        "database": "8.4.13",
+        "wordpress": "7.1.3",
+        "woocommerce": "11.2.1",
+        "hpos": "no",
+        "assertions": 41,
+        "cases": [
+          "price apply, advisory exclusion, real row-lock wait, order/job retries",
+          "price undo versus order stock reduction",
+          "stock set versus order reduction and guarded undo",
+          "committed order versus stale preview",
+          "transaction rollback after product writes",
+          "variation pricing versus shared-parent order stock"
+        ],
+        "sqlite_lock_shim": false,
+        "scope": "Separate native PHP/database connections, observed server lock waits and WooCommerce order-stock reduction. Not an HTTP checkout/payment or production load test."
+      },
+      "resources": {
+        "version": "1.9.1",
+        "php": "8.3.36",
+        "wp": "7.1.3",
+        "wc": "11.2.1",
+        "profiles": {
+          "2": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 4.11,
+              "php_peak_delta_bytes": 324168,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 2.89,
+              "php_peak_delta_bytes": 304816,
+              "rows": null
+            }
+          },
+          "40": {
+            "preview": {
+              "queries": 12,
+              "wall_ms": 11.88,
+              "php_peak_delta_bytes": 928920,
+              "rows": null
+            },
+            "export": {
+              "queries": 8,
+              "wall_ms": 11.04,
+              "php_peak_delta_bytes": 865120,
+              "rows": null
+            }
+          }
+        },
+        "database": "8.4.13",
+        "note": "native SQL, no SQLite lock shim; concurrency is reported separately; cold-cache diagnostics, PHP heap only; not production latency or host CPU/RAM."
+      }
+    }
+  ]
+}

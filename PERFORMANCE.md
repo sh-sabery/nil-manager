@@ -1,3 +1,5 @@
+> Native database validation added in 1.9.1 is documented in SQL-VALIDATION.md. Earlier release measurements and SQLite limitations below describe their original versions.
+
 # Performance contract — v1.8.0
 
 ## Scope
@@ -69,3 +71,8 @@ Production admin CSS/JS is 59,709 bytes (22,406 deterministic gzip), still under
 ## Version 1.9 journey layout
 
 The production admin CSS/JS totals 59,884 bytes (22,075 deterministic gzip), within the same 60,000-byte cap. Static messages remain in an admin-only template; no framework, runtime package, schema, endpoint, cron or storefront asset was added. The static start screen and mode changes make no new HTTP requests. The product table still loads once at startup; the former startup history fetch is removed. History loads on explicit navigation/refresh and after relevant operations. This is not a new PHP heap/CPU, MySQL or production GTmetrix measurement. Optional Playwright/Chromium tooling lives outside the distributable plugin and is not included in its ZIP.
+
+
+## Version 1.9.1 native database evidence
+
+See SQL-VALIDATION.md for four native MySQL/MariaDB + HPOS configurations and the exact initial run. All four measured 12/12 SQL queries for 2/40-product previews and 8/8 for CSV exports. Worker processes verified actual server lock waits rather than sleeping and assuming contention. PHP heap diagnostics remain per-request deltas; no production host/CPU/GTmetrix or shared-cache claim follows. The native runner, workers, database containers and reports stay outside the plugin ZIP; shipped assets and runtime dependencies are unchanged.

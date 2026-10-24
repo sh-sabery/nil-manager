@@ -4,8 +4,9 @@
 
 ## [1.9.1] - 2026-10-24
 
-- Add guarded native SQL functional/concurrency fixtures and an isolated database CI matrix. Native runs never install SQLite SQL rewrites. Existing Playground fixtures explicitly opt into the disposable test guard.
-- Validation is in progress on the validation branch; do not publish this entry until native results and beta documentation are finalized.
+- Add guarded native MySQL 8.4/MariaDB 11.4 functional fixtures with HPOS on/off. Use fresh random databases and marked temporary WordPress installs; never accept an existing store database/path. Keep mail/external runtime HTTP blocked and exclude all test infrastructure from the plugin ZIP. Existing SQLite Playgrounds explicitly opt into the fixture guard; native runs never rewrite lock/engine/transaction SQL. Buffer fixture output to preserve REST header tests.
+- Add independent native PHP workers and barriers observing real InnoDB lock waits: plugin exclusion/retry, price apply/undo versus WooCommerce order-stock reduction, stock set/undo conflicts, stale previews, product/lookup rollback after forced log failure, and variation prices with shared-parent inventory. Gate releases on the four database jobs. Record evidence and limits in SQL-VALIDATION.md and prepare staging/user acceptance in BETA-GUIDE.md. No pricing algorithm, UI, schema, cron, runtime dependency or storefront asset change.
+- Validation: the initial native matrix passed 382 functional and 41 concurrency assertions in each of four configurations on PHP 8.3.36 / WordPress 7.1.3 / WooCommerce 11.2.1, MySQL 8.4.13 or MariaDB 11.4.13. Preview/export query counts stayed 12/12 and 8/8 for 2/40 products. The final release gate repeats the matrix with buffered fixture output and a 256 MB PHP limit. Local PHP 8.3.33 parsed 40 plugin/test/tool PHP files and passed the standalone calendar/pricing/market/sheet/updater regressions; source/minified DOM, asset checks and the package build passed. Whole-store HTTP checkout/payment, real-store compatibility, persistent shared object caches, live installation, user beta and production CPU/RAM/GTmetrix remain unverified.
 
 ## [1.9.0] - 2026-10-24
 

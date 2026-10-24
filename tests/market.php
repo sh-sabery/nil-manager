@@ -1,5 +1,5 @@
 <?php
-// Disposable fixture after advanced.php; source HTTP is mocked, locks use SQLite shims.
+// Disposable fixture after advanced.php; source HTTP is mocked. Native SQL does not rewrite lock statements.
 wp_set_current_user(1);
 $nil_market_feed=array();$nil_market_http_error=false;$nil_market_http_calls=0;
 function nil_market_source($usd=250000,$eur=300000,$gold=20000000,$age=0){global $nil_market_feed;$nil_market_feed=array('indicators'=>array());foreach(array('price_dollar_rl'=>array($usd*10,true),'price_eur'=>array($eur*10,true),'gold18k'=>array($gold,false)) as $key=>$row)$nil_market_feed['indicators'][$key]=array('price'=>$row[0],'divide10'=>$row[1],'unit'=>'تومان','updated_ms'=>(time()-$age)*1000);delete_transient('nil_market_rates');delete_transient('nil_market_rate_error');}
