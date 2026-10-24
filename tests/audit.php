@@ -36,6 +36,6 @@ function nil_audit_fixture(){
  $aid=wp_insert_attachment(array('post_title'=>'Audit oversized PNG','post_mime_type'=>'image/png','post_status'=>'inherit'),$upload['file']);update_attached_file($aid,$upload['file']);wp_update_attachment_metadata($aid,array('width'=>9000,'height'=>9000,'file'=>_wp_relative_upload_path($upload['file']),'sizes'=>array()));
  $media=request_nil('GET','media?search=Audit%20oversized');$m=array_values(array_filter($media['rows'],function($r)use($aid){return $r['id']===$aid;}))[0];$plan=request_nil('POST','media/preview',array('rows'=>array(array('id'=>$aid,'version'=>$m['version'])),'action'=>'optimize'));$out=request_nil('POST','media/apply',array('token'=>$plan['token']));check($out[0]['state']==='skipped'&&get_attached_file($aid)===$upload['file'],'oversized image rejected before pixel decode/write');
  update_option('timezone_string','UTC');
- $msg='PASS: '.$checks.' combined assertions; role/ownership/nonce/body/CSV/XML-image bounds, Persian dates and report limits; HPOS '.get_option('woocommerce_custom_orders_table_enabled')."\n";file_put_contents('/nil-tests/audit-result.txt',$msg);echo $msg;
+ $msg='PASS: '.$checks.' combined assertions; role/ownership/nonce/body/CSV/XML-image bounds, Persian dates and report limits; HPOS '.get_option('woocommerce_custom_orders_table_enabled')."\n";file_put_contents(nil_test_dir().'/audit-result.txt',$msg);echo $msg;
 }
 nil_audit_fixture();

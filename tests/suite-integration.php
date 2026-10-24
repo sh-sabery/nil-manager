@@ -1,6 +1,6 @@
 <?php
 // Requires tests/integration.php in a fresh, disposable Playground installation.
-set_exception_handler(function($e){$message='FAIL: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine().'\n'.$e->getTraceAsString();file_put_contents('/nil-tests/suite-result.txt',$message);echo $message;exit(1);});
+set_exception_handler(function($e){$message='FAIL: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine().'\n'.$e->getTraceAsString();file_put_contents(nil_test_dir().'/suite-result.txt',$message);echo $message;exit(1);});
 wp_set_current_user(1);
 function rejected_nil($method,$path,$body=null){try{request_nil($method,$path,$body);}catch(Throwable $e){return true;}return false;}
 $cat=wp_insert_term('تست نیل','product_cat');$cat_id=(int)$cat['term_id'];
@@ -63,4 +63,4 @@ if(NIL_Media::unused($large)){
  $ml=request_nil('GET','media?trash=1');foreach($ml['rows'] as $m)if($m['id']===$large)$lr=$m;$mp=request_nil('POST','media/preview',array('rows'=>array(array('id'=>$large,'version'=>$lr['version'])),'action'=>'restore'));$ap=request_nil('POST','media/apply',array('token'=>$mp['token']));check($ap[0]['state']==='applied'&&get_post($large)->post_status==='inherit','archive restore works');
 }
 wp_set_current_user(0);check(rejected_nil('GET','insights'),'analytics anonymous denied');check(rejected_nil('POST','branding',array('title'=>'x','accent'=>'#ffffff')),'branding anonymous denied');
-$result="PASS: $checks combined integration checks; WP ".get_bloginfo('version').'; WC '.WC_VERSION.'; HPOS '.get_option('woocommerce_custom_orders_table_enabled')."; SQLite lock shim, no concurrency verification.\n";file_put_contents('/nil-tests/suite-result.txt',$result);echo $result;
+$result="PASS: $checks combined integration checks; WP ".get_bloginfo('version').'; WC '.WC_VERSION.'; HPOS '.get_option('woocommerce_custom_orders_table_enabled')."; ".nil_test_engine_note().".\n";file_put_contents(nil_test_dir().'/suite-result.txt',$result);echo $result;

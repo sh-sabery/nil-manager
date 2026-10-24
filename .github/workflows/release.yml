@@ -9,7 +9,12 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  native-sql:
+    uses: ./.github/workflows/mysql.yml
+    permissions:
+      contents: read
   release:
+    needs: native-sql
     runs-on: ubuntu-24.04
     permissions:
       contents: write

@@ -2,6 +2,11 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.9.1] - 2026-10-24
+
+- Add guarded native SQL functional/concurrency fixtures and an isolated database CI matrix. Native runs never install SQLite SQL rewrites. Existing Playground fixtures explicitly opt into the disposable test guard.
+- Validation is in progress on the validation branch; do not publish this entry until native results and beta documentation are finalized.
+
 ## [1.9.0] - 2026-10-24
 
 - Add an admin-only start workspace with three clear journeys: manual price changes, stock/discount operations and fixed-baseline market pricing. Keep a common category/product/variation selection step and show only the relevant operation form. Empty table selection opens the explicit picker when starting a journey; existing selections survive route changes. Keep all additional tools, move cost-based scheduling into an advanced disclosure and document commercial scope, screen structure and acceptance in PRODUCT-PLAN.md.

@@ -1,0 +1,58 @@
+name: Native SQL validation
+on:
+  workflow_call:
+  push:
+    branches: ['codex/**']
+    paths:
+      - 'nilwears-bulk-manager/**'
+      - 'tests/**'
+      - 'scripts/*mysql*'
+      - '.github/workflows/mysql.yml'
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  database:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - {name: mysql84, image: 'mysql:8.4'}
+          - {name: mariadb114, image: 'mariadb:11.4'}
+        hpos: ['yes', 'no']
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          # Disposable runner-only credentials; never a store account or secret.
+          MYSQL_ROOT_PASSWORD: ${{ github.run_id }}
+          MARIADB_ROOT_PASSWORD: ${{ github.run_id }}
+          MYSQL_ROOT_HOST: '%'
+          MARIADB_ROOT_HOST: '%'
+        ports:
+          - 3306/tcp
+    steps:
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, zip, gd, mbstring, dom, xml
+          tools: wp-cli
+          coverage: none
+      - name: Run isolated functional and concurrency fixtures
+        env:
+          NIL_MYSQL_HOST: 127.0.0.1
+          NIL_MYSQL_PORT: ${{ job.services.database.ports[3306] }}
+          NIL_MYSQL_USER: root
+          NIL_MYSQL_PASSWORD: ${{ github.run_id }}
+          NIL_TEST_LABEL: ${{ matrix.database.name }}
+          NIL_TEST_HPOS: ${{ matrix.hpos }}
+        run: bash scripts/test-mysql.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-sql-${{ matrix.database.name }}-hpos-${{ matrix.hpos }}
+          path: dist/mysql-results/
+          retention-days: 7

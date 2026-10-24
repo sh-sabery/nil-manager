@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Nil Manager — مدیریت قیمت و موجودی ووکامرس
  * Description: مدیریت گروهی محصولات و ورییشن‌ها، قیمت خرید و سود، اکسل، تصاویر و گزارش مشتریان.
- * Version: 1.9.0
+ * Version: 1.9.1
  * Update URI: https://github.com/sh-sabery/nilwears-bulk-manager
  * Author: Nil Web
  * Requires at least: 6.4
@@ -22,7 +22,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.9.0';
+    const VERSION = '1.9.1';
     const VARIATION_LIMIT = 500;
     /** Prime a bounded batch; reuse WordPress caches instead of per-product reads. */
     public static function prime( $ids ) {

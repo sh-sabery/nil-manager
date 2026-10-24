@@ -5,7 +5,8 @@
     "wp": "7.1.3"
   },
   "constants": {
-    "WP_HTTP_BLOCK_EXTERNAL": true
+    "WP_HTTP_BLOCK_EXTERNAL": true,
+    "NIL_DISPOSABLE_FIXTURE": true
   },
   "steps": [
     {

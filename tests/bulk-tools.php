@@ -25,6 +25,6 @@ function nil_bulk_tools_fixture(){
  $stock['operation']='add';$stock['value']='1';$job=plan_nil($ids[1],array(),$stock);wc_update_product_stock($ids[1],1,'decrease');run_nil($job);check(request_nil('GET','job/'.$job)['items'][0]['state']==='skipped'&&(int)fresh_nil($ids[1])->get_stock_quantity('edit')===3,'checkout conflict prevents relative overwrite');
  $v=fresh_nil($ids[1]);$v->set_backorders('yes');$v->save();$stock['operation']='out';$row=row_nil($ids[1]);$out=preview_nil(array(array('id'=>$ids[1],'version'=>$row['version'],'changes'=>array())),$stock);check(count($out['errors'])===1&&fresh_nil($ids[1])->get_backorders('edit')==='yes','unavailable does not silently disable backorders');
  wp_set_current_user(0);check(rejected_nil('POST','preview',array('rows'=>array($row),'rule'=>$remove)),'anonymous bulk tools denied');wp_set_current_user(1);
- $msg='PASS: '.$checks.' combined assertions; discount creation/removal/rounding/schedule undo, stock ownership/relative/out/undo and conflicts; HPOS '.get_option('woocommerce_custom_orders_table_enabled')."\n";file_put_contents('/nil-tests/bulk-tools-result.txt',$msg);echo $msg;
+ $msg='PASS: '.$checks.' combined assertions; discount creation/removal/rounding/schedule undo, stock ownership/relative/out/undo and conflicts; HPOS '.get_option('woocommerce_custom_orders_table_enabled')."\n";file_put_contents(nil_test_dir().'/bulk-tools-result.txt',$msg);echo $msg;
 }
 nil_bulk_tools_fixture();

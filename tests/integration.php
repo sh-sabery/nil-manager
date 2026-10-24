@@ -1,9 +1,7 @@
 <?php
-// Run only in disposable WordPress Playground. SQLite shims exercise CRUD and
-// endpoint workflows, not MySQL locking or concurrent checkout behavior.
-if ( ! defined('IS_PLAYGROUND_PREVIEW') && ! defined('SQLITE_DB_DROPIN_VERSION') && ! defined('DB_ENGINE') ) {
-    // No web entry point. This file is excluded from the installable plugin.
-}
+// Disposable fixture; native SQL is enabled only by the isolated runner.
+require_once __DIR__ . '/fixture.php';
+nil_fixture_guard();
 wp_set_current_user(1);
 update_option('woocommerce_price_num_decimals',0);
 $checks=0;
@@ -18,7 +16,7 @@ function request_nil($method,$path,$body=null){
     return $response->get_data();
 }
 // Explicitly emulates MySQL-only statements on the disposable SQLite fixture.
-add_filter('query',function($sql){
+if (!(defined('NIL_TEST_REAL_MYSQL') && NIL_TEST_REAL_MYSQL)) add_filter('query',function($sql){
     if(stripos($sql,'SELECT GET_LOCK(')!==false || stripos($sql,'SELECT RELEASE_LOCK(')!==false)return 'SELECT 1';
     if(stripos($sql,'SELECT ENGINE FROM information_schema.TABLES')!==false)return "SELECT 'InnoDB'";
     return preg_replace('/ FOR UPDATE\s*$/i','',$sql);
@@ -69,5 +67,5 @@ $job=plan_nil($a_id,array('sale_price'=>''));run_nil($job);check(fresh_nil($a_id
 // A price undo must preserve a newer checkout-driven stock reduction.
 $job=plan_nil($a_id,array('regular_price'=>'599000'));run_nil($job);wc_update_product_stock($a_id,1,'decrease');run_nil($job,'undo');check(fresh_nil($a_id)->get_regular_price('edit')==='495000','price undo after stock decrease');check((int)fresh_nil($a_id)->get_stock_quantity('edit')===4,'new stock survives price undo');
 wp_set_current_user(0);$response=rest_do_request(new WP_REST_Request('GET','/nil-bulk/v1/products'));check($response->get_status()>=400,'unauthenticated denied');
-$result="PASS: $checks WooCommerce integration checks; WP ".get_bloginfo('version').'; WC '.WC_VERSION."; SQLite lock shim (no concurrency verification).\n";
-file_put_contents('/nil-tests/integration-result.txt',$result);echo $result;
+$result="PASS: $checks WooCommerce integration checks; WP ".get_bloginfo('version').'; WC '.WC_VERSION."; ".nil_test_engine_note().".\n";
+file_put_contents(nil_test_dir().'/integration-result.txt',$result);echo $result;
