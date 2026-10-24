@@ -111,6 +111,6 @@
     for(const key of ['title','accent'])$('brand-'+key).oninput=brandPreview;$('brand-logo').onchange=brandPreview;brandPreview();
     if(cfg.canBrand===false){$('brand-save').disabled=true;$('brand-preview').querySelector('small').textContent=a.text.u19;}
     on('brand-save',async()=>{const brand=await api('branding',{title:$('brand-title').value,accent:$('brand-accent').value,logo:$('brand-logo').value});applyBranding(brand);brandPreview();message(a.text.u33);});
-    on('update-status',async()=>{const s=await api('updater/check',{});$('update-result').textContent=`نسخه نصب‌شده: ${s.current} · آخرین نسخه: ${s.available||'نامشخص'} · ${s.access==='token'?'با توکن':'عمومی'} · ${s.error?.message||(s.update_available?a.text.u20:'آخرین نسخه نصب است.')}`;});
+    on('update-status',async()=>{const s=await api('updater/check',{});$('update-result').textContent=s.message||`نسخه نصب‌شده: ${s.current} · آخرین نسخه: ${s.available||'نامشخص'} · ${s.access==='token'?'با توکن':'عمومی'} · ${s.error?.message||(s.update_available?a.text.u20:'آخرین نسخه نصب است.')}`;});
     if(cfg.canUpdate===false)$('update-status').disabled=true;
 })();

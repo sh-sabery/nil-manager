@@ -28,5 +28,6 @@ jobs:
           php tests/market-unit.php
           php tests/sheet.php
           php tests/updater.php
+          php tests/distribution.php
           NIL_PUBLIC_UPDATES=1 php tests/updater.php
-      - run: python3 scripts/build.py
+      - run: python3 tests/distribution-build.py

@@ -209,3 +209,7 @@ Settings includes manual cleanup of owned abandoned drafts older than 7 days. Co
 - **رابط تازه:** هشت فضای کاری، تیتر و کنترل‌های واضح، فرم‌های گروه‌بندی‌شده، ناوبری قابل پیمایش در عرض کم و جدول با اسکرول افقی مستقل. فونت محلی وزیرمتن، بدون فریم‌ورک جدید یا فایل عمومی فروشگاه.
 
 The browser DOM suites use the same static admin/help templates and source/minified scripts that WordPress receives. `python3 scripts/preview.py` creates a self-contained **mock-data** preview and a 390px iframe harness under ignored `dist/`; neither connects to a store or ships in the plugin ZIP. Browser visual review was not completed: Cloud Browser rejected local `file:` navigation. DOM fixtures are not visual rendering evidence.
+
+## آماده‌سازی ژاکت — نسخهٔ ۱.۹.۲
+
+کانال فعلی گیت‌هاب حفظ شده است. ساخت `--channel zhaket-review` یک بستهٔ بررسی با همان شناسهٔ نصب و بدون آپدیت گیت‌هاب می‌سازد؛ نسخهٔ لایسنس‌دار یا تأییدشدهٔ فروش نیست. وضعیت گارد، ورودی‌های لازم از پنل و مراحل باقی‌مانده در [ZHAKET-READINESS.md](ZHAKET-READINESS.md) آمده است. برای نصب فعلی از بستهٔ عادی Releases استفاده کنید.

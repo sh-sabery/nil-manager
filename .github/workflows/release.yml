@@ -37,7 +37,14 @@ jobs:
           php tests/market-unit.php
           php tests/sheet.php
           php tests/updater.php
+          php tests/distribution.php
           NIL_PUBLIC_UPDATES=1 php tests/updater.php
+      - run: python3 tests/distribution-build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zhaket-review-only
+          path: dist/zhaket-review/*
+          retention-days: 30
       - name: Build installation ZIP and release notes
         env:
           REF_TYPE: ${{ github.ref_type }}
@@ -59,5 +66,5 @@ jobs:
             echo "Release $RELEASE_TAG already exists; keeping its tag and assets unchanged."
             exit 0
           fi
-          gh release create "$RELEASE_TAG" dist/*.zip dist/*.sha256 \
+          gh release create "$RELEASE_TAG" dist/*.zip dist/*.sha256 dist/*.manifest.json \
             --target "$GITHUB_SHA" --title "$RELEASE_TAG" --notes-file dist/release-notes.md

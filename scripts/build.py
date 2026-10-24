@@ -10,6 +10,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--tag', help='Require the release tag to match vX.Y.Z')
+parser.add_argument('--channel', choices=('github', 'zhaket-review'), default='github', help='Marketplace output is a review candidate, never a licensed sale build')
 args = parser.parse_args()
 version = (ROOT / 'VERSION').read_text().strip()
 if not re.fullmatch(r'\d+\.\d+\.\d+', version):
@@ -30,8 +31,15 @@ section = re.search(r'^## \[' + re.escape(version) + r'\] - \d{4}-\d{2}-\d{2}\n(
 if not section or not section.group(1).strip():
     raise SystemExit('Matching nonempty CHANGELOG release section is required')
 out = ROOT / 'dist'
-out.mkdir(exist_ok=True)
-archive = out / f'nilwears-bulk-manager-v{version}.zip'
+if args.channel == 'zhaket-review':
+    out = out / 'zhaket-review'
+out.mkdir(parents=True, exist_ok=True)
+suffix = '-zhaket-review' if args.channel == 'zhaket-review' else ''
+archive = out / f'nilwears-bulk-manager-v{version}{suffix}.zip'
+channel_file = ROOT / 'nilwears-bulk-manager/includes-channel.php'
+if channel_file.read_text() != "<?php\n/** Distribution identity, generated only by the release builder. */\ndefined( 'ABSPATH' ) || exit;\nreturn 'github';\n":
+    raise SystemExit('Source channel must remain github; build transforms the review copy only')
+manifest_files = []
 allowed = {'.php', '.js', '.css', '.html', '.txt', '.woff2', '.svg'}
 files = sorted((ROOT / 'nilwears-bulk-manager').rglob('*'))
 with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as bundle:
@@ -45,7 +53,11 @@ with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslev
         info = zipfile.ZipInfo(file.relative_to(ROOT).as_posix(), date_time=(2020, 1, 1, 0, 0, 0))
         info.compress_type = zipfile.ZIP_DEFLATED
         info.external_attr = 0o100644 << 16
-        bundle.writestr(info, file.read_bytes())
+        data = file.read_bytes()
+        if file == channel_file and args.channel == 'zhaket-review':
+            data = data.replace(b"return 'github';", b"return 'zhaket';")
+        bundle.writestr(info, data)
+        manifest_files.append({'path': info.filename, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
 with zipfile.ZipFile(archive) as bundle:
     if bundle.testzip():
         raise SystemExit('ZIP integrity check failed')
@@ -54,4 +66,11 @@ with zipfile.ZipFile(archive) as bundle:
 digest = hashlib.sha256(archive.read_bytes()).hexdigest()
 (out / (archive.name + '.sha256')).write_text(f'{digest}  {archive.name}\n')
 (out / 'release-notes.md').write_text(f'# v{version}\n\n' + section.group(1).strip() + '\n')
+manifest = {'product': 'Nil Manager', 'publisher': 'Nil Web', 'version': version,
+            'channel': args.channel, 'basename': 'nilwears-bulk-manager/nilwears-bulk-manager.php',
+            'archive': archive.name, 'sha256': digest, 'size': archive.stat().st_size,
+            'guard_integrated': False, 'marketplace_approved': False,
+            'readiness': 'review-only' if args.channel == 'zhaket-review' else 'github-release',
+            'files': manifest_files}
+(out / (archive.name + '.manifest.json')).write_text(json.dumps(manifest, indent=2) + '\n')
 print(f'Built {archive.name}; SHA256 {digest}')

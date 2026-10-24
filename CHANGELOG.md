@@ -2,6 +2,12 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.9.2] - 2026-10-24
+
+- Separate the existing GitHub release from an explicitly marked Zhaket review build without changing the installed basename or pricing/stock data. Marketplace-channel status performs no GitHub HTTP/cache calls; remove only stale own-GitHub update entries, preserve external/other-plugin metadata, and block cached GitHub package downloads. Display the review-channel notice without claiming the latest marketplace version or active licensing.
+- Add deterministic channel-aware builds and per-file SHA-256 manifests. Put review ZIPs in a separate directory/artifact; publish only the ordinary GitHub ZIP and its manifest. Document official Guard/update contracts, pending vendor inputs and commercial rate-feed rights, and prepare factual Persian listing copy. No license gate, Guard requests, telemetry, new SQL/schema/cron or live-store changes. Staging and merchant beta remain deferred, not passed.
+- Validation: PHP 8.3.33 parsed 42 files and passed 3,273 date/time, 1,566 price, 58 market, 23 spreadsheet, 63 private/61 public updater and 21 marketplace-channel assertions. Source/minified DOM suites passed the external-channel notice and existing regressions; CSS/JS is 59,895 bytes within the 60,000-byte budget. Both 30-file plugin ZIPs rebuilt identically, differed only in the channel marker, and matched archive/per-file manifest hashes without altering source. Native MySQL/MariaDB with HPOS on/off remain a mandatory release gate. No actual Zhaket activation/update or merchant beta has been performed.
+
 ## [1.9.1] - 2026-10-24
 
 - Add guarded native MySQL 8.4/MariaDB 11.4 functional fixtures with HPOS on/off. Use fresh random databases and marked temporary WordPress installs; never accept an existing store database/path. Keep mail/external runtime HTTP blocked and exclude all test infrastructure from the plugin ZIP. Existing SQLite Playgrounds explicitly opt into the fixture guard; native runs never rewrite lock/engine/transaction SQL. Buffer fixture output to preserve REST header tests.
