@@ -81,6 +81,7 @@ final class NIL_Payments {
     }
     /** Runs before Store API totals/order creation, including direct POST without our JS. */
     public static function block_request( $customer, $request ) {
+        if ( ! self::active( self::settings() ) && ( ! WC()->cart || ! WC()->cart->has_discount( self::CODE ) ) ) { return; }
         $id = $request->get_param( 'payment_method' );
         if ( null !== $id ) { self::block_update( array( 'payment_method' => $id ) ); }
     }
@@ -95,7 +96,7 @@ final class NIL_Payments {
         $order->update_meta_data( '_nil_payment_discount', array_merge( self::$quote, array( 'discount' => $own->get_discount(), 'discount_tax' => $own->get_discount_tax() ) ) );
     }
     public static function posted_data( $data ) {
-        if ( empty( $data['payment_method'] ) && WC()->cart && ! WC()->cart->needs_payment() ) {
+        if ( empty( $data['payment_method'] ) && WC()->cart && ! WC()->cart->needs_payment() && ( self::active( self::settings() ) || WC()->cart->has_discount( self::CODE ) ) ) {
             WC()->cart->calculate_totals();
             if ( ! WC()->cart->needs_payment() && WC()->cart->has_discount( self::CODE ) && self::$quote ) { $data['payment_method'] = self::$quote['gateway']; }
         }
