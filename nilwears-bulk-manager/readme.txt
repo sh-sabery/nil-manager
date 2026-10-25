@@ -15,6 +15,8 @@ Manage products, prices, stock, purchase cost, XLSX/CSV, images and customer rep
 See README-fa.html for usage, and the repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Public-repository updates need no token from v1.4. Older versions without a token require one manual v1.4 ZIP installation. An optional token supports private access.
 
 == Changelog ==
+= 1.10.0 =
+Per-payment-method automatic discounts with optional order caps, server-side currency/gateway validation, classic/Block checkout synchronization, native coupon/tax/refund allocation and guarded order retries. Disabled by default; configure under WooCommerce > Payment discounts. Optional checkout JS only; no new public stylesheet or catalog-price changes.
 = 1.9.1 =
 Guarded native MySQL/MariaDB functional and concurrency validation with HPOS on/off; publication now requires the database matrix. No pricing/UI/runtime dependency change. See SQL-VALIDATION.md and BETA-GUIDE.md in the repository.
 = 1.9.0 =
