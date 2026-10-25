@@ -33,9 +33,11 @@ final class NIL_Payments {
     /** Rebuild from current product prices every time, including quantity/variation/sale changes. */
     public static function sync( $cart ) {
         self::$quote = array();
+        $settings = self::settings();
+        // Never shadow a merchant's real coupon using the reserved code, including after activation.
+        if ( ( self::active( $settings ) || $cart->has_discount( self::CODE ) ) && wc_get_coupon_id_by_code( self::CODE ) ) { return; }
         $codes = array_values( array_diff( $cart->get_applied_coupons(), array( self::CODE ) ) );
         $cart->set_applied_coupons( $codes );
-        $settings = self::settings();
         if ( ! self::active( $settings ) || ! WC()->session || $cart->is_empty() ) { return; }
         $id = WC()->session->get( 'chosen_payment_method', '' );
         $gateways = WC()->payment_gateways()->payment_gateways();
@@ -55,16 +57,16 @@ final class NIL_Payments {
         $cart->set_applied_coupons( $codes );
     }
     public static function coupon( $data, $code ) {
-        if ( self::CODE !== $code ) { return $data; }
+        if ( self::CODE !== $code || wc_get_coupon_id_by_code( self::CODE ) ) { return $data; }
         return array( 'discount_type' => 'fixed_cart', 'amount' => self::$quote['amount'] ?? 0, 'individual_use' => false, 'free_shipping' => false );
     }
     public static function valid( $valid, $coupon ) {
-        if ( self::CODE !== $coupon->get_code() ) { return $valid; }
+        if ( self::CODE !== $coupon->get_code() || $coupon->get_id() ) { return $valid; }
         return $valid && ! empty( self::$quote ) && WC()->session && self::$quote['gateway'] === WC()->session->get( 'chosen_payment_method' ) && self::active( self::settings() );
     }
-    public static function sort( $sort, $coupon ) { return self::CODE === $coupon->get_code() ? PHP_INT_MAX : $sort; }
-    public static function label( $label, $coupon ) { return self::CODE === $coupon->get_code() ? 'تخفیف روش پرداخت' : $label; }
-    public static function coupon_html( $html, $coupon, $discount_html ) { return self::CODE === $coupon->get_code() ? $discount_html : $html; }
+    public static function sort( $sort, $coupon ) { return self::CODE === $coupon->get_code() && ! $coupon->get_id() ? PHP_INT_MAX : $sort; }
+    public static function label( $label, $coupon ) { return self::CODE === $coupon->get_code() && ! $coupon->get_id() ? 'تخفیف روش پرداخت' : $label; }
+    public static function coupon_html( $html, $coupon, $discount_html ) { return self::CODE === $coupon->get_code() && ! $coupon->get_id() ? $discount_html : $html; }
 
     /** Store API supplies only an identifier; all amounts stay server-controlled. */
     public static function block_update( $data ) {
@@ -83,7 +85,8 @@ final class NIL_Payments {
         $id = $data instanceof WP_REST_Request ? $data->get_param( 'payment_method' ) : ( $data['payment_method'] ?? '' );
         $own = null;
         foreach ( $order->get_items( 'coupon' ) as $item ) { if ( self::CODE === $item->get_code() ) { $own = $item; break; } }
-        if ( ! $own ) { $order->delete_meta_data( '_nil_payment_discount' ); return; }
+        if ( ! $own || wc_get_coupon_id_by_code( self::CODE ) ) { $order->delete_meta_data( '_nil_payment_discount' ); return; }
+        if ( $data instanceof WP_REST_Request && 'POST' !== $data->get_method() && null === $id && self::$quote ) { $id = self::$quote['gateway']; }
         if ( ! $id && ! $order->needs_payment() && self::$quote ) { $id = self::$quote['gateway']; }
         if ( ! self::valid( true, new WC_Coupon( self::CODE ) ) || self::$quote['gateway'] !== $id ) { throw new Exception( 'روش پرداخت یا تخفیف تغییر کرده است؛ سبد را تازه کنید و دوباره تأیید کنید.' ); }
         $order->update_meta_data( '_nil_payment_discount', array_merge( self::$quote, array( 'discount' => $own->get_discount(), 'discount_tax' => $own->get_discount_tax() ) ) );
@@ -98,8 +101,9 @@ final class NIL_Payments {
         $id = absint( get_query_var( 'order-pay' ) );
         $key = isset( $_GET['key'] ) && is_string( $_GET['key'] ) ? wc_clean( wp_unslash( $_GET['key'] ) ) : '';
         $order = $id ? wc_get_order( $id ) : false;
-        if ( ! $order || ! $key || ! hash_equals( $order->get_order_key(), $key ) || ! $order->has_discount( self::CODE ) ) { return $gateways; }
+        if ( ! $order || ! $key || ! hash_equals( $order->get_order_key(), $key ) || ! in_array( self::CODE, $order->get_coupon_codes(), true ) ) { return $gateways; }
         $receipt = $order->get_meta( '_nil_payment_discount' );
+        if ( ! is_array( $receipt ) || empty( $receipt['gateway'] ) ) { return $gateways; }
         $gateway = is_array( $receipt ) ? ( $receipt['gateway'] ?? '' ) : '';
         return isset( $gateways[$gateway] ) ? array( $gateway => $gateways[$gateway] ) : array();
     }

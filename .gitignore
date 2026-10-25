@@ -19,3 +19,5 @@ tests/icons-result.txt
 tests/bulk-tools-result.txt
 tests/resources-*.json
 tests/audit-result.txt
+tests/payments-result.txt
+tests/payment-ui-result.html
