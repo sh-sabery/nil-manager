@@ -72,7 +72,10 @@ final class NIL_Payments {
     public static function block_update( $data ) {
         $id = is_array( $data ) ? ( $data['payment_method'] ?? null ) : null;
         if ( ! is_string( $id ) || strlen( $id ) > 200 || ! WC()->session || ! WC()->cart ) { throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException( 'nil_payment_method', 'روش پرداخت نامعتبر است.', 400 ); }
-        if ( '' === $id && ! WC()->cart->needs_payment() && WC()->cart->has_discount( self::CODE ) ) { return; }
+        if ( '' === $id && ! WC()->cart->needs_payment() ) {
+            WC()->cart->calculate_totals(); // Rebuild a cached zero-total cart in a fresh request.
+            if ( ! WC()->cart->needs_payment() && WC()->cart->has_discount( self::CODE ) ) { return; }
+        }
         if ( '' !== $id && ! isset( WC()->payment_gateways()->get_available_payment_gateways()[$id] ) ) { throw new \Automattic\WooCommerce\StoreApi\Exceptions\RouteException( 'nil_payment_method', 'این روش پرداخت برای سبد فعلی در دسترس نیست.', 400 ); }
         WC()->session->set( 'chosen_payment_method', $id );
     }
@@ -82,17 +85,20 @@ final class NIL_Payments {
         if ( null !== $id ) { self::block_update( array( 'payment_method' => $id ) ); }
     }
     public static function capture( $order, $data ) {
+        if ( $data instanceof WP_REST_Request && 'POST' !== $data->get_method() ) { return; } // Draft edits do not authorize a payment.
         $id = $data instanceof WP_REST_Request ? $data->get_param( 'payment_method' ) : ( $data['payment_method'] ?? '' );
         $own = null;
         foreach ( $order->get_items( 'coupon' ) as $item ) { if ( self::CODE === $item->get_code() ) { $own = $item; break; } }
         if ( ! $own || wc_get_coupon_id_by_code( self::CODE ) ) { $order->delete_meta_data( '_nil_payment_discount' ); return; }
-        if ( $data instanceof WP_REST_Request && 'POST' !== $data->get_method() && null === $id && self::$quote ) { $id = self::$quote['gateway']; }
         if ( ! $id && ! $order->needs_payment() && self::$quote ) { $id = self::$quote['gateway']; }
         if ( ! self::valid( true, new WC_Coupon( self::CODE ) ) || self::$quote['gateway'] !== $id ) { throw new Exception( 'روش پرداخت یا تخفیف تغییر کرده است؛ سبد را تازه کنید و دوباره تأیید کنید.' ); }
         $order->update_meta_data( '_nil_payment_discount', array_merge( self::$quote, array( 'discount' => $own->get_discount(), 'discount_tax' => $own->get_discount_tax() ) ) );
     }
     public static function posted_data( $data ) {
-        if ( empty( $data['payment_method'] ) && WC()->cart && ! WC()->cart->needs_payment() && WC()->cart->has_discount( self::CODE ) && self::$quote ) { $data['payment_method'] = self::$quote['gateway']; }
+        if ( empty( $data['payment_method'] ) && WC()->cart && ! WC()->cart->needs_payment() ) {
+            WC()->cart->calculate_totals();
+            if ( ! WC()->cart->needs_payment() && WC()->cart->has_discount( self::CODE ) && self::$quote ) { $data['payment_method'] = self::$quote['gateway']; }
+        }
         return $data;
     }
     /** A discounted pending order may only be retried with its original gateway. */
