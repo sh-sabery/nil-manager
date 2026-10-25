@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 (async()=>{
-const source=fs.readFileSync('nilwears-bulk-manager/assets/payment-checkout'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8');
+const source=fs.readFileSync('nil-manager/assets/payment-checkout'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8');
 let handler,triggers=0;const body={};const jquery=arg=>({on:(event,selector,fn)=>{assert.equal(arg,body);assert.equal(selector,'input[name="payment_method"]');handler=fn;},trigger:event=>{assert.equal(event,'update_checkout');triggers++;}});
 vm.runInNewContext(source,{NIL_PAYMENT:{blocks:false},document:{body},jQuery:jquery});handler();assert.equal(triggers,1,'classic change updates checkout');
 let selected='bacs',ready=false,listener,filters,pending=[],requests=[],errors={};

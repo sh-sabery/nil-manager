@@ -62,34 +62,34 @@ final class NIL_Updater {
     }
     public static function dashboard_check() { if ( ! empty( $_GET['force-check'] ) && current_user_can( 'update_plugins' ) ) { self::check(); } }
     private static function package( $r ) { return 'https://api.github.com/repos/' . self::REPO . '/releases/assets/' . $r['asset']; }
-    private static function icons() { return array( 'svg' => plugins_url( 'assets/icon.svg', __DIR__ . '/nilwears-bulk-manager.php' ) ); }
+    private static function icons() { return array( 'svg' => plugins_url( 'assets/icon.svg', NIL_Bulk_Manager::FILE ) ); }
     private static function own_package( $package ) { return is_string( $package ) && ( 0 === strpos( $package, 'https://api.github.com/repos/' . self::REPO . '/releases/assets/' ) || 0 === strpos( $package, 'https://api.github.com/repos/' . self::LEGACY_REPO . '/releases/assets/' ) ); }
     public static function updates( $transient ) {
         if ( 'github' !== self::channel() ) {
             // Drop only old GitHub entries for our basename; preserve marketplace/other providers.
-            $plugin = plugin_basename( __DIR__ . '/nilwears-bulk-manager.php' );
+            $plugin = plugin_basename( NIL_Bulk_Manager::FILE );
             if ( is_object( $transient ) ) { foreach ( array( 'response', 'no_update' ) as $bucket ) {
                 if ( self::own_package( $transient->$bucket[$plugin]->package ?? null ) ) { unset( $transient->$bucket[$plugin] ); }
             } }
             return $transient;
         }
         if ( ! is_object( $transient ) ) { $transient = new stdClass(); }
-        $r = self::release(); $plugin = plugin_basename( __DIR__ . '/nilwears-bulk-manager.php' );
+        $r = self::release(); $plugin = plugin_basename( NIL_Bulk_Manager::FILE );
         if ( $r ) {
             $transient->checked[$plugin] = NIL_Bulk_Manager::VERSION;
             unset( $transient->response[$plugin], $transient->no_update[$plugin] );
-            $entry = (object) array( 'slug' => 'nilwears-bulk-manager', 'plugin' => $plugin, 'new_version' => $r['version'], 'url' => 'https://github.com/' . self::REPO, 'package' => self::package( $r ), 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4', 'icons' => self::icons() );
+            $entry = (object) array( 'slug' => dirname( plugin_basename( NIL_Bulk_Manager::FILE ) ), 'plugin' => $plugin, 'new_version' => $r['version'], 'url' => 'https://github.com/' . self::REPO, 'package' => self::package( $r ), 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4', 'icons' => self::icons() );
             if ( version_compare( $r['version'], NIL_Bulk_Manager::VERSION, '>' ) ) { $transient->response[$plugin] = $entry; }
             else { $transient->no_update[$plugin] = $entry; }
         } return $transient;
     }
     public static function info( $result, $action, $args ) {
         if ( 'github' !== self::channel() ) { return $result; }
-        if ( 'plugin_information' !== $action || 'nilwears-bulk-manager' !== ( $args->slug ?? '' ) ) { return $result; }
+        if ( 'plugin_information' !== $action || dirname( plugin_basename( NIL_Bulk_Manager::FILE ) ) !== ( $args->slug ?? '' ) ) { return $result; }
         $r = self::release();
-        $description = '<p>نیل منجر، محصول نیل وب، افزونهٔ فارسی مدیریت قیمت و موجودی ووکامرس است.</p><ul><li>ویرایش محصولات ساده و ورییشن‌ها، قیمت خرید و موجودی مشترک یا مستقل.</li><li>تغییر گروهی قیمت، رندکردن پیشرفته، پیش‌نمایش و بازگردانی با کنترل تداخل.</li><li>قیمت‌گذاری بر مبنای طلا، دلار و یورو با نرخ مبنا و فاصلهٔ اجرای دلخواه.</li><li>تخفیف مستقل برای هر روش پرداخت با سقف اختیاری کل سفارش.</li><li>ورود و خروج اکسل، افزودن ورییشن، ابزار تصاویر و گزارش مشتریان و سود.</li><li>هماهنگی با بهای تمام‌شدهٔ داخلی ووکامرس، رابط راست‌چین و تاریخ‌های شمسی.</li></ul><p>برای راهنما از ووکامرس ← نیل منجر ← راهنما استفاده کنید. تخفیف روش پرداخت از منوی ووکامرس تنظیم می‌شود و پیش‌فرض خاموش است. فایل‌های مدیریت فقط در صفحهٔ افزونه بارگذاری می‌شوند؛ با فعال‌بودن تخفیف پرداخت، اسکریپت کوچک هماهنگی فقط در تسویه‌حساب اجرا می‌شود.</p><p>برای دریافت نسخهٔ ۱.۱۰.۱ از نصب‌های قدیمی، ZIP جدید را یک بار از بخش افزونه‌ها بارگذاری و جایگزین کنید؛ بروزرسان‌های قدیمی تغییر نشانی ریپو را دنبال نمی‌کنند.</p>';
+        $description = '<p>نیل منجر، محصول نیل وب، افزونهٔ فارسی مدیریت قیمت و موجودی ووکامرس است.</p><ul><li>ویرایش محصولات ساده و ورییشن‌ها، قیمت خرید و موجودی مشترک یا مستقل.</li><li>تغییر گروهی قیمت، رندکردن پیشرفته، پیش‌نمایش و بازگردانی با کنترل تداخل.</li><li>قیمت‌گذاری بر مبنای طلا، دلار و یورو با نرخ مبنا و فاصلهٔ اجرای دلخواه.</li><li>تخفیف مستقل برای هر روش پرداخت با سقف اختیاری کل سفارش.</li><li>ورود و خروج اکسل، افزودن ورییشن، ابزار تصاویر و گزارش مشتریان و سود.</li><li>هماهنگی با بهای تمام‌شدهٔ داخلی ووکامرس، رابط راست‌چین و تاریخ‌های شمسی.</li></ul><p>برای راهنما از ووکامرس ← نیل منجر ← راهنما استفاده کنید. تخفیف روش پرداخت از منوی ووکامرس تنظیم می‌شود و پیش‌فرض خاموش است. فایل‌های مدیریت فقط در صفحهٔ افزونه بارگذاری می‌شوند؛ با فعال‌بودن تخفیف پرداخت، اسکریپت کوچک هماهنگی فقط در تسویه‌حساب اجرا می‌شود.</p>';
         $changelog = file_get_contents( __DIR__ . '/changelog-fa.html' );
-        return (object) array( 'name' => NIL_Suite::title(), 'slug' => 'nilwears-bulk-manager', 'version' => $r ? $r['version'] : NIL_Bulk_Manager::VERSION, 'author' => 'نیل وب', 'homepage' => 'https://github.com/' . self::REPO, 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4', 'icons' => self::icons(), 'banners' => array( 'low' => plugins_url( 'assets/banner.svg', __DIR__ . '/nilwears-bulk-manager.php' ) ), 'sections' => array( 'description' => $description, 'changelog' => $changelog ), 'download_link' => $r ? self::package( $r ) : '' );
+        return (object) array( 'name' => NIL_Suite::title(), 'slug' => dirname( plugin_basename( NIL_Bulk_Manager::FILE ) ), 'version' => $r ? $r['version'] : NIL_Bulk_Manager::VERSION, 'author' => 'نیل وب', 'homepage' => 'https://github.com/' . self::REPO, 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4', 'icons' => self::icons(), 'banners' => array( 'low' => plugins_url( 'assets/banner.svg', NIL_Bulk_Manager::FILE ) ), 'sections' => array( 'description' => $description, 'changelog' => $changelog ), 'download_link' => $r ? self::package( $r ) : '' );
     }
     public static function download( $reply, $package, $upgrader, $hook_extra ) {
         if ( ! self::own_package( $package ) ) { return $reply; }

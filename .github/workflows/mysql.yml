@@ -4,7 +4,7 @@ on:
   push:
     branches: ['codex/**']
     paths:
-      - 'nilwears-bulk-manager/**'
+      - 'nil-manager/**'
       - 'tests/**'
       - 'scripts/*mysql*'
       - '.github/workflows/mysql.yml'

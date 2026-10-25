@@ -1,7 +1,7 @@
 const fs=require('fs'), vm=require('vm'), assert=require('assert/strict');
 const {parseHTML}=require('linkedom');
 (async()=>{
-const templates=['grid','view','help'].map(name=>fs.readFileSync('nilwears-bulk-manager/includes-'+name+'.php','utf8').replace(/<\?php[\s\S]*?\?>/,'' )).join('');
+const templates=['grid','view','help'].map(name=>fs.readFileSync('nil-manager/includes-'+name+'.php','utf8').replace(/<\?php[\s\S]*?\?>/,'' )).join('');
 const {window}=parseHTML('<html lang="fa" dir="rtl"><body><div id="toplevel_page_woocommerce"><a href="admin.php?page=nil-bulk">نیل</a></div><div id="nil-bulk-app"></div>'+templates+'</body></html>');
 const document=window.document;window.HTMLElement.prototype.scrollIntoView=function(){};window.confirm=()=>true;
 const base={cost_price:'100000',name:'تست',sku:'',category_ids:[],brand_ids:[],regular_price:'495000',sale_price:'',manage_stock:false,stock_quantity:null,stock_status:'instock',backorders:'no',sale_from:null,sale_to:null,parent_stock:false,type:'simple',parent_id:0,status:'publish'};
@@ -43,7 +43,7 @@ return{ok:true,json:async()=>structuredClone(result)};
 }
 let numberFormatsBuilt=0;const observedIntl={DateTimeFormat:Intl.DateTimeFormat,NumberFormat:class extends Intl.NumberFormat{constructor(...args){super(...args);numberFormatsBuilt++;}}};
 const context=vm.createContext({window,document,Event:window.Event,NIL_BULK:{api:'https://nil.test/nil/',nonce:'test',currency:'تومان',currencyCode:'IRT',decimals:0,categories:[{id:7,name:'بارونی'},{id:8,name:'تیشرت'}],canMarket:true,userId:1},fetch:fetchMock,Intl:observedIntl,Map,Set,URLSearchParams,URL,Blob,setTimeout,console,crypto:require('crypto').webcrypto,atob,Uint8Array,FileReader:class{readAsDataURL(){this.result='data:text/csv;base64,aWQscHJpY2U=';this.onload();}}});
-vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/admin'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
+vm.runInContext(fs.readFileSync('nil-manager/assets/admin'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
 const $=s=>document.querySelector(s),change=el=>el.dispatchEvent(new window.Event('change',{bubbles:true}));
 async function idle(){for(let i=0;i<200;i++){await new Promise(r=>setTimeout(r,1));if(!$('#nil-bulk-app').hasAttribute('aria-busy'))return;}throw new Error('busy timeout: '+$('#nil-message').textContent);}
 await idle();assert.equal(document.querySelectorAll('#nil-rows tr').length,4);
@@ -59,7 +59,7 @@ $('#nil-manual').click();await idle();assert.equal(payload.rows[0].changes.stock
 qty=$('[data-id="11"][data-field="stock_quantity"]');qty.value='4';change(qty);
 $('#nil-apply').click();await idle();assert.equal($('[data-id="11"][data-field="stock_quantity"]').value,'4');assert(!$('#nil-manual').disabled);
 $('#nil-reset').click();assert.equal($('[data-id="11"][data-field="stock_quantity"]').value,'3');assert($('#nil-manual').disabled);
-vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/suite'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
+vm.runInContext(fs.readFileSync('nil-manager/assets/suite'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
 assert.equal(document.querySelectorAll('[role=tab]').length,10);assert(!$('#nil-panel-home').hidden);$('#nil-tab-media').click();assert(!$('#nil-panel-media').hidden);assert($('#nil-panel-products').hidden);$('#nil-tab-products').click();assert(!$('#nil-panel-products').hidden);
 assert($('#nil-panel-pricing').contains($('#nil-bulk')));assert(!$('#nil-panel-products').contains($('#nil-bulk')));
 $('#nil-tab-help').click();assert(!$('#nil-panel-help').hidden);assert($('#nil-panel-help').textContent.includes('قیمت تازه، در سه قدم.'));
@@ -77,12 +77,12 @@ $('#nil-brand-title').value='فروشگاه من';$('#nil-brand-accent').value='
 brandFailure=true;$('#nil-brand-title').value='ذخیره نشده';$('#nil-brand-save').click();await idle();assert.equal($('h1').textContent,'فروشگاه من','failed save leaves applied identity intact');assert.equal($('#nil-message').getAttribute('role'),'alert');brandFailure=false;
 $('#nil-brand-title').value='فروشگاه من';$('#nil-brand-logo').value='';$('#nil-brand-save').click();await idle();assert.equal(document.querySelectorAll('.nil-header .nil-mark img').length,0,'clearing logo applied immediately');$('#nil-update-status').click();await idle();assert($('#nil-update-result').textContent.includes('1.8.0'));assert($('#nil-update-result').textContent.includes('1.8.1'));assert.deepEqual(requests.at(-1),{path:'updater/check',body:{}});updateError={message:'اتصال سرور ناموفق بود'};$('#nil-update-status').click();await idle();assert($('#nil-update-result').textContent.includes(updateError.message));updateError=null;updateAvailable=false;$('#nil-update-status').click();await idle();assert($('#nil-update-result').textContent.includes('آخرین نسخه نصب است.'));
 updateMessage='نسخهٔ بررسی ژاکت؛ اتصال نهایی تأیید نشده است.';$('#nil-update-status').click();await idle();assert.equal($('#nil-update-result').textContent,updateMessage);assert(!$('#nil-update-result').textContent.includes('آخرین نسخه نصب است.'));updateMessage=null;
-vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/advanced'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
+vm.runInContext(fs.readFileSync('nil-manager/assets/advanced'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);
 const unrelated=document.createElement('table');unrelated.className='nil-table';unrelated.innerHTML='<tr>'+Array.from({length:9},(_,i)=>'<td>'+i+'</td>').join('')+'</tr>';document.getElementById('nil-bulk-app').append(unrelated);
 const costColumn=$('#nil-columns [data-col="cost"]');costColumn.checked=false;change(costColumn);assert($('th[data-column="cost"]').hidden,'hidden cost column');assert(!unrelated.querySelector('[data-column]'),'column layout scoped to product grid');
 $('#nil-p-name').value='نمای من';$('#nil-p-view').click();await idle();assert.equal(payload.kind,'view');assert(!payload.data.columns.includes('cost'));$('#nil-p-apply').click();await idle();assert($('th[data-column="cost"]').hidden,'saved columns survive reload');
 $('#nil-v-parent').value='10';$('#nil-v-load').click();await idle();assert($('#nil-v-options').value.includes('color: black'));$('#nil-v-options').value='color: blue\nsize: M';$('#nil-v-price').value='300000';$('#nil-v-preview').click();await idle();assert.equal(payload.options.color[0],'blue');assert(!$('#nil-v-apply').hidden);$('#nil-v-apply').click();await idle();assert.equal(payload.token,'v-token');assert($('#nil-v-result').textContent.includes('#40'));
-const beforeMarketBoot=requests.length;vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/market'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);assert.equal(requests.length,beforeMarketBoot,'market screen has no background rate or report calls');
+const beforeMarketBoot=requests.length;vm.runInContext(fs.readFileSync('nil-manager/assets/market'+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),context);assert.equal(requests.length,beforeMarketBoot,'market screen has no background rate or report calls');
 $('#nil-market-rates').click();await idle();assert($('#nil-market-rates-result').textContent.includes('۲۷۵٬۰۰۰'));
 window.NIL_APP.applyRule({scope:'selected'});const selectMarketParent=$('[data-select="10"]');selectMarketParent.checked=true;change(selectMarketParent);$('#nil-market-base').value='250000';$('#nil-market-preview').click();await idle();assert.deepEqual(marketCaptured.map(r=>r.id),[11,12],'capture variations, not parent price');assert.equal(marketRules[0].base_rate,'250000');assert(!$('#nil-market-activate').hidden);assert($('#nil-market-preview-result').textContent.includes('۵۴۴٬۵۰۰'));$('#nil-market-details').click();await idle();assert($('#nil-apply').hidden,'market full preview cannot be applied through regular history controls');
 $('#nil-market-interval').value='15';$('#nil-market-interval').dispatchEvent(new window.Event('input',{bubbles:true}));assert($('#nil-market-activate').hidden,'editing settings invalidates confirmation');$('#nil-market-preview').click();await idle();$('#nil-market-activate').click();await idle();assert.equal(payload.action,'activate');assert.equal(marketRules[0].status,'active');assert.equal(document.querySelectorAll('#nil-market-controls').length,1);
@@ -144,7 +144,7 @@ assert.equal(numberFormatsBuilt,1,'number formatter reused across table renders 
 // Fresh document: saved identity is applied at startup; manager-only disable survives async loading.
 const reloadWindow=parseHTML('<html lang="fa" dir="rtl"><body><div id="nil-bulk-app"></div>'+templates+'</body></html>').window;reloadWindow.HTMLElement.prototype.scrollIntoView=function(){};
 const reloadContext=vm.createContext({...context,window:reloadWindow,document:reloadWindow.document,Event:reloadWindow.Event,NIL_BULK:{...context.NIL_BULK,timeZone:'+04:30',canBrand:false,canMarket:false,canUpdate:false}});
-for(const script of ['admin','suite','advanced','market'])vm.runInContext(fs.readFileSync('nilwears-bulk-manager/assets/'+script+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),reloadContext);
+for(const script of ['admin','suite','advanced','market'])vm.runInContext(fs.readFileSync('nil-manager/assets/'+script+(process.env.NIL_MINIFIED?'.min':'')+'.js','utf8'),reloadContext);
 await new Promise(resolve=>setTimeout(resolve,10));assert.equal(reloadWindow.document.querySelector('h1').textContent,'فروشگاه من','saved branding shown after reload');assert.equal(reloadWindow.document.getElementById('nil-brand-accent').value,'#146b5a');assert(reloadWindow.document.getElementById('nil-brand-save').disabled,'manager branding permission survives initial async load');assert(reloadWindow.document.getElementById('nil-market-preview').disabled,'manager market permission survives initial async load');
 assert(reloadWindow.NIL_APP.date(known).includes('۱۶:۳۰'),'fixed UTC offset supported');
 assert(reloadWindow.document.getElementById('nil-update-status').disabled,'manager cannot force update checks');

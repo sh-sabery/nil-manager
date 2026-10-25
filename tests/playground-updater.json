@@ -11,7 +11,7 @@
   "steps": [
     {
       "step": "runPHP",
-      "code": "<?php function nil_fixture_copy($f,$t){if(is_dir($f)){if(!is_dir($t))mkdir($t,0777,true);foreach(scandir($f) as $n)if($n!=='.'&&$n!=='..')nil_fixture_copy($f.'/'.$n,$t.'/'.$n);}else copy($f,$t);}nil_fixture_copy('/nil-source','/wordpress/wp-content/plugins/nilwears-bulk-manager');"
+      "code": "<?php function nil_fixture_copy($f,$t){if(is_dir($f)){if(!is_dir($t))mkdir($t,0777,true);foreach(scandir($f) as $n)if($n!=='.'&&$n!=='..')nil_fixture_copy($f.'/'.$n,$t.'/'.$n);}else copy($f,$t);}nil_fixture_copy('/nil-source','/wordpress/wp-content/plugins/nilwears-bulk-manager'); rename('/wordpress/wp-content/plugins/nilwears-bulk-manager/nil-manager.php','/wordpress/wp-content/plugins/nilwears-bulk-manager/nilwears-bulk-manager.php');"
     },
     {
       "step": "installPlugin",

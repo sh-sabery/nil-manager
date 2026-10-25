@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {minify} from 'terser';
-const dir=path.resolve('nilwears-bulk-manager/assets'), check=process.argv.includes('--check');
+const dir=path.resolve('nil-manager/assets'), check=process.argv.includes('--check');
 const generated=[];
 let checkoutBytes=0;
 for(const name of ['admin','suite','advanced','market','payment-checkout']){

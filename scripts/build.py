@@ -15,7 +15,7 @@ args = parser.parse_args()
 version = (ROOT / 'VERSION').read_text().strip()
 if not re.fullmatch(r'\d+\.\d+\.\d+', version):
     raise SystemExit('VERSION must be X.Y.Z')
-source = (ROOT / 'nilwears-bulk-manager/nilwears-bulk-manager.php').read_text()
+source = (ROOT / 'nil-manager/nil-manager.php').read_text()
 header = re.search(r'^ \* Version: (.+)$', source, re.M)
 constant = re.search(r"const VERSION = '([^']+)'", source)
 package = json.loads((ROOT / 'package.json').read_text())
@@ -30,7 +30,7 @@ changelog = (ROOT / 'CHANGELOG.md').read_text()
 section = re.search(r'^## \[' + re.escape(version) + r'\] - \d{4}-\d{2}-\d{2}\n(.*?)(?=^## \[|\Z)', changelog, re.M | re.S)
 if not section or not section.group(1).strip():
     raise SystemExit('Matching nonempty CHANGELOG release section is required')
-description = ROOT / 'nilwears-bulk-manager/changelog-fa.html'
+description = ROOT / 'nil-manager/changelog-fa.html'
 expected_hash = hashlib.sha256(changelog.encode()).hexdigest()
 if not description.exists() or not description.read_text().startswith('<!-- source-sha256: ' + expected_hash + ' -->'):
     raise SystemExit('Persian release descriptions are stale; run npm run build:descriptions')
@@ -40,12 +40,12 @@ if args.channel == 'zhaket-review':
 out.mkdir(parents=True, exist_ok=True)
 suffix = '-zhaket-review' if args.channel == 'zhaket-review' else ''
 archive = out / f'nil-manager-v{version}{suffix}.zip'
-channel_file = ROOT / 'nilwears-bulk-manager/includes-channel.php'
+channel_file = ROOT / 'nil-manager/includes-channel.php'
 if channel_file.read_text() != "<?php\n/** Distribution identity, generated only by the release builder. */\ndefined( 'ABSPATH' ) || exit;\nreturn 'github';\n":
     raise SystemExit('Source channel must remain github; build transforms the review copy only')
 manifest_files = []
 allowed = {'.php', '.js', '.css', '.html', '.txt', '.woff2', '.svg'}
-files = sorted((ROOT / 'nilwears-bulk-manager').rglob('*'))
+files = sorted((ROOT / 'nil-manager').rglob('*'))
 with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as bundle:
     for file in files:
         if file.name in {'admin.js','suite.js','advanced.js','market.js','payment-checkout.js','admin.css'}:
@@ -54,7 +54,11 @@ with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslev
             continue
         if file.suffix not in allowed or file.is_symlink():
             raise SystemExit(f'Unexpected plugin file: {file}')
-        info = zipfile.ZipInfo(file.relative_to(ROOT).as_posix(), date_time=(2020, 1, 1, 0, 0, 0))
+        # Keep existing WordPress installations replaceable while source paths use nil-manager.
+        relative = file.relative_to(ROOT / 'nil-manager')
+        if relative.as_posix() == 'nil-manager.php':
+            relative = Path('nilwears-bulk-manager.php')
+        info = zipfile.ZipInfo((Path('nilwears-bulk-manager') / relative).as_posix(), date_time=(2020, 1, 1, 0, 0, 0))
         info.compress_type = zipfile.ZIP_DEFLATED
         info.external_attr = 0o100644 << 16
         data = file.read_bytes()

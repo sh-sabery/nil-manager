@@ -1,7 +1,7 @@
 <?php
 // Bounded spreadsheet parser/writer tests without WordPress or WooCommerce.
 define('ABSPATH',__DIR__);function wp_tempnam($name){return tempnam(sys_get_temp_dir(),'nil');}function sanitize_file_name($name){return $name;}
-require __DIR__.'/../nilwears-bulk-manager/includes-sheet.php';
+require __DIR__.'/../nil-manager/includes-sheet.php';
 $n=0;function expect_sheet($ok,$label){global $n;$n++;if(!$ok)throw new Exception($label);}
 $headers=array('sku','name','price','notes');$rows=array(array('000012','پیراهن نیل','9000','x,y'),array('x','=SUM(1,2)','0',"multi\nline"));
 foreach(array('xlsx','csv') as $format){$file=NIL_Sheet::file($headers,$rows,$format,'nil');$out=NIL_Sheet::parse(base64_decode($file['data']),$format);expect_sheet($out['headers']===$headers,$format.' headers');expect_sheet($out['rows'][0]===$rows[0],$format.' Persian, leading zero SKU, commas');expect_sheet($out['rows'][1][2]==='0',$format.' zero price');expect_sheet($out['rows'][1][3]==="multi\nline",$format.' multiline');}

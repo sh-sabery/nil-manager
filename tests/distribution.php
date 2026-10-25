@@ -1,7 +1,7 @@
 <?php
 // Isolated HTTP/transient spies; never load WordPress or use store data.
 define('ABSPATH', __DIR__);
-class NIL_Bulk_Manager { const VERSION = '1.9.2'; }
+class NIL_Bulk_Manager { const VERSION = '1.9.2'; const FILE = __DIR__.'/../nil-manager/nil-manager.php'; }
 class WP_Error { public $code; public function __construct($code, $message) { $this->code = $code; } }
 $hooks = array(); $allowed = true;
 function add_filter($hook, $callback, $priority = 10, $count = 1) { global $hooks; $hooks[$hook][] = $callback; }
@@ -17,7 +17,7 @@ function channel_expect($ok, $label) { global $n; ++$n; if (!$ok) { throw new Ex
 $dir = sys_get_temp_dir() . '/nil-channel-' . bin2hex(random_bytes(8));
 mkdir($dir);
 try {
-    copy(__DIR__ . '/../nilwears-bulk-manager/includes-updater.php', $dir . '/includes-updater.php');
+    copy(__DIR__ . '/../nil-manager/includes-updater.php', $dir . '/includes-updater.php');
     file_put_contents($dir . '/includes-channel.php', "<?php defined('ABSPATH') || exit; return 'zhaket';");
     require $dir . '/includes-updater.php';
     channel_expect(NIL_Updater::channel() === 'zhaket', 'build selects marketplace channel');

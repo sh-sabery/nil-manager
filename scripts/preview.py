@@ -4,7 +4,7 @@ from pathlib import Path
 import base64
 import re
 root = Path(__file__).resolve().parents[1]
-plugin = root / 'nilwears-bulk-manager'
+plugin = root / 'nil-manager'
 out = root / 'dist'
 out.mkdir(exist_ok=True)
 templates = ''.join(re.sub(r'<\?php[\s\S]*?\?>', '', (plugin / ('includes-'+name+'.php')).read_text()) for name in ['grid','view','help'])

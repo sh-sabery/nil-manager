@@ -38,7 +38,7 @@ final class NIL_Suite {
         add_action( 'woocommerce_checkout_create_order_line_item', array( 'NIL_Insights', 'checkout_cost' ), 10, 4 );
         add_action( 'woocommerce_new_order_item', array( 'NIL_Insights', 'new_item_cost' ), 10, 3 );
         add_filter( 'all_plugins', function( $plugins ) {
-            $key = plugin_basename( __DIR__ . '/nilwears-bulk-manager.php' );
+            $key = plugin_basename( NIL_Bulk_Manager::FILE );
             if ( isset( $plugins[$key] ) ) { $plugins[$key]['Name'] = self::title(); }
             return $plugins;
         } );

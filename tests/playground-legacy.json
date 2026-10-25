@@ -21,7 +21,7 @@
     },
     {
       "step": "activatePlugin",
-      "pluginPath": "nilwears-bulk-manager/nilwears-bulk-manager.php"
+      "pluginPath": "nil-manager/nil-manager.php"
     },
     {
       "step": "runPHP",

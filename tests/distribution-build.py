@@ -8,7 +8,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 version = (ROOT / 'VERSION').read_text().strip()
-source = ROOT / 'nilwears-bulk-manager/includes-channel.php'
+source = ROOT / 'nil-manager/includes-channel.php'
 before = source.read_bytes()
 contents = {}
 for channel in ('github', 'zhaket-review'):
@@ -33,6 +33,8 @@ for channel in ('github', 'zhaket-review'):
     assert hashlib.sha256(archive.read_bytes()).hexdigest() == first_digest, 'non-deterministic archive'
     assert source.read_bytes() == before, 'review build changed source identity'
     assert manifest['basename'] == 'nilwears-bulk-manager/nilwears-bulk-manager.php'
+    assert 'nil-manager/nil-manager.php' not in contents[channel], 'no duplicate installed plugin'
+    assert contents[channel][manifest['basename']] == (ROOT / 'nil-manager/nil-manager.php').read_bytes(), 'entrypoint content preserved through path mapping'
 assert contents['github'].keys() == contents['zhaket-review'].keys()
 changed = [name for name in contents['github'] if contents['github'][name] != contents['zhaket-review'][name]]
 assert changed == ['nilwears-bulk-manager/includes-channel.php'], changed

@@ -34,7 +34,7 @@ jobs:
       - run: NIL_MINIFIED=1 node tests/payment-checkout.cjs
       - name: PHP syntax and pricing checks
         run: |
-          for file in nilwears-bulk-manager/*.php tests/*.php; do php -l "$file" || exit 1; done
+          for file in nil-manager/*.php tests/*.php; do php -l "$file" || exit 1; done
           php tests/dates.php
           php tests/pricing.php
           php tests/market-unit.php
@@ -43,6 +43,7 @@ jobs:
           php tests/updater.php
           php tests/distribution.php
           NIL_PUBLIC_UPDATES=1 php tests/updater.php
+          NIL_PUBLIC_UPDATES=1 NIL_TEST_CANONICAL=1 php tests/updater.php
       - run: python3 tests/distribution-build.py
       - uses: actions/upload-artifact@v4
         with:

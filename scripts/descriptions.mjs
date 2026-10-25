@@ -12,6 +12,6 @@ const versions=source.split(/^## \[/m).slice(1).map(part=>{
  return `<h3>نسخهٔ ${digits(m[1])} — ${date.format(new Date(m[2]+'T12:00:00Z'))}</h3>\n<ul>\n`+m[3].split('\n').filter(line=>line.startsWith('- ')).map(line=>'<li>'+inline(line.slice(2))+'</li>').join('\n')+'\n</ul>';
 });
 const html='<!-- source-sha256: '+crypto.createHash('sha256').update(source).digest('hex')+' -->\n<div dir="rtl" lang="fa">\n'+versions.join('\n')+'\n</div>\n';
-const path='nilwears-bulk-manager/changelog-fa.html';
+const path='nil-manager/changelog-fa.html';
 if(process.argv.includes('--check')){if(fs.readFileSync(path,'utf8')!==html)throw Error('Run npm run build:descriptions');}else fs.writeFileSync(path,html);
 console.log(`PASS: ${versions.length} Persian release descriptions with Persian-calendar dates`);

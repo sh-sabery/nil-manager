@@ -1,6 +1,6 @@
 <?php
 define( 'ABSPATH', __DIR__ );
-require __DIR__ . '/../nilwears-bulk-manager/includes-price.php';
+require __DIR__ . '/../nil-manager/includes-price.php';
 $checks = 0;
 function same( $actual, $expected, $message ) {
     global $checks; $checks++;

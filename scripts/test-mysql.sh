@@ -24,8 +24,8 @@ mkdir -p "$NIL_TEST_WP_ROOT/wp-content/mu-plugins"
 printf '%s\n' '<?php add_filter("pre_wp_mail", "__return_true");' > "$NIL_TEST_WP_ROOT/wp-content/mu-plugins/no-fixture-mail.php"
 curl --fail --silent --show-error --location https://downloads.wordpress.org/plugin/woocommerce.11.2.1.zip --output "$work/woocommerce.zip"
 wp --allow-root --path="$NIL_TEST_WP_ROOT" plugin install "$work/woocommerce.zip" --activate --quiet
-ln -s "$repo/nilwears-bulk-manager" "$NIL_TEST_WP_ROOT/wp-content/plugins/nilwears-bulk-manager"
-wp --allow-root --path="$NIL_TEST_WP_ROOT" plugin activate nilwears-bulk-manager --quiet
+ln -s "$repo/nil-manager" "$NIL_TEST_WP_ROOT/wp-content/plugins/nil-manager"
+wp --allow-root --path="$NIL_TEST_WP_ROOT" plugin activate nil-manager --quiet
 wp --allow-root --path="$NIL_TEST_WP_ROOT" option update woocommerce_custom_orders_table_enabled "$NIL_TEST_HPOS" --quiet
 wp --allow-root --path="$NIL_TEST_WP_ROOT" option update woocommerce_custom_orders_table_data_sync_enabled no --quiet
 php "$repo/tests/mysql-suite.php" 2>&1 | tee "$NIL_TEST_RESULTS_DIR/functional.log"

@@ -1,6 +1,6 @@
 <?php
 // Pure arithmetic / feed-contract tests. No WordPress, network or store writes.
-define('ABSPATH',__DIR__);require __DIR__.'/../nilwears-bulk-manager/includes-price.php';require __DIR__.'/../nilwears-bulk-manager/includes-market.php';
+define('ABSPATH',__DIR__);require __DIR__.'/../nil-manager/includes-price.php';require __DIR__.'/../nil-manager/includes-market.php';
 $n=0;function market_check($ok,$label){global $n;$n++;if(!$ok)throw new Exception($label);}function market_bad($fn){try{$fn();return false;}catch(Throwable $e){return true;}}
 $s=array('base_rate'=>250000,'allow_decrease'=>true,'rounding'=>'none','step'=>'10000','ending'=>'9000','decimals'=>0);
 market_check(NIL_Market::price('495000',$s,275000)==='544500','10% from frozen base');market_check(NIL_Market::price('495000',$s,300000)==='594000','20% without compounding');market_check(NIL_Market::price('495000',$s,225000)==='445500','drop below base allowed');market_check(NIL_Market::price('',$s,275000)==='','blank sale not created');

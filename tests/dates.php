@@ -1,7 +1,7 @@
 <?php
 // Independent Node/ICU Persian calendar vectors; no WP/intl extension dependency.
 define('ABSPATH',__DIR__);$nil_date_zone='UTC';function wp_timezone(){global $nil_date_zone;return new DateTimeZone($nil_date_zone);}
-require __DIR__.'/../nilwears-bulk-manager/includes-dates.php';
+require __DIR__.'/../nil-manager/includes-dates.php';
 $n=0;function date_check($ok,$why){global $n;$n++;if(!$ok)throw new Exception($why);}function date_reject($fn){try{$fn();}catch(InvalidArgumentException $e){return true;}return false;}
 foreach(json_decode(file_get_contents(__DIR__.'/date-vectors.json'),true) as $row){$t=strtotime($row[0].'T12:00:00Z');date_check(NIL_Dates::format($t,false,false)===$row[1],'ICU display '.$row[0]);date_check(NIL_Dates::parse($row[1])===$row[0],'ICU reverse '.$row[1]);}
 date_check(NIL_Dates::parse("\u{200f}۱۴۰۵/۰۸/۰۱\u{200e}")==='2026-10-23','bidi date marks');

@@ -1,7 +1,7 @@
 <?php
 define('ABSPATH', __DIR__);
-require __DIR__.'/../nilwears-bulk-manager/includes-price.php';
-require __DIR__.'/../nilwears-bulk-manager/includes-payments.php';
+require __DIR__.'/../nil-manager/includes-price.php';
+require __DIR__.'/../nil-manager/includes-payments.php';
 function get_woocommerce_currency(){return 'IRT';}
 function wc_get_price_decimals(){return 0;}
 function wc_format_decimal($n,$d){return number_format((float)$n,$d,'.','');}
