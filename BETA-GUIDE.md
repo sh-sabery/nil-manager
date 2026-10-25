@@ -74,3 +74,8 @@
 ## وضعیت اعلام‌شدهٔ فروشگاه — ۱۴۰۵/۰۸/۰۲
 
 افزونه روی سایت اصلی نصب است ولی کاربر هنوز با آن تغییر محصولی اعمال نکرده است. فعلاً استیجینگ در اختیار نیست؛ آزمون فروشگاهی به تعویق افتاده و پاس‌شده حساب نمی‌شود. آماده‌سازی انتشار ژاکت می‌تواند مستقل ادامه یابد؛ این تصمیم مجوز ایجاد دادهٔ آزمایشی یا اجرای تغییر قیمت روی سایت اصلی نیست.
+
+
+## Payment discounts (1.10)
+
+With a disposable cart first: cash 10% uncapped, then 10% capped at 1,000,000 IRT / 10,000,000 IRR; installments 0%. Check below/above cap, sale/variation quantities, shipping, tax, a normal coupon and an individual-use coupon. Switch methods rapidly, reload, place an order and verify the amount sent to each installed gateway. Retry an unpaid discounted order (same gateway only), partially refund an item and confirm WooCommerce line/tax accounting. Repeat with the store's actual classic or Block checkout and installed installment extensions. Backend/isolated script fixtures cannot establish compatibility with proprietary gateway redirect/callback code. No production test has been performed by this release.

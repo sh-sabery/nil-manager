@@ -4,11 +4,26 @@ defined( 'ABSPATH' ) || exit;
 // Optional tools are parsed only when an endpoint or update hook needs them.
 spl_autoload_register( function( $class ) {
     if ( 0 !== strpos( $class, 'NIL_' ) ) { return; }
-    static $map = array( 'NIL_Dates' => 'dates', 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market', 'NIL_Selection' => 'selection' );
+    static $map = array( 'NIL_Payments' => 'payments', 'NIL_Dates' => 'dates', 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market', 'NIL_Selection' => 'selection' );
     if ( isset( $map[$class] ) ) { require_once __DIR__ . '/includes-' . $map[$class] . '.php'; }
 } );
 final class NIL_Suite {
     public static function boot() {
+        add_action( 'admin_menu', function() { add_submenu_page( 'woocommerce', 'نیل منجر · تخفیف روش پرداخت', 'تخفیف روش پرداخت', 'manage_options', 'nil-payment-discounts', array( 'NIL_Payments', 'page' ) ); } );
+        add_action( 'admin_enqueue_scripts', function( $hook ) { if ( 'woocommerce_page_nil-payment-discounts' === $hook ) { wp_enqueue_style( 'nil-bulk', plugins_url( 'assets/admin.min.css', __FILE__ ), array(), NIL_Bulk_Manager::VERSION ); } } );
+        add_action( 'wp_enqueue_scripts', function() { if ( is_checkout() ) { NIL_Payments::assets(); } } );
+        add_action( 'woocommerce_before_calculate_totals', array( 'NIL_Payments', 'sync' ), 1000 );
+        add_filter( 'woocommerce_get_shop_coupon_data', array( 'NIL_Payments', 'coupon' ), 10, 2 );
+        add_filter( 'woocommerce_coupon_is_valid', array( 'NIL_Payments', 'valid' ), 10, 2 );
+        add_filter( 'woocommerce_coupon_sort', array( 'NIL_Payments', 'sort' ), 1000, 2 );
+        add_filter( 'woocommerce_cart_totals_coupon_label', array( 'NIL_Payments', 'label' ), 10, 2 );
+        add_filter( 'woocommerce_cart_totals_coupon_html', array( 'NIL_Payments', 'coupon_html' ), 10, 3 );
+        add_filter( 'woocommerce_available_payment_gateways', array( 'NIL_Payments', 'pay_gateways' ), 1000 );
+        add_action( 'woocommerce_checkout_create_order', array( 'NIL_Payments', 'capture' ), 1000, 2 );
+        add_filter( 'woocommerce_checkout_posted_data', array( 'NIL_Payments', 'posted_data' ), 1000 );
+        add_action( 'woocommerce_store_api_checkout_update_customer_from_request', array( 'NIL_Payments', 'block_request' ), 10, 2 );
+        add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( 'NIL_Payments', 'capture' ), 1000, 2 );
+        add_action( 'rest_api_init', function() { if ( function_exists( 'woocommerce_store_api_register_update_callback' ) ) { woocommerce_store_api_register_update_callback( array( 'namespace' => 'nil-manager-payment', 'callback' => array( 'NIL_Payments', 'block_update' ) ) ); } } );
         add_action( 'rest_api_init', array( __CLASS__, 'routes' ) );
         add_filter( 'rest_pre_dispatch', function( $reply, $server, $r ) {
             if ( 0 === strpos( $r->get_route(), '/nil-bulk/v1/' ) ) {

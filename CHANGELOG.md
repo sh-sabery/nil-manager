@@ -2,6 +2,15 @@
 
 تغییرات هر نسخه در این فایل ثبت می‌شود. شماره‌ها از الگوی `MAJOR.MINOR.PATCH` پیروی می‌کنند.
 
+## [1.10.0] - 2026-10-25
+
+- Add independent payment-gateway discount percentages (0–100%) and optional whole-order caps in the store currency. Defaults to disabled; works with every registered WooCommerce gateway, including third-party installment methods.
+- Use a virtual fixed-cart coupon allocated by WooCommerce to real line totals/taxes/refunds; never change catalog prices or create negative fees. Current sale/variation prices form the pre-coupon base, excluding shipping/fees. Individual-use coupons take priority.
+- Synchronize classic and Block checkout method changes and validate the method again before order creation. Coalesce Block updates and block submission while a quote is pending or failed. Store API requests never accept client discount amounts.
+- Record the applied rule/gateway/currency on the order; discounted pending orders can only retry their original gateway. Rule disable/currency changes remove cart discounts without rewriting old orders.
+- Add a Persian, server-rendered WooCommerce settings page, discoverable from Nil Manager Home/Settings, with nonce/capability/revision checks and atomic field validation. No new table, cron, admin JS, storefront stylesheet or external request; optional checkout script has a separate 3 KB cap and the original 60 KB admin budget remains unchanged.
+- Add payment arithmetic, source/minified checkout interaction and disposable real WooCommerce cart/order/Store API/security fixtures to release gates. Third-party gateway processing and the live Nilwears checkout still require merchant acceptance testing; no live deployment is performed.
+
 ## [1.9.2] - 2026-10-24
 
 - Separate the existing GitHub release from an explicitly marked Zhaket review build without changing the installed basename or pricing/stock data. Marketplace-channel status performs no GitHub HTTP/cache calls; remove only stale own-GitHub update entries, preserve external/other-plugin metadata, and block cached GitHub package downloads. Display the review-channel notice without claiming the latest marketplace version or active licensing.

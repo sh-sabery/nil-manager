@@ -19,6 +19,8 @@ jobs:
       - run: npm run check:js
       - run: npm run test:ui
       - run: npm run test:ui:min
+      - run: node tests/payment-checkout.cjs
+      - run: NIL_MINIFIED=1 node tests/payment-checkout.cjs
       - name: PHP syntax and pricing checks
         run: |
           php --version
@@ -26,6 +28,7 @@ jobs:
           php tests/dates.php
           php tests/pricing.php
           php tests/market-unit.php
+          php tests/payments-unit.php
           php tests/sheet.php
           php tests/updater.php
           php tests/distribution.php

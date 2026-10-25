@@ -76,3 +76,10 @@ The production admin CSS/JS totals 59,884 bytes (22,075 deterministic gzip), wit
 ## Version 1.9.1 native database evidence
 
 See SQL-VALIDATION.md for four native MySQL/MariaDB + HPOS configurations and the exact initial run. All four measured 12/12 SQL queries for 2/40-product previews and 8/8 for CSV exports. Worker processes verified actual server lock waits rather than sleeping and assuming contention. PHP heap diagnostics remain per-request deltas; no production host/CPU/GTmetrix or shared-cache claim follows. The native runner, workers, database containers and reports stay outside the plugin ZIP; shipped assets and runtime dependencies are unchanged.
+
+
+## Optional payment discounts — 1.10
+
+The original 60,000-byte admin CSS/JS budget is unchanged. The payment settings reuse the existing scoped stylesheet and render on the server without a new admin script or background request. The feature defaults off. Enabled checkout adds one local vanilla-JS script capped independently at 3,000 bytes; it reuses WooCommerce/jQuery or Blocks data stores already used by that checkout and loads on neither product pages nor order-pay/order-received pages. Consequently the previous blanket “no storefront assets” statement applies to the product tools and to disabled payment discounts, not to enabled checkout synchronization.
+
+One non-autoloaded bounded option stores at most 100 gateway rules. No table, coupon post, cron, scan, external HTTP or per-product metadata is created. Calculation traverses the current cart and existing applied coupons, and delegates coupon allocation/tax/refund arithmetic to WooCommerce. Boot still adds no SQL; first checkout/settings access may read the option, using normal WordPress option caching thereafter. Native gateway extensions may add their own work and are outside this module's resource contract.
