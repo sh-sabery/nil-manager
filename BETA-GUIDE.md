@@ -76,6 +76,6 @@
 افزونه روی سایت اصلی نصب است ولی کاربر هنوز با آن تغییر محصولی اعمال نکرده است. فعلاً استیجینگ در اختیار نیست؛ آزمون فروشگاهی به تعویق افتاده و پاس‌شده حساب نمی‌شود. آماده‌سازی انتشار ژاکت می‌تواند مستقل ادامه یابد؛ این تصمیم مجوز ایجاد دادهٔ آزمایشی یا اجرای تغییر قیمت روی سایت اصلی نیست.
 
 
-## Payment discounts (1.10)
+## تخفیف روش پرداخت — ۱.۱۰
 
-With a disposable cart first: cash 10% uncapped, then 10% capped at 1,000,000 IRT / 10,000,000 IRR; installments 0%. Check below/above cap, sale/variation quantities, shipping, tax, a normal coupon and an individual-use coupon. Switch methods rapidly, reload, place an order and verify the amount sent to each installed gateway. Retry an unpaid discounted order (same gateway only), partially refund an item and confirm WooCommerce line/tax accounting. Repeat with the store's actual classic or Block checkout and installed installment extensions. Backend/isolated script fixtures cannot establish compatibility with proprietary gateway redirect/callback code. No production test has been performed by this release.
+در سبد ساختگی، ابتدا نقدی ۱۰٪ نامحدود و سپس با سقف ۱۰۰۰۰۰۰ تومان یا ۱۰۰۰۰۰۰۰ ریال، و اقساطی صفر را تنظیم کنید. سبد پایین و بالای سقف، محصول حراج و ورییشن، تعداد، ارسال، مالیات، کوپن معمول و استفادهٔ فردی را بررسی کنید. روش‌ها را سریع تغییر دهید، صفحه را تازه و سفارش ثبت کنید؛ مبلغ ارسال‌شده به هر درگاه نصب‌شده را با سفارش تطبیق دهید. پرداخت مجدد سفارش تخفیف‌دار باید فقط با همان روش ممکن باشد. بازپرداخت جزئی را از مبلغ واقعی ردیف بررسی و سناریو را در نوع تسویه‌حساب واقعی سایت تکرار کنید. آزمون سرور و اسکریپت جدا، تأیید کد اختصاصی انتقال و بازگشت درگاه نیست؛ در انتشار این نسخه پرداخت واقعی تولید انجام نشده است.

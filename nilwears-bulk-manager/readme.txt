@@ -1,41 +1,62 @@
-=== Nil Manager by Nil Web ===
+=== نیل منجر — محصول نیل وب ===
 Contributors: sh-sabery
 Requires at least: 6.4
 Tested up to: 7.1.3
 Requires PHP: 7.4
-Stable tag: 1.10.0
+Stable tag: 1.10.1
 Requires Plugins: woocommerce
 License: GPL-2.0-or-later
 
-Persian, variation-aware WooCommerce product operations. Tested with WooCommerce 11.2.1, including HPOS on and off.
+مدیریت فارسی قیمت، موجودی و تخفیف ووکامرس با پشتیبانی از محصولات ساده و ورییشن‌ها، پیش‌نمایش و بازگردانی.
 
 == Description ==
-Manage products, prices, stock, purchase cost, XLSX/CSV, images and customer reports in a scoped RTL admin screen. No storefront CSS/JavaScript/font is enqueued. Optional PHP modules load on use; temporary tool state is bounded per user. Essential cost metadata and undo history intentionally use database storage.
+نیل منجر، محصول نیل وب، ابزار مدیریت گروهی قیمت و موجودی ووکامرس است. دسته، چند محصول یا ورییشن دلخواه را انتخاب کنید؛ تغییر درصدی یا مبلغی، قیمت ثابت و رندکردن را پیش‌نمایش بگیرید و پس از بررسی تأیید کنید.
 
-See README-fa.html for usage, and the repository README.md, PERFORMANCE.md and CHANGELOG.md for measurements, limits and release history. Public-repository updates need no token from v1.4. Older versions without a token require one manual v1.4 ZIP installation. An optional token supports private access.
+امکانات: جدول ویرایش محصول، مدیریت موجودی مشترک و مستقل، ساخت و حذف حراج، قیمت‌گذاری بر مبنای طلا و ارز، تخفیف مستقل هر روش پرداخت با سقف اختیاری، اکسل و CSV، ساخت ورییشن، ابزار تصاویر، قیمت خرید و COGS داخلی، گزارش مشتریان و سود، برندینگ و تاریخ شمسی.
+
+تخفیف روش پرداخت پیش‌فرض خاموش است و از ووکامرس ← تخفیف روش پرداخت تنظیم می‌شود. سقف خالی یعنی نامحدود و مبلغ سقف با واحد پول فروشگاه ثبت می‌شود. خود درگاه باید با تسویه‌حساب فروشگاه سازگار باشد. حق استفادهٔ تجاری منبع نرخ و اتصال لایسنس ژاکت هنوز تأیید نشده‌اند.
+
+فایل‌های مدیریت فقط در صفحهٔ افزونه بارگذاری می‌شوند. با فعال‌بودن تخفیف پرداخت، اسکریپت کوچک هماهنگی فقط در تسویه‌حساب اجرا می‌شود؛ فایل CSS عمومی تازه‌ای ندارد. دادهٔ ضروری هزینه و بازگردانی در دیتابیس ذخیره می‌شود؛ مصرف صفر منابع یا امتیاز تضمینی سرعت ادعا نمی‌شود.
+
+راهنمای کامل در README-fa.html و تب راهنماست. منبع پروژه و تغییرات نسخه‌ها: https://github.com/sh-sabery/nil-manager
+
+== Installation ==
+ZIP قابل نصب را از انتشارهای پروژه بگیرید؛ فایل کد منبع خودکار گیت‌هاب بستهٔ نصب نیست. در افزونه‌ها ← افزودن ← بارگذاری افزونه، فایل را نصب یا با نسخهٔ موجود جایگزین کنید. افزونه را برای ارتقا حذف نکنید. ابزار اصلی از ووکامرس ← نیل منجر در دسترس است.
+
+در ۱.۱۰.۱ نام ریپو تغییر کرده است؛ بروزرسان‌های قدیمی انتقال نشانی را دنبال نمی‌کنند. برای دریافت این اصلاح یک بار ZIP جدید را بارگذاری و جایگزین کنید. پوشه و شناسهٔ داخلی نصب برای حفظ تشخیص نسخهٔ قبلی و داده‌ها ثابت مانده‌اند؛ از آن پس بروزرسان منبع جدید را می‌خواند. ریپوی عمومی توکن لازم ندارد.
 
 == Changelog ==
+تاریخچهٔ کامل فارسی با تاریخ شمسی در changelog-fa.html و پنجرهٔ جزئیات افزونه نمایش داده می‌شود. فایل CHANGELOG.md ریپو نیز تغییرات همهٔ نسخه‌ها و حدود اعتبارسنجی هرکدام را ثبت می‌کند.
+
+= 1.10.1 =
+یکدست‌سازی نام نیل منجر و نیل وب، فارسی‌سازی معرفی و تمام تغییرات نسخه‌ها، تاریخچهٔ محلی فارسی در جزئیات وردپرس، منبع جدید بروزرسانی و نام تازهٔ ZIP؛ حفظ شناسهٔ نصب و داده‌ها.
 = 1.10.0 =
-Per-payment-method automatic discounts with optional order caps, server-side currency/gateway validation, classic/Block checkout synchronization, native coupon/tax/refund allocation and guarded order retries. Disabled by default; configure under WooCommerce > Payment discounts. Optional checkout JS only; no new public stylesheet or catalog-price changes.
+تخفیف مستقل روش پرداخت، سقف اختیاری کل سفارش، هماهنگی تسویه‌حساب کلاسیک و بلوکی، مالیات و بازپرداخت استاندارد و کنترل پرداخت مجدد سفارش.
+= 1.9.2 =
+تفکیک بستهٔ عادی گیت‌هاب از بستهٔ بررسی ژاکت، ساخت تکرارپذیر و شناسنامهٔ هش فایل‌ها؛ بدون اتصال یا تأیید لایسنس.
 = 1.9.1 =
-Guarded native MySQL/MariaDB functional and concurrency validation with HPOS on/off; publication now requires the database matrix. No pricing/UI/runtime dependency change. See SQL-VALIDATION.md and BETA-GUIDE.md in the repository.
+آزمون عملکردی و هم‌زمانی واقعی MySQL و MariaDB با HPOS روشن/خاموش؛ موفقیت ماتریس دیتابیس پیش‌نیاز انتشار شد.
 = 1.9.0 =
-A local start screen with manual price, stock/discount and market journeys; shared product scope, isolated forms, stale-preview closure and an independent on-demand history workspace. Preserve descendant pseudo-class spacing in production CSS so rounded input/focus styles apply. See PRODUCT-PLAN.md in the repository for commercial scope and remaining work.
+صفحهٔ شروع با سه مسیر، انتخاب مشترک کالا، فرم‌های متمرکز، بستن پیش‌نمایش قدیمی، تاریخچهٔ مستقل و اصلاح گوشه‌های ورودی و نمایش موبایل.
 = 1.8.1 =
-Adopt the Nil Manager product identity and Nil Web publisher across the admin defaults, plugin metadata, update details, banner, guide and worksheet. Preserve custom branding, installed plugin identity and stored data. Commercial licensing and Zhaket distribution are not included.
+نام محصول نیل منجر و سازنده نیل وب در مدیریت، اطلاعات افزونه، بنر و راهنما یکدست شد؛ برند سفارشی و شناسهٔ نصب حفظ شدند.
 = 1.8.0 =
-Persian date inputs/displays/exports in the site time zone; bounded resource processing and batched product reads; REST/taxonomy/CSV/XML/media/update hardening. See the repository AUDIT.md for measured results and limits.
+تاریخ شمسی و منطقهٔ زمانی سایت، خواندن دسته‌ای، محدودیت منابع و سخت‌گیری مجوزها، فایل‌ها، تصاویر و بروزرسانی.
 = 1.7.0 =
-Dedicated regular-price discount creation/removal with rounding and exact sale-date undo. Stock set/add/subtract/unavailable with shared-parent protection. Softer inputs/buttons and grouped action cards.
+ساخت و حذف تخفیف از قیمت اصلی با رندکردن و بازگردانی دقیق؛ تعیین، افزایش، کاهش و ناموجودکردن موجودی؛ ورودی و دکمهٔ نرم‌تر.
 = 1.6.0 =
-Select a category or multiple named products directly in Pricing, with variation-aware scope review. Updated responsive navigation, selection/edit counters, and local WordPress update icons/details banner.
+انتخاب دسته و چند محصول یا ورییشن، بررسی محدوده، ناوبری واکنش‌گرا، شمارنده‌ها و آیکون و بنر محلی بروزرسانی.
 = 1.5.1 =
-Fresh update checks bypass the release cache and refresh WordPress update data. Display connection errors, fall back to public access for invalid optional tokens, and keep update hooks available without active WooCommerce.
+بررسی تازهٔ نسخه، ادغام اعلان وردپرس، نمایش امن خطا، تلاش بدون توکن نامعتبر برای ریپوی عمومی و حفظ اعتبارسنجی دانلود.
 = 1.5.0 =
-Fixed-baseline scheduled pricing with WallGold 18K gold, USD and EUR. Reference rates in Toman, optional reduction below baseline, rounding, configurable intervals, explicit activation, pause/resume and source/manual-edit protections.
+قیمت‌گذاری طلا، دلار و یورو با مبنای ثابت، سیاست کاهش، رندکردن، فاصلهٔ اجرا، توقف/ادامه و محافظت در برابر نرخ یا قیمت قدیمی.
 = 1.4.0 =
-In-app Persian help, dedicated pricing workspace, safe example recipes and live sample calculation. Immediate saved-brand application with an unsaved preview, refreshed responsive styling and tokenless public-release updates.
+راهنمای فارسی، قیمت‌گذاری مستقل، مثال آماده، محاسبهٔ نمونه، برندینگ فوری و بروزرسان عمومی بدون توکن.
 = 1.3.0 =
-Append variations to existing parents from the form or mapped XLSX/CSV, save personal views and price rules, and use native WooCommerce COGS when enabled. Preview legacy-cost migration; retain conflicting native costs.
+افزودن ورییشن برای والد موجود، نما و الگوی شخصی و استفاده از COGS داخلی ووکامرس با انتقال صریح هزینهٔ قدیمی.
 = 1.2.0 =
-Seven admin workspaces, production minification, batched variation loading, on-demand image scans, bounded cache slots and explicit history cleanup. No whole-site GTmetrix score is guaranteed.
+هفت فضای کاری راست‌چین، فایل‌های فشرده، خواندن دسته‌ای، اسکن درخواستی، کش محدود و پاکسازی صریح تاریخچه.
+= 1.1.0 =
+گسترش جدول، ساخت محصول، اکسل، هزینه، تصاویر، گزارش مشتریان و سود، برندینگ و بروزرسان خصوصی گیت‌هاب.
+= 1.0.0 =
+جدول قیمت و موجودی ساده/ورییشن، عملیات درصدی و مبلغی، رندکردن، پیش‌نمایش، تاریخچه و بازگردانی.

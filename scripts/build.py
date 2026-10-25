@@ -30,12 +30,16 @@ changelog = (ROOT / 'CHANGELOG.md').read_text()
 section = re.search(r'^## \[' + re.escape(version) + r'\] - \d{4}-\d{2}-\d{2}\n(.*?)(?=^## \[|\Z)', changelog, re.M | re.S)
 if not section or not section.group(1).strip():
     raise SystemExit('Matching nonempty CHANGELOG release section is required')
+description = ROOT / 'nilwears-bulk-manager/changelog-fa.html'
+expected_hash = hashlib.sha256(changelog.encode()).hexdigest()
+if not description.exists() or not description.read_text().startswith('<!-- source-sha256: ' + expected_hash + ' -->'):
+    raise SystemExit('Persian release descriptions are stale; run npm run build:descriptions')
 out = ROOT / 'dist'
 if args.channel == 'zhaket-review':
     out = out / 'zhaket-review'
 out.mkdir(parents=True, exist_ok=True)
 suffix = '-zhaket-review' if args.channel == 'zhaket-review' else ''
-archive = out / f'nilwears-bulk-manager-v{version}{suffix}.zip'
+archive = out / f'nil-manager-v{version}{suffix}.zip'
 channel_file = ROOT / 'nilwears-bulk-manager/includes-channel.php'
 if channel_file.read_text() != "<?php\n/** Distribution identity, generated only by the release builder. */\ndefined( 'ABSPATH' ) || exit;\nreturn 'github';\n":
     raise SystemExit('Source channel must remain github; build transforms the review copy only')
@@ -65,8 +69,8 @@ with zipfile.ZipFile(archive) as bundle:
         raise SystemExit('Missing plugin entrypoint')
 digest = hashlib.sha256(archive.read_bytes()).hexdigest()
 (out / (archive.name + '.sha256')).write_text(f'{digest}  {archive.name}\n')
-(out / 'release-notes.md').write_text(f'# v{version}\n\n' + section.group(1).strip() + '\n')
-manifest = {'product': 'Nil Manager', 'publisher': 'Nil Web', 'version': version,
+(out / 'release-notes.md').write_text(f'# نیل منجر — نسخهٔ {version}\n\n' + section.group(1).strip() + '\n')
+manifest = {'product': 'نیل منجر', 'publisher': 'نیل وب', 'version': version,
             'channel': args.channel, 'basename': 'nilwears-bulk-manager/nilwears-bulk-manager.php',
             'archive': archive.name, 'sha256': digest, 'size': archive.stat().st_size,
             'guard_integrated': False, 'marketplace_approved': False,

@@ -15,7 +15,7 @@ for channel in ('github', 'zhaket-review'):
     subprocess.run(['python3', 'scripts/build.py', '--channel', channel], cwd=ROOT, check=True)
     folder = ROOT / 'dist' / ('zhaket-review' if channel == 'zhaket-review' else '')
     suffix = '-zhaket-review' if channel == 'zhaket-review' else ''
-    archive = folder / f'nilwears-bulk-manager-v{version}{suffix}.zip'
+    archive = folder / f'nil-manager-v{version}{suffix}.zip'
     manifest = json.loads(archive.with_name(archive.name + '.manifest.json').read_text())
     assert manifest['sha256'] == hashlib.sha256(archive.read_bytes()).hexdigest()
     assert manifest['size'] == archive.stat().st_size

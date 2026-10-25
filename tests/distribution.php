@@ -33,6 +33,8 @@ try {
     channel_expect($denied, 'manual checks retain update_plugins capability'); $allowed = true;
     $plugin = plugin_basename('');
     $own = (object) array('package' => 'https://api.github.com/repos/sh-sabery/nilwears-bulk-manager/releases/assets/123');
+    $canonical = (object) array('package' => 'https://api.github.com/repos/sh-sabery/nil-manager/releases/assets/123');
+    channel_expect(NIL_Updater::download(false, $canonical->package, null, array())->code === 'nil_update_channel', 'new repository package blocked in marketplace channel');
     $market = (object) array('package' => 'https://zhaket.test/update.zip', 'new_version' => '9.0');
     $other = (object) array('package' => $own->package);
     foreach (array('response', 'no_update') as $bucket) {

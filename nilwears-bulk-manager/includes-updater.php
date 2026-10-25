@@ -2,7 +2,8 @@
 /** Public GitHub releases; optional private-repository token stays on the server. */
 defined( 'ABSPATH' ) || exit;
 final class NIL_Updater {
-    const REPO = 'sh-sabery/nilwears-bulk-manager';
+    const REPO = 'sh-sabery/nil-manager';
+    const LEGACY_REPO = 'sh-sabery/nilwears-bulk-manager';
     /** Build-time channel; never switched by a request or a customer option. */
     public static function channel() {
         static $channel;
@@ -44,7 +45,7 @@ final class NIL_Updater {
         $data = json_decode( wp_remote_retrieve_body( $response ), true ); $tag = $data['tag_name'] ?? '';
         if ( ! is_array( $data ) || ! is_string( $tag ) || ! preg_match( '/^v(\d+\.\d+\.\d+)$/', $tag, $m ) || ! empty( $data['prerelease'] ) || ! empty( $data['draft'] ) || ! is_array( $data['assets'] ?? null ) ) { return self::failure( 'metadata', 'اطلاعات نسخهٔ منتشرشده معتبر نیست.' ); }
         foreach ( $data['assets'] ?? array() as $asset ) {
-            if ( is_array( $asset ) && ( $asset['name'] ?? '' ) === 'nilwears-bulk-manager-' . $tag . '.zip' && ! empty( $asset['id'] ) && ! empty( $asset['size'] ) ) {
+            if ( is_array( $asset ) && in_array( $asset['name'] ?? '', array( 'nil-manager-' . $tag . '.zip', 'nilwears-bulk-manager-' . $tag . '.zip' ), true ) && ! empty( $asset['id'] ) && ! empty( $asset['size'] ) ) {
                 if ( ! is_string( $asset['digest'] ?? null ) || ! preg_match( '/^sha256:[a-f0-9]{64}$/D', $asset['digest'] ) || ! filter_var( $asset['size'], FILTER_VALIDATE_INT, array( 'options' => array( 'min_range' => 1, 'max_range' => 20 * 1024 * 1024 ) ) ) ) { return self::failure( 'integrity', 'هش SHA-256 یا اندازهٔ بستهٔ به‌روزرسانی معتبر نیست.' ); }
                 $release = array( 'version' => $m[1], 'asset' => absint( $asset['id'] ), 'size' => absint( $asset['size'] ), 'digest' => $asset['digest'] ?? '', 'notes' => wp_strip_all_tags( $data['body'] ?? '' ), 'access' => $auth ? 'token' : 'public', 'checked_at' => time() );
                 delete_site_transient( 'nil_release_error' ); set_site_transient( self::token() ? 'nil_release' : 'nil_release_public', $release, 6 * HOUR_IN_SECONDS ); return $release;
@@ -62,7 +63,7 @@ final class NIL_Updater {
     public static function dashboard_check() { if ( ! empty( $_GET['force-check'] ) && current_user_can( 'update_plugins' ) ) { self::check(); } }
     private static function package( $r ) { return 'https://api.github.com/repos/' . self::REPO . '/releases/assets/' . $r['asset']; }
     private static function icons() { return array( 'svg' => plugins_url( 'assets/icon.svg', __DIR__ . '/nilwears-bulk-manager.php' ) ); }
-    private static function own_package( $package ) { return is_string( $package ) && 0 === strpos( $package, 'https://api.github.com/repos/' . self::REPO . '/releases/assets/' ); }
+    private static function own_package( $package ) { return is_string( $package ) && ( 0 === strpos( $package, 'https://api.github.com/repos/' . self::REPO . '/releases/assets/' ) || 0 === strpos( $package, 'https://api.github.com/repos/' . self::LEGACY_REPO . '/releases/assets/' ) ); }
     public static function updates( $transient ) {
         if ( 'github' !== self::channel() ) {
             // Drop only old GitHub entries for our basename; preserve marketplace/other providers.
@@ -85,14 +86,19 @@ final class NIL_Updater {
     public static function info( $result, $action, $args ) {
         if ( 'github' !== self::channel() ) { return $result; }
         if ( 'plugin_information' !== $action || 'nilwears-bulk-manager' !== ( $args->slug ?? '' ) ) { return $result; }
-        $r = self::release(); if ( ! $r ) { return $result; }
-        return (object) array( 'name' => NIL_Suite::title(), 'slug' => 'nilwears-bulk-manager', 'version' => $r['version'], 'author' => 'Nil Web', 'homepage' => 'https://github.com/' . self::REPO, 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4', 'icons' => self::icons(), 'banners' => array( 'low' => plugins_url( 'assets/banner.svg', __DIR__ . '/nilwears-bulk-manager.php' ) ), 'sections' => array( 'description' => 'نیل منجر؛ مدیریت قیمت و موجودی ووکامرس، محصول نیل وب', 'changelog' => nl2br( esc_html( $r['notes'] ) ) ), 'download_link' => self::package( $r ) );
+        $r = self::release();
+        $description = '<p>نیل منجر، محصول نیل وب، افزونهٔ فارسی مدیریت قیمت و موجودی ووکامرس است.</p><ul><li>ویرایش محصولات ساده و ورییشن‌ها، قیمت خرید و موجودی مشترک یا مستقل.</li><li>تغییر گروهی قیمت، رندکردن پیشرفته، پیش‌نمایش و بازگردانی با کنترل تداخل.</li><li>قیمت‌گذاری بر مبنای طلا، دلار و یورو با نرخ مبنا و فاصلهٔ اجرای دلخواه.</li><li>تخفیف مستقل برای هر روش پرداخت با سقف اختیاری کل سفارش.</li><li>ورود و خروج اکسل، افزودن ورییشن، ابزار تصاویر و گزارش مشتریان و سود.</li><li>هماهنگی با بهای تمام‌شدهٔ داخلی ووکامرس، رابط راست‌چین و تاریخ‌های شمسی.</li></ul><p>برای راهنما از ووکامرس ← نیل منجر ← راهنما استفاده کنید. تخفیف روش پرداخت از منوی ووکامرس تنظیم می‌شود و پیش‌فرض خاموش است. فایل‌های مدیریت فقط در صفحهٔ افزونه بارگذاری می‌شوند؛ با فعال‌بودن تخفیف پرداخت، اسکریپت کوچک هماهنگی فقط در تسویه‌حساب اجرا می‌شود.</p><p>برای دریافت نسخهٔ ۱.۱۰.۱ از نصب‌های قدیمی، ZIP جدید را یک بار از بخش افزونه‌ها بارگذاری و جایگزین کنید؛ بروزرسان‌های قدیمی تغییر نشانی ریپو را دنبال نمی‌کنند.</p>';
+        $changelog = file_get_contents( __DIR__ . '/changelog-fa.html' );
+        return (object) array( 'name' => NIL_Suite::title(), 'slug' => 'nilwears-bulk-manager', 'version' => $r ? $r['version'] : NIL_Bulk_Manager::VERSION, 'author' => 'نیل وب', 'homepage' => 'https://github.com/' . self::REPO, 'requires' => '6.4', 'tested' => '7.1.3', 'requires_php' => '7.4', 'icons' => self::icons(), 'banners' => array( 'low' => plugins_url( 'assets/banner.svg', __DIR__ . '/nilwears-bulk-manager.php' ) ), 'sections' => array( 'description' => $description, 'changelog' => $changelog ), 'download_link' => $r ? self::package( $r ) : '' );
     }
     public static function download( $reply, $package, $upgrader, $hook_extra ) {
         if ( ! self::own_package( $package ) ) { return $reply; }
         if ( 'github' !== self::channel() ) { return new WP_Error( 'nil_update_channel', 'این بسته از کانال ژاکت بروزرسانی می‌شود؛ دانلود کش‌شدهٔ گیت‌هاب مجاز نیست.' ); }
         if ( false !== $reply ) { return $reply; }
-        $r = self::release(); if ( ! $r || $package !== self::package( $r ) ) { return new WP_Error( 'nil_update_auth', 'ریلیز مورد درخواست معتبر نیست.' ); }
+        $r = self::release();
+        $legacy = $r ? 'https://api.github.com/repos/' . self::LEGACY_REPO . '/releases/assets/' . $r['asset'] : '';
+        if ( ! $r || ( $package !== self::package( $r ) && $package !== $legacy ) ) { return new WP_Error( 'nil_update_auth', 'نسخهٔ مورد درخواست معتبر نیست.' ); }
+        $package = self::package( $r ); // Reuse the verified asset ID on the renamed repository, without an HTTP redirect.
         if ( ! function_exists( 'wp_tempnam' ) ) { require_once ABSPATH . 'wp-admin/includes/file.php'; }
         $tmp = wp_tempnam( 'nil-update.zip' );
         $args = array( 'reject_unsafe_urls' => true, 'timeout' => 60, 'redirection' => 0, 'headers' => self::headers( 'application/octet-stream', 'public' !== ( $r['access'] ?? '' ) ), 'stream' => true, 'filename' => $tmp, 'limit_response_size' => 20 * 1024 * 1024 );

@@ -25,6 +25,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run check:descriptions
       - run: npm run check:assets
       - run: npm run check:js
       - run: npm run test:ui
@@ -70,4 +71,4 @@ jobs:
             exit 0
           fi
           gh release create "$RELEASE_TAG" dist/*.zip dist/*.sha256 dist/*.manifest.json \
-            --target "$GITHUB_SHA" --title "$RELEASE_TAG" --notes-file dist/release-notes.md
+            --target "$GITHUB_SHA" --title "نیل منجر — نسخهٔ ${RELEASE_TAG#v}" --notes-file dist/release-notes.md

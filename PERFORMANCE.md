@@ -1,85 +1,48 @@
-> Native database validation added in 1.9.1 is documented in SQL-VALIDATION.md. Earlier release measurements and SQLite limitations below describe their original versions.
+<div dir="rtl">
 
-# Performance contract — v1.8.0
+# قرارداد کارایی و مصرف منابع نیل منجر
 
-## Scope
+«کم‌حجم و بهینه» یعنی فایل عمومی و پردازش بی‌دلیل، کار آغازین دیتابیس و رسید موقت نامحدود اضافه نشود؛ ویرایش محصول، گزارش، تاریخچهٔ بازگردانی، هزینه و قوانین فعال به داده و SQL نیاز دارند. مصرف صفر دیتابیس یا امتیاز تضمینی GTmetrix ادعا نمی‌شود.
 
-“Zero bloat” means no unnecessary storefront assets, boot-time database work or unbounded temporary receipts. It does **not** mean zero storage or zero SQL while editing products, calculating reports or saving historical order costs. Essential costs, explicit pricing schedules and undo history have a purpose and are retained.
+## حدود فعلی
 
-The latest stable releases verified on 2026-10-22 Tehran time are WordPress 7.1.3 and WooCommerce 11.2.1. Compatibility is exercised in disposable PHP 8.3 installations with HPOS enabled and disabled. WordPress beta releases are outside this stable-release claim.
-
-## Measurable limits
-
-| Area | Contract |
+| بخش | قرارداد |
 |---|---|
-| Public CSS, JavaScript and fonts | 0 plugin enqueues on public pages; also none on unrelated admin screens |
-| Plugin boot | 0 SQL issued by the plugin's boot function; schema-version work only during authorized admin initialization |
-| Admin assets | Four minified vanilla-JS files and one minified stylesheet, 59,709 bytes total; 22,406 bytes with deterministic gzip in the local build. Server compression must be enabled to realize that transfer size. |
-| Font | Local Vazirmatn WOFF2, 46,308 bytes, requested only by the plugin admin stylesheet; no CDN font |
-| Build budget | CSS/JS limited to 60,000 uncompressed bytes and checked in CI; readable source files remain in git and are excluded from the installation ZIP |
-| In-app help and static forms | Rendered as templates only on the plugin admin page; 0 additional SQL, no extra script, library or remote asset |
-| Optional PHP tools | Spreadsheet, media, maintenance, variation creation, presets, market pricing and report code load on use; update hooks load in admin/cron contexts |
-| Product pages | 15 parent/simple products per page, at most 500 variation posts per request; variation posts, metadata and taxonomy caches loaded together; legacy cost reads use the primed WordPress metadata cache; native costs use WooCommerce CRUD |
-| Media listing | No reference scans; scans require an explicit selection and run in batches of at most 5 images; archive rechecks references |
-| Temporary state | One active XLSX/CSV file, one media preview and one insights report and one new-variation plan per user, each with a one-hour expiry; starting another invalidates the older token |
-| Creation receipts | One small token on its product/created variation instead of an indefinite new WordPress option per creation |
-| Saved views and rules | One user-meta record per user, at most 20 entries and 32 KB; loaded only when requested |
-| Media backup metadata | Last 3 metadata snapshots; physical old files stay to preserve old URLs |
-| Maintenance | Explicit user action, at most 100 owned jobs per request; remove abandoned drafts older than 7 days; completed history deletion requires confirmation and an age of at least 30 days (UI defaults to 90) |
-| Market pricing | One non-autoload metadata option (20 rules); fixed baseline table, one row per participating product (5,000 per rule). No market request at boot or page startup. Only explicit rate/preview actions and activated rules fetch the fixed public feed; shared 60-second cache and 15-second error throttle. Capture/plan at most 50 rows; apply at most 10 per request. One scheduled event per active rule; no empty price job for unchanged cycles. Actual change/undo history intentionally uses storage. |
-| Background tasks | No periodic analytics or media scans; only user-created price schedules/market rules and normal WordPress update mechanisms |
+| آغاز به کار | در آزمون، تابع آغاز افزونه SQL تازه اجرا نکرد؛ کنترل نسخهٔ ساختار فقط در مدیریت مجاز انجام می‌شود |
+| فایل‌های مدیریت | چهار اسکریپت فشرده و یک شیوه‌نامه، مجموع ۵۹۸۹۵ بایت، با سقف ۶۰۰۰۰ بایت؛ فقط در صفحهٔ مدیریت افزونه |
+| فونت | وزیرمتن محلی WOFF2، بدون شبکهٔ توزیع بیرونی؛ فقط با سبک مدیریت درخواست می‌شود |
+| تخفیف پرداخت | پیش‌فرض خاموش؛ هنگام فعال‌بودن، اسکریپت محلی ۱۱۸۳بایتی فقط در تسویه‌حساب؛ سقف مستقل ۳۰۰۰ بایت و بدون CSS عمومی تازه |
+| تنظیم تخفیف | یک گزینهٔ بدون بارگذاری سراسری و حداکثر ۱۰۰ قانون درگاه؛ بدون جدول، کوپن دائمی، زمان‌بندی یا متادیتای محصول تازه |
+| پردازش قیمت | خواندن پیش‌نمایش در دسته‌های ۵۰ ردیف و ذخیرهٔ محدود ۱۰ ردیف؛ پیش‌نمایش ناقص تأیید نمی‌شود |
+| ورییشن | حداکثر ۵۰۰ ردیف در خواندن جدول و ۵۰۰۰ کالا در محدودهٔ عملیات/قانون؛ انتخاب را با دسته یا جست‌وجو کوچک کنید |
+| حالت موقت ابزار | یک جایگاه منقضی‌شونده برای فایل، رسانه و گزارش هر کاربر؛ شروع کار جدید جایگزین قبلی می‌شود |
+| اسکن تصویر | فقط با اقدام صریح، حداکثر پنج تصویر در هر درخواست؛ فهرست رسانه ارجاع‌یابی سنگین نمی‌کند |
+| قوانین بازار | حداکثر ۲۰ قانون، ۵۰۰۰ عضو ثابت در هر قانون، کش مشترک نرخ ۶۰ ثانیه و وقفهٔ خطا ۱۵ ثانیه |
 
-## Verification and practical limits
+اسکریپت تسویه‌حساب از وابستگی‌های موجود همان نوع تسویه‌حساب استفاده می‌کند و کتابخانهٔ تازه‌ای ندارد. فعال‌نبودن تخفیف، اعتبارسنجی عادی تسویه‌حساب را تغییر نمی‌دهد. اولین دسترسی تنظیم/تسویه‌حساب ممکن است گزینه را از دیتابیس بخواند؛ دفعات بعد از کش معمول وردپرس استفاده می‌کنند. محاسبه فقط سبد جاری و کوپن‌های موجود را پیمایش و توزیع تخفیف/مالیات را به ووکامرس می‌سپارد. بررسی نام رزروشده از کش کوپن ووکامرس استفاده می‌کند. مصرف سایر افزونه‌های درگاه، خارج از قرارداد این ماژول است.
 
-The integration regression compares cold-cache reads of a parent with 2 variations and a parent with 40 variations. The fixtures measure both legacy cost metadata and native COGS. Each measured 17 SQL queries for both cases (the first 40-variation probe issued 97). The regression requires query count to remain within a small fixed margin rather than grow linearly with the variation count. It also verifies zero SQL during plugin boot, no unrelated-screen assets, no reference-scan SQL during media listing, bounded cache replacement and cleanup ownership/state protections. Market baseline capture measured 25 queries with 2 variations and 25 with 40; cache priming includes parents, and one multirow insert captures each batch. These counts include endpoint checks, settings locks and baseline storage; they are not a zero-SQL editing claim. See CONTRIBUTING.md for measured results.
+## فایل، تصویر و گزارش
 
-DOM tests run against both readable sources and the exact production minified JavaScript. They cover table edits, shared stock, selection, preview/apply/undo, imports, quick creation, branding, tab navigation, saved column layouts and adding variations to existing parents, help recipes, sample-price calculation, immediate branding changes/failures and startup branding after a fresh document. Market tests also cover explicit rate loading, scoped capture, full preview, activation, interval changes and pause/resume without duplicate controls. They do not substitute for visual testing of the actual store's admin theme.
+فایل ورودی تا ۸ مگابایت، یک برگه، ۵۰۰۰ ردیف و ۱۰۰ ستون است. حجم بازشدهٔ XLSX، اندازهٔ XML، تعداد سلول، طول متن و حافظهٔ آزاد پیش از پردازش کنترل می‌شوند؛ مرجع و متن تکراری نیز در سقف حساب می‌شوند. هر ردیف CSV حداکثر ۶۴ کیلوبایت دارد و ردیف ناقص پذیرفته نمی‌شود. فرمول رد می‌شود و خروجی متن با پیشوند فرمول محافظت می‌شود.
 
-GTmetrix scores describe the whole tested page and are at most 100, not above 100. This plugin cannot guarantee a whole-site GTmetrix score: theme, hosting, images, other plugins, scripts, cache, network and test conditions matter. No live-store GTmetrix test, real MySQL concurrency test or automatic live installation is implied by this release. The SQLite fixture emulates MySQL locking only. With native COGS enabled, WooCommerce records the order cost and Nil does not duplicate its unit-cost metadata. Without COGS, Nil captures the small immutable cost metadata needed for future historical profit.
+تصویر بهینه‌شونده حداکثر ۸ مگابایت و ۸ مگاپیکسل دارد؛ اندازهٔ اعلام‌شده پیش از بازکردن پیکسل بررسی می‌شود. تولید اندازه‌های فرعی و حافظه محدود است. بهینه‌سازی وقتی فایل کوچکتر نسازد، نسخهٔ اصلی را حفظ می‌کند. تغییر نام فایل قبلی را برای نشانی موجود نگه می‌دارد؛ بایگانی قابل بازیابی است و فضای دیسک آزاد نمی‌کند.
 
-References: [WordPress releases](https://wordpress.org/download/releases/), [WooCommerce changelog](https://developer.woocommerce.com/changelog/), [GTmetrix scoring](https://gtmetrix.com/blog/everything-you-need-to-know-about-the-new-gtmetrix-report-powered-by-lighthouse/).
+گزارش در دسته‌های ۵۰ سفارش ساخته و رشد ردیف، ارتباط و حالت ذخیره‌شده محدود می‌شود. بازهٔ بزرگ را به بازه‌های کوچکتر تقسیم کنید. سود تاریخی فقط برای هزینهٔ معلوم محاسبه می‌شود؛ دادهٔ گذشته حدس زده یا از هزینهٔ امروز پر نمی‌شود. ارز متفاوت جدا شمارش می‌شود. هیچ گزارش‌گیری یا اسکن دوره‌ای اضافه نشده است.
 
-## Market timing and retention
+## شواهد اندازه‌گیری
 
-Market cycles use a fixed captured cohort and immutable original prices, not a growing price history as a baseline. One replacement event is scheduled before each worker step to recover from interruptions. Completion schedules the next interval (5–1440 minutes); long batches and traffic-dependent WP-Cron can delay the wall-clock cadence. A server cron is required for reliable scheduling. Source failures retry, while permission/currency failures pause; no stale-rate writes are allowed. WordPress/MySQL advisory locks serialize rule, settings and product writes, but the disposable SQLite tests do not establish real MySQL concurrency behavior.
+در نسخهٔ ۱.۲، خواندن سرد جدول برای والد با ۲ و ۴۰ ورییشن به‌ترتیب ۱۷/۱۷ کوئری بود؛ نسخهٔ قبل برای نمونهٔ ۴۰ ورییشن ۹۷ کوئری داشت. همین تعداد با COGS روشن و خاموش حفظ شد. ثبت مبنای بازار ۲۵/۲۵ و انتخاب مستقیم ۱۲/۱۲ کوئری داشت. این اعداد کل درخواست در محیط نمونه‌اند و برای هر ترکیب افزونه/کش تضمین نمی‌شوند.
 
-Deleting a rule removes its baseline records and pending event but preserves current prices and historical reports. Pausing retains baselines. Source failures and unchanged cycles update only bounded rule state; completed price-change history is retained for undo and can be removed through the existing explicit history cleanup. Frequent schedules with many changed products can produce substantial purposeful history; there is no automatic history deletion or claim of zero database growth.
+در آزمون جفت‌شدهٔ ۱.۸ با داده و کش یکسان، پیش‌نمایش ۴۰ محصول از ۱۲۹ به ۱۲ و خروجی از ۱۲۵ به ۸ کوئری رسید؛ برای ۲ محصول نیز نتیجهٔ تازه ۱۲ و ۸ بود. کش دسته‌ای در همان نمونه حدود ۰٫۲ مگابایت حافظهٔ PHP بیشتر مصرف کرد. رکورد خام در `tests/benchmark-v1.8.json` و توضیح نمونه‌گیری در [گزارش ممیزی](AUDIT.md) است؛ این داده‌ها SQLite و شبیه‌سازی قفل بودند.
 
-## Update discovery
+از ۱.۹.۱، MySQL ۸.۴ و MariaDB ۱۱.۴ با HPOS روشن و خاموش به دروازهٔ انتشار اضافه شدند. شمار پیش‌نمایش ۲/۴۰ محصول ۱۲/۱۲ و خروجی ۸/۸ ماند. پردازشگرهای مستقل، انتظار واقعی قفل سرور را مشاهده می‌کنند. در ۱.۱۰، هر حالت ۴۳۳ بررسی عملکردی و ۴۱ بررسی هم‌زمانی را گذراند. این بررسی‌ها شاهد مسیر کامل درگاه، HTTP فروشگاه، کش مشترک پایدار یا بار تولید نیستند؛ [گزارش SQL](SQL-VALIDATION.md) حدود نتیجه را ثبت می‌کند.
 
-Updater hooks stay confined to admin, cron and WP-CLI contexts and are registered before the WooCommerce dependency gate. Reading WordPress's plugin-update transient merges this plugin's verified release metadata, including a no-update entry when current; it does not require a successful WordPress.org update response. Cached ordinary reads retain the six-hour metadata cache and five-minute failure throttle. An authorized explicit check or dashboard Check Again bypasses those caches once, without periodic extra jobs, storefront work, installing software or replacing other plugins' update entries. Failed optional-token requests can retry anonymously once for a public release. Error metadata is one five-minute site transient containing only a safe category/message, status and timestamp.
+اعداد حافظه، تغییر اوج حافظهٔ مدیریت‌شدهٔ PHP در هر درخواست‌اند؛ با حافظهٔ کل فرایند یا کتابخانه‌های بومی برابر نیستند. زمان‌های تک‌نمونهٔ آزمایشگاهی، درصد CPU هاست یا کاهش RAM واقعی را ثابت نمی‌کنند. آزمون قالب‌بندی جاوااسکریپت صرفاً تشخیص با چند نمونه و کنترل برابری نتیجه دارد و آستانهٔ سرعت تولید نیست.
 
-## Pricing selections and local identity
+## نگهداری و بازگردانی
 
-Pricing searches, category expansion and explicit-ID resolution happen only on user actions; no startup selection fetch, persisted pick cache, new cron or new database table is added. Explicit IDs resolve in at most 50-ID requests, with post/meta/taxonomy and parent priming, a 5,000-row response cap and fresh fingerprints. The UI retains at most 500 direct picks in memory, caps collected cohorts at 5,000 rows and renders at most 50 scope-review rows. The disposable HPOS fixture measured 12 queries for resolving a parent with 2 variations and 12 for 40. These are endpoint-specific counts, not zero SQL during editing.
+تاریخچهٔ قیمت و هزینهٔ سفارش برای گزارش و بازگردانی لازم‌اند و عمداً نگهداری می‌شوند. پاکسازی پیش‌نویس رهاشده فقط با اقدام کاربر و محدودهٔ مالکیت/سن/وضعیت مجاز است. حذف گزارش تکمیل‌شدهٔ قدیمی، تأیید جدا دارد و امکان بازگردانی همان گزارش را از بین می‌برد. حذف خودکار تاریخچه یا کران پاکسازی اضافه نشده است؛ رسیدهای قدیمی بدون دستور حذف نمی‌شوند.
 
-Advanced form/select/navigation markup now lives in existing admin PHP templates, without added rendering SQL or a runtime framework. Four minified JS files plus CSS remain under the same 60,000-byte cap. The local icon/banner SVG files together are 949 bytes, have no script or external asset references, and are requested only by WordPress admin update/detail views; app navigation/marks are inline SVG. No public storefront enqueues are added. Product picker data is not sent to any external host.
+آزمون منبع و نسخهٔ فشرده، عدم کهنگی خروجی و بودجهٔ اندازه را بررسی می‌کند. مشاهدهٔ کاربر، سازگاری قالب و افزونه‌ها، پرداخت بانکی/اقساطی و امتیاز واقعی سرعت باید روی محیط فروشگاه جدا بررسی شوند؛ [راهنمای بتا](BETA-GUIDE.md) سناریوها را دارد.
 
-## Version 1.7 group operations
-
-Discount and stock rules reuse the existing preview/apply/history requests and schemas. Relative stock and regular-price discounts calculate on the server using the same fresh snapshot/fingerprint; there is no extra read query for the arithmetic. New forms and fixed UI wording render only in the admin templates. CSS/JS is 59,934 uncompressed / 22,313 deterministic gzip bytes. Essential before/after prices, stock and sale dates remain in existing undo receipts. No new SQL table, endpoint, remote resource, boot request or periodic task is registered. PHP 8.3 / WP 7.1.3 / WC 11.2.1 disposable fixtures passed 343 cumulative assertions each with HPOS enabled and disabled; the existing cold query probes retained 17/17 for the product grid, 25/25 for market capture and 12/12 for explicit selection. These are fixture-specific SQLite/MySQL-lock-shim measurements, not real MySQL concurrency or a live-store performance score.
-
-## Version 1.8 audit
-
-See [AUDIT.md](AUDIT.md) and the committed synthetic [paired diagnostic record](tests/benchmark-v1.8.json). A cold preview of 2/40 simple products now takes 12/12 SQL reads instead of 15/129; a CSV export takes 8/8 instead of 11/125. Bounded priming trades about 0.2 MB additional PHP heap in these samples for fewer database round trips. These single-sample wall times and PHP heap deltas are not host RSS, production latency or CPU percentage. A separate five-sample Node/ICU formatting microbenchmark records shared-formatter CPU cost; no brittle timing assertion runs in CI.
-
-Reads cap variation expansion at 500 (operation scope can span requests), reports read 50 orders per batch with 50,000 lines / 20,000 customer-product pairs / 4 MiB state caps, and incoming REST bodies cap at 12 MiB for file read, 4 MiB for export, 1 MiB otherwise. Spreadsheet caps are 8 MiB compressed input / 16 MiB expanded ZIP / 8 MiB XML / 150,000 cells / 32 KiB per cell / 8 MiB decoded cell text, with a 64 KiB CSV-record limit and estimated free-memory admission checks. Image optimization rejects over 8 MiB / 8 MP and estimates available PHP memory before decoding pixels. These are admission guards, not hard limits on native libraries or all other WordPress code. Media reference scans remain explicit and potentially expensive on large databases. Original image files and required undo/cost history remain intentional storage.
-
-Production admin CSS/JS is 59,709 bytes (22,406 deterministic gzip), still under 60,000. Persian labels/forms stay in non-executing templates; date PHP loads on demand. Public assets and boot SQL remain zero in disposable fixtures. No schema, dependency, background scan or recurring cleanup task was added.
-
-
-## Version 1.9 journey layout
-
-The production admin CSS/JS totals 59,884 bytes (22,075 deterministic gzip), within the same 60,000-byte cap. Static messages remain in an admin-only template; no framework, runtime package, schema, endpoint, cron or storefront asset was added. The static start screen and mode changes make no new HTTP requests. The product table still loads once at startup; the former startup history fetch is removed. History loads on explicit navigation/refresh and after relevant operations. This is not a new PHP heap/CPU, MySQL or production GTmetrix measurement. Optional Playwright/Chromium tooling lives outside the distributable plugin and is not included in its ZIP.
-
-
-## Version 1.9.1 native database evidence
-
-See SQL-VALIDATION.md for four native MySQL/MariaDB + HPOS configurations and the exact initial run. All four measured 12/12 SQL queries for 2/40-product previews and 8/8 for CSV exports. Worker processes verified actual server lock waits rather than sleeping and assuming contention. PHP heap diagnostics remain per-request deltas; no production host/CPU/GTmetrix or shared-cache claim follows. The native runner, workers, database containers and reports stay outside the plugin ZIP; shipped assets and runtime dependencies are unchanged.
-
-
-## Optional payment discounts — 1.10
-
-The original 60,000-byte admin CSS/JS budget is unchanged. The payment settings reuse the existing scoped stylesheet and render on the server without a new admin script or background request. The feature defaults off. Enabled checkout adds one local vanilla-JS script capped independently at 3,000 bytes; it reuses WooCommerce/jQuery or Blocks data stores already used by that checkout and loads on neither product pages nor order-pay/order-received pages. Consequently the previous blanket “no storefront assets” statement applies to the product tools and to disabled payment discounts, not to enabled checkout synchronization.
-
-One non-autoloaded bounded option stores at most 100 gateway rules. No table, coupon post, cron, scan, external HTTP or per-product metadata is created. Calculation traverses the current cart and existing applied coupons, and delegates coupon allocation/tax/refund arithmetic to WooCommerce. Boot still adds no SQL; first checkout/settings access may read the option, using normal WordPress option caching thereafter. Native gateway extensions may add their own work and are outside this module's resource contract.
+</div>

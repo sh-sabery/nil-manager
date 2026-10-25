@@ -1,148 +1,85 @@
-# Development and releases
+# راهنمای توسعه و انتشار نیل منجر
 
-The installable plugin is `nilwears-bulk-manager/`. Development tools and tests must stay outside that directory. Do not commit site credentials, customer data, database dumps, `node_modules`, or generated ZIPs.
+فقط پوشهٔ `nilwears-bulk-manager/` در ZIP نصب قرار می‌گیرد. این نام، شناسهٔ فنی نصب‌های قبلی است؛ نام عمومی پروژه و ZIPهای تازه `nil-manager` و برند محصول «نیل منجر»، ساختهٔ «نیل وب» است. آزمون، ابزار توسعه، خروجی تولیدشده، `node_modules`، رمز، دادهٔ مشتری و نسخهٔ دیتابیس نباید وارد پوشهٔ افزونه شوند.
 
-Run `npm ci`, `npm run check:js`, `npm run test:ui`, `php tests/dates.php`, `php tests/pricing.php`, and `php tests/market-unit.php`. PHP lint must pass for all PHP files. Build with `python3 scripts/build.py`; it verifies VERSION, the plugin header and constant, npm manifest and lock, and the matching CHANGELOG section. Python's standard library is sufficient.
+## بررسی‌های اصلی
 
-`tests/ui-dom.cjs` tests real admin JavaScript against a DOM and mocked HTTP. It does not verify browser rendering or database persistence. `tests/pricing.php` is independent of WordPress. `tests/integration.php` creates fixture products and exercises real WooCommerce CRUD and REST endpoints in a disposable WordPress Playground installation. Mount this repository's tests directory as `/nil-tests`, install/activate WooCommerce and this plugin, then use a Playground `runPHP` step to require `/wordpress/wp-load.php` and `/nil-tests/integration.php`. The script intentionally emulates MySQL lock statements on SQLite. It must never run on a production store and does not verify MySQL checkout concurrency. Check `/nil-tests/integration-result.txt` for the result. The initial run passed 50 checks on WP 7.1.3 / WC 11.2.1 with PHP 8.3; those versions are test evidence, not installation requirements.
+```sh
+npm ci
+npm run build:descriptions
+npm run check:descriptions
+npm run check:assets
+npm run check:js
+npm run test:ui
+npm run test:ui:min
+node tests/payment-checkout.cjs
+NIL_MINIFIED=1 node tests/payment-checkout.cjs
+php tests/dates.php
+php tests/pricing.php
+php tests/market-unit.php
+php tests/payments-unit.php
+php tests/sheet.php
+php tests/updater.php
+NIL_PUBLIC_UPDATES=1 php tests/updater.php
+php tests/distribution.php
+python3 tests/distribution-build.py
+```
 
-For each released update:
+نحو تمام فایل‌های PHP افزونه، آزمون و ابزار باید بررسی شود. `npm run build:assets` نسخهٔ فشردهٔ فایل‌ها را می‌سازد؛ خروجی اصلی و فشرده باید یک رفتار داشته باشند. `npm run build:descriptions` تاریخچهٔ محلی فارسی را از `CHANGELOG.md` با تاریخ شمسی می‌سازد. بررسی انتشار، کهنه‌بودن این خروجی را رد می‌کند. روی وردپرس، Node یا Python نصب نمی‌شود.
 
-1. Update code, tests, and user documentation as appropriate.
-2. Choose a new semantic version; never reuse a released tag.
-3. Change `VERSION`, the plugin's `Version:` header and `NIL_Bulk_Manager::VERSION`, and `package.json`; regenerate `package-lock.json` with `npm install --package-lock-only`.
-4. Add `## [X.Y.Z] - YYYY-MM-DD` and factual release notes to CHANGELOG.md.
-5. Run tests and build the ZIP. Inspect the diff and ensure the package only contains plugin files.
-6. Commit and push the change to `main`. The release workflow reruns checks, creates a `vX.Y.Z` tag for a new VERSION, and publishes a release with the installation ZIP and exact changelog entry. A manually pushed version tag can trigger the same workflow. Existing releases are skipped without changing their tags or assets.
-7. Check the Actions result and release asset. Report the commit, tag, release link, and any unverified behavior to the user. Site installation is a separate action.
+سقف فایل‌های مدیریت ۶۰۰۰۰ بایت است؛ اسکریپت اختیاری تخفیف پرداخت سقف جداگانهٔ ۳۰۰۰ بایت دارد و فقط در تسویه‌حساب با قابلیت فعال بارگذاری می‌شود. رابط از وزیرمتن محلی و جاوااسکریپت ساده استفاده می‌کند. فشرده‌سازی CSS باید فاصلهٔ انتخابگر پیش از شبه‌کلاس را حفظ کند؛ `#nil-bulk-app :is(...)` نباید به `#nil-bulk-app:is(...)` تبدیل شود.
 
-GitHub Actions may need to be enabled for the private repository and use available private-repository Actions minutes. The release job requests only `contents: write`; tests use `contents: read`. No external deployment credentials or automatic WordPress installation are configured.
+## محیط موقت ووکامرس
 
+`tests/integration.php` محصول آزمایشی می‌سازد و **نباید روی فروشگاه اصلی اجرا شود**. نصب باید دارای `NIL_DISPOSABLE_FIXTURE=true` باشد. برای اجرای محلیِ جدا، از `tests/playground-hpos.json` یا `tests/playground-legacy.json` با `@wp-playground/cli@3.1.60` استفاده کنید. پوشهٔ افزونه را در مسیر استاندارد افزونه و آزمون‌ها را در `/nil-tests` سوار کنید. داده، ایمیل، تصویر، محصول و سفارش این محیط ساختگی‌اند.
 
-## Version 1.1 validation
+وردپرس و ووکامرس مبنای آزمون ۷.۱.۳ و ۱۱.۲.۱ و PHP مبنا ۸.۳ است؛ این اعداد را با حداقل نصب برابر ندانید. برای اجرای آفلاین می‌توان ووکامرس استخراج‌شده را از قبل سوار و مرحلهٔ نصب افزونه را با فعال‌سازی جایگزین کرد. خروجی آزمون‌ها در فایل‌های نادیده‌گرفته‌شدهٔ `tests/*-result.txt` و پوشهٔ `dist` است.
 
-- PHP lint for every plugin and test PHP file, plus 1,532 pricing checks, 14 XLSX/CSV checks (including literal formulas, numeric report cells and leading-zero SKUs), and 10 private-updater HTTP mock checks. Local standalone PHP runtime: PHP.wasm 8.5.
-- Real admin JavaScript tested in LinkeDOM: table/variation selection, preview/apply/undo, stock inheritance, retaining edits made after preview, quick-create attribute parsing, file column mapping, async button enablement, branding and updater status. This is DOM interaction verification, not a visual browser rendering test.
-- Disposable WordPress Playground, PHP 8.3, WP 7.1.3 / WooCommerce 11.2.1: legacy order storage passed 138 combined CRUD/REST assertions; HPOS enabled passed 140 assertions, including matching generated variations through WooCommerce’s storefront variation matcher. Scenarios include array-field undo, cost pricing, variable creation/idempotency, spreadsheet roundtrips and conflicts, scheduled jobs, historical order cost/refunds, unknown historical costs, mixed currencies, actual image editing/renaming and archive/restore.
-- No production-store installation or real MySQL checkout-concurrency test. SQLite shims emulate MySQL locks only. The updater's authorization, redirection and digest checks use fake credentials and mocked HTTP; private-token configuration and a real dashboard upgrade on the Nilwears server remain installation tasks.
+آزمون‌های SQLite، دستورات قفل و تراکنش MySQL را شبیه‌سازی می‌کنند؛ نتیجهٔ آن‌ها اثبات هم‌زمانی واقعی MySQL نیست. آزمون تعامل DOM نیز بازتولید رندر قالب یا رفتار کاربر واقعی نیست.
 
-To reproduce in a **disposable** Playground, use `tests/playground-hpos.json` or `tests/playground-legacy.json`. Mount the plugin directory at `/wordpress/wp-content/plugins/nilwears-bulk-manager` and the tests directory at `/nil-tests`, then run that Blueprint with `@wp-playground/cli@3.1.60`. The Blueprint downloads and activates WooCommerce. For offline reproducibility, mount an extracted WooCommerce 11.2.1 directory at `/wordpress/wp-content/plugins/woocommerce` and replace the first `installPlugin` step with `activatePlugin`. `tests/suite-result.txt` contains the assertion result and is excluded from git. Test images, orders, products and customer email addresses are generated fixtures only. Never mount a live store or production database.
+## آزمون واقعی دیتابیس و هم‌زمانی
 
+ورک‌فلو `.github/workflows/mysql.yml` چهار حالت MySQL ۸.۴ و MariaDB ۱۱.۴، هرکدام با HPOS روشن و خاموش، را با PHP ۸.۳ و سقف حافظهٔ ۲۵۶ مگابایت بررسی می‌کند. این بررسی روی شاخه‌های `codex/**`، درخواست ادغام و پیش از انتشار اجرا می‌شود. کد آزمون و گزارش آن در بستهٔ نصب نیست.
 
-## Version 1.2 performance verification
+`bash scripts/test-mysql.sh` به PHP بومی با افزونه‌های mysqli، zip، XML، GD و mbstring، ابزار WP-CLI و سرویس محلی جدا نیاز دارد. متغیرهای `NIL_MYSQL_HOST`، پورت، کاربر و `NIL_MYSQL_PASSWORD` باید فقط متعلق به سرویس آزمایشی باشند. `NIL_TEST_HPOS` برابر `yes` یا `no` و برچسب آزمون فقط ساده است. **اطلاعات اتصال یا مسیر سایت واقعی را جایگزین نکنید.**
 
-`npm run build:assets` creates the shipped minified assets; `npm run check:assets` rejects stale outputs or CSS/JS larger than 60,000 bytes. CI runs both `npm run test:ui` and `npm run test:ui:min`. Runtime WordPress does not require Node or any npm package. `scripts/build.py` excludes the unminified development assets from ZIPs.
+اجراکننده همیشه دیتابیس تصادفی تازه با پیشوند `nil_manager_test_` و نصب نشان‌گذاری‌شدهٔ `nil-manager-mysql.…` می‌سازد و نام دیتابیس موجود را نمی‌پذیرد. پیش از بارگذاری هر آزمونِ داده‌نویس، مسیر، نشانگر، نام دیتابیس و پیشوند جدول بررسی می‌شوند. ایمیل و HTTP خارجی محیط بومی مسدودند؛ SQL قفل، موتور یا تراکنش بازنویسی نمی‌شود. گزارش‌ها در `dist/mysql-results/` قرار می‌گیرند. اجرای دستی، محیط تازهٔ خودش را برای بررسی باقی می‌گذارد؛ سرویس‌های CI پس از کار جمع می‌شوند.
 
-The disposable Blueprints now also run `tests/frontend.php` before fixtures and `tests/performance.php` after the functional suite. PHP 8.3 / WP 7.1.3 / WooCommerce 11.2.1 with HPOS enabled and disabled each passed 156 combined assertions: 17 cold-cache SQL queries for a product with 2 variations and the same 17 for 40 variations; the initial unoptimized 40-variation probe issued 97. These are fixture-specific whole-endpoint counts, not a universal promise for every third-party plugin configuration. Frontend boot added zero SQL and no public assets; spreadsheet/media/maintenance modules stayed unloaded until used. Explicit media scanning, cache replacement and cleanup age/state/ownership checks passed. Core functional tests, 1,532 pricing checks, 14 spreadsheet checks and 10 updater HTTP checks remain covered. Production and source DOM tests pass, including tab navigation. Visual rendering of the actual Nilwears admin and live GTmetrix were not measured.
+`tests/mysql-concurrency.php` پردازشگر PHP و اتصال دیتابیس مستقل دارد و پیش از ادامه، انتظار واقعی قفل را در جدول‌های سرور مشاهده می‌کند. اجرای هم‌زمان افزونه، ثبت/بازگردانی قیمت کنار کاهش موجودی سفارش، تعیین موجودی و تداخل بازگردانی، پیش‌نمایش قدیمی، بازگشت تراکنش پس از خطا و موجودی مشترک ورییشن بررسی می‌شوند. این آزمون کاهش موجودی ووکامرس است؛ مسیر بانکی، پرداخت واقعی مرورگر، کش مشترک پایدار یا آزمون بار فروشگاه نیست. جزئیات در [گزارش SQL](SQL-VALIDATION.md) آمده‌اند.
 
-Temporary cache slots are single-active per tool/user. History cleanup is explicit and bounded. No extra periodic cleanup, media or analytics job is registered. Required historical cost and undo data still need storage; this is not a zero-database-footprint claim. See PERFORMANCE.md for the contract and source references for current stable release targets.
+## پوشش عملکردی
 
+آزمون‌ها و [تاریخچهٔ فارسی هر انتشار](CHANGELOG.md) شاهد دقیق همان نسخه‌اند. بررسی‌ها شامل محاسبات قیمت و موجودی، تاریخ شمسی با دادهٔ مستقل ICU، ورود و خروج فایل و متن/فرمول، کنترل حجم و حافظه، مجوز کاربر، مالکیت تاریخچه، اعتبار درخواست، حفظ برند سفارشی، ایجاد ورییشن و برخورد SKU، بهای تمام‌شدهٔ داخلی و انتقال صریح هزینه، قیمت‌گذاری بازار، کنترل تغییر دستی، وقفه و ادامه، آیکون و کانال انتشارند.
 
-## Version 1.3 validation
+آزمون تخفیف پرداخت، قیمت واقعی حراج و ورییشن، سقف کل سفارش، کوپن معمول و استفادهٔ فردی، مالیات و معافیت، بازپرداخت از ردیف تخفیف‌خورده، ثبت سفارش کلاسیک، درخواست واقعی رابط فروشگاه، تغییر روش در ثبت مستقیم، سفارش بلوکی تخفیف‌دار، سفارش رایگان با وضعیت درخواست تازه، پرداخت مجدد، ذخیرهٔ تنظیمات، اعتبار فرم و نام کوپن متداخل را بررسی می‌کند. BACS/COD آزمایشی، شاهد پرداخت واقعی درگاه بانکی یا اقساطی نیست.
 
-`tests/advanced.php` now follows the performance suite in both disposable Blueprints. PHP 8.3 / WordPress 7.1.3 / WooCommerce 11.2.1 passed 209 cumulative assertions in each HPOS-enabled and legacy-order fixture. This includes new custom/global variation combinations, preserving old children, storefront attribute matching, duplicate SKUs, late-SKU collision rollback, stale-parent rejection, file-created variations, personal views/rules and anonymous denial. Native COGS checks cover inherited/additive costs, absolute and zero overrides, clearing to inheritance, exact undo, migration conflicts, explicit migration, backend-switch conflicts, native order capture and profit-report cost, without a parallel Nil order snapshot. Cold table requests with native COGS enabled measured 17 queries for 2 variations and 17 for 40, matching the disabled-state measurements.
+آزمون مستقل بروزرسان، درخواست عمومی و توکن اختیاری ساختگی، ردشدن توکن و تلاش عمومی، جداسازی کش، محدودیت اندازه، SHA-256، حذف اعتبارنامه در انتقال فایل، میزبان مجاز، مجوز بررسی تازه، آیکون، متن فارسی و تاریخچهٔ محلی حتی هنگام خطای شبکه را بررسی می‌کند. نشانی کش‌شدهٔ قبلی فقط با همان شناسهٔ فایل معتبر به مسیر جدید عادی‌سازی می‌شود. اعتبارسنجی TLS و هش نباید خاموش شوند.
 
-Source and production DOM suites pass saved-column persistence, layout isolation to the product grid and preview/apply for additional variations. PHP.wasm 8.5 linted 19 plugin/test PHP files and passed the 1,532 pricing, 14 spreadsheet and 10 updater checks. Total shipped admin CSS/JS is 59,870 bytes (20,819 with deterministic gzip), below the unchanged 60,000-byte limit. The updater unit test deliberately uses a fake older version and mocked releases; it does not configure production credentials.
+## بررسی اختیاری رندر
 
-One initial legacy run stopped on the existing unused-image candidate assertion: the conservative reference scanner matched another fixture metadata record. The identical assertion passed on rerun after diagnostics were expanded to identify the matching record on future failures. No relaxation of production image-reference protections was made. This fixture can conservatively report a candidate as referenced; do not use that test result as proof that all real unused images can be identified.
-
-These suites use SQLite and explicit MySQL lock shims. They do not establish real MySQL concurrency behavior, third-party theme/plugin compatibility, browser visual rendering, live GTmetrix scores, or a real WordPress private-token upgrade. New variation creation has a separate confirmation and no price-job undo; existing variation rows remain untouched. Cost migration is preview-only until the normal price job is confirmed.
-
-
-## Version 1.4 validation
-
-Run both updater modes: `php tests/updater.php` and `NIL_PUBLIC_UPDATES=1 php tests/updater.php`. The ten checks in each mode cover authenticated/anonymous metadata and download, expected package identity, redirected credential removal, allowed asset hosts, byte count, SHA-256 tampering and other-plugin isolation. CI and release workflows run both. This is mocked HTTP evidence, not a live WordPress dashboard upgrade.
-
-The source and production DOM suites now load the actual static admin/help PHP templates (with the PHP guard stripped), then exercise the pricing workspace, help recipes without writes, live sample calculations, malformed rounding inputs, immediate branding, unsaved-preview isolation, failed-save preservation, logo replacement/clearing, startup branding in a fresh document and shop-manager disabled controls after asynchronous loading. The initial async cleanup no longer enables newly rendered intentionally disabled controls. The saved-view select setter clears options before selecting the intended one, avoiding stale selections.
-
-PHP.wasm 8.5 linted 21 plugin/test PHP files. The 1,532 price, 14 spreadsheet, 10 private-updater and 10 public-updater checks passed. PHP 8.3 / WordPress 7.1.3 / WooCommerce 11.2.1 disposable HPOS and legacy suites each passed 218 cumulative assertions. New checks verify sanitized/persisted branding, failed HTTP-logo saves preserving stored values, three-digit hex normalization, manager restrictions, anonymous template denial and zero SQL while rendering admin/help templates. Performance fixtures retained 17 cold table queries for 2 and 40 variations in legacy/native COGS modes, zero plugin boot SQL and zero public assets.
-
-`python3 scripts/preview.py` writes an ignored self-contained mock interface and a 390px iframe harness to `dist/`; the production plugin does not ship either. Cloud Browser rejected the local file protocol when attempting visual review, so no visual desktop/mobile browser result is claimed. Do not confuse LinkeDOM interaction tests or the preview generator with browser visual verification. Real Nilwears theme/plugin compatibility, MySQL concurrency, storefront scores and installation remain outside these disposable fixtures.
-
-
-## Version 1.5 validation
-
-PHP.wasm 8.5 linted 25 plugin/test PHP files and passed 1,532 pricing, 58 market arithmetic/feed, 14 spreadsheet and ten checks in each updater mode. Source and shipped-minified DOM suites cover explicit rate requests (none at startup), scoped simple/variation capture, full read-only market preview, configuration invalidation, activation, pause/resume, interval editing without recapture, manager restrictions and duplicate-control prevention. Shipped CSS/JS is 59,494 bytes (22,318 deterministic gzip), within the unchanged 60,000-byte budget.
-
-`tests/market.php` follows `advanced.php` in both disposable Blueprints. Each PHP 8.3 / WordPress 7.1.3 / WooCommerce 11.2.1 HPOS and legacy fixture passed 275 cumulative assertions. Scenarios cover three source assets and divide flags, shared caching, fixed baselines, below-reference floors and rounding, variation parent synchronization, stock preservation, no writes before activation, direct-job apply rejection, no compounded increases, no empty history for unchanged cycles, manual conflicts, overlapping membership, stale table versions, invalid intervals and editable cadence, pause/resume/delete, source failure/staleness/recovery, expired pending quotes, currency/role restrictions, 10-row partial writes and a simulated interruption after the product write but before baseline reconciliation. A later resume reconciles receipts without compounding. Capturing 2 and 40 variations from cold caches measured 25 SQL queries in both cases. The existing product endpoint remains 17/17, with zero boot SQL and zero public assets.
-
-All integration price HTTP is mocked using WordPress's `pre_http_request`; the live public WallGold feed was checked separately for its schema/unit/divide flags, without live product writes. Rule/settings locks and the pre-work replacement event are implemented, but SQLite lock shims, direct tick calls and sequential tests do not prove real MySQL concurrency or real-server cron timing. Browser visual rendering, production dashboard upgrade, Nilwears theme/plugin compatibility and live-store installation were not performed. Do not claim those as passing tests.
-
-
-## Version 1.5.1 updater validation
-
-PHP.wasm 8.5 linted 26 plugin/test files; 1,532 pricing, 58 market and 14 spreadsheet checks passed, alongside 35 public and 35 private updater checks. Source/minified DOM tests verify that the update button sends POST updater/check, shows current/latest versions and safe errors, distinguishes an already-current installation, and stays disabled without update_plugins permission. Assets remain within budget at 59,625 bytes (22,363 deterministic gzip).
-
-Use tests/playground-updater.json in a **disposable** PHP 8.3 / WordPress 7.1.3 Playground. Mount the source plugin at /nil-source and tests at /nil-tests. Unlike the other Blueprints, this one copies source into the disposable WordPress filesystem before activating it; it must never mount the repository at the active plugin path, because the test invokes the actual Plugin_Upgrader and replaces that fixture. The Blueprint explicitly reactivates the fixture after the foreground Plugin_Upgrader call, matching the separate reactivation step normally handled by WordPress; no browser activation flow is claimed. FS_METHOD=direct is a fixture setting only. WooCommerce is downloaded and activated, then deactivated near the end. All runtime HTTP is mocked, including intentional WordPress.org failure; source/package HTTP has no production credentials or customer data.
-
-The 20 lifecycle assertions verify stale release-cache reproduction and forced recovery, real WordPress transient merging, retaining other updates, discovery with WordPress.org blocked, dashboard force-check, role denial, safe error/recovery, real streamed fixture ZIP download through Plugin_Upgrader, unpack/file replacement, an independent request executing fixture version 1.5.2 and removing its obsolete update notification, and working update hooks with WooCommerce inactive. The mounted repository stays at 1.5.1. The Blueprint also runs the frontend probe (zero boot SQL, no public assets, lazy optional modules). Results are in the ignored tests/updater-result.txt. The temporary future-version fixture is not published as a real release.
-
-No Nilwears production update, visual browser check, host connectivity verification or MySQL concurrency test was performed. Cloud Browser access to wp-admin/plugins.php failed authentication and its error surface could not be observed under browser policy. Treat the live cause as unconfirmed; the fixed cache and discovery paths are reproducible code defects, not proof of the host's actual connection status. Existing 1.4/1.5 code cannot gain the new controls merely because a GitHub release is published; a one-time ZIP replacement applies the fix immediately.
-
-
-## Version 1.6 selection and identity validation
-
-PHP.wasm 8.5 linted 29 plugin/test PHP files; the 1,532 pricing, 58 market, 14 spreadsheet, 37 private and 37 public updater assertions passed. Both source/minified DOM suites cover the category selector independent of table filters and across pages, persistent picks across searches, isolated variation choice, parent/child consolidation, fresh selection resolution feeding manual and market previews, scope-change invalidation, and blocking the old cost scheduler from silently using a different filter scope. Existing branding, import, table edit, save/undo and permission interactions continue to pass. The stylesheet and JS remain below the unchanged cap at 59,974 bytes (22,435 deterministic gzip); icon/banner SVG files total 949 bytes. No Lightning CSS dependency was retained.
-
-Both full Blueprints now append tests/selection.php. The HPOS-enabled PHP 8.3 / WP 7.1.3 / WooCommerce 11.2.1 run passed 293 cumulative assertions, including category/subcategory membership, explicit product/variation isolation, current versions/prices, duplicate handling, input/row bounds, permissions and no writes during selection. A cold parent resolution measured 12 SQL queries for 2 variations and 12 for 40. Existing cold grid queries stayed 17/17, market capture 25/25, with zero plugin boot SQL and public enqueues. These are fixture counts using SQLite/MySQL lock shims; no MySQL concurrency result is implied.
-
-A repeat of tests/playground-updater.json was blocked by network policy while downloading from downloads.wordpress.org. Do not count its stale result file as a passing v1.6 lifecycle run. Instead tests/playground-icons.json uses the already-cached WP 7.1.3 core, copies plugin files to a disposable location and requires no WooCommerce download. Mount source at /nil-source and tests at /nil-tests. Its eight assertions verify real WordPress update aggregation and plugin_information metadata, local icon/banner files without script/external resources, no_update icon retention and release-cache reuse with mocked HTTP. Results are in ignored tests/icons-result.txt. The full legacy-order suite and upgraded-package lifecycle were not reverified in v1.6; prior v1.5.1 lifecycle evidence is historical. No live-store installation, visual browser check or artwork raster preview is claimed; the available SVG raster converter could not run without its delegate. DOM tests do not establish responsive pixel rendering.
-
-
-## Version 1.7 group tools and form validation
-
-`tests/pricing.php` now exercises regular-price discount arithmetic/removal/rounding and stock set/add/subtract/unavailable ownership/bounds. PHP 8.3.33 (the @php-wasm/node runtime) parsed all 30 plugin/test PHP files and passed 1,566 price/stock, 58 market, 14 spreadsheet and 37 checks in each updater mode. Source/minified DOM tests exercise the real forms with mocked HTTP, explicit category scope, shared-parent/independent-child targeting, empty input changes with server rules, disabled irrelevant controls, unsaved-grid guards and placement in the pricing workspace. Static wording is parsed from the non-executing admin template; the label data is fixed and never user-provided. This is interaction verification, not visual browser rendering.
-
-Both full Blueprints append `tests/bulk-tools.php` after selection tests. The disposable PHP 8.3 / WP 7.1.3 / WC 11.2.1 fixtures each passed 343 cumulative assertions with HPOS enabled and disabled, including sale creation from regular prices, no compound discounts, effective storefront sale price, exact future-sale-date undo, discount removal, price-only undo preserving checkout stock, stale-price rejection, malformed rules, shared parent and independent variation stock, mode-preserving unavailable, zero/negative results, undo, checkout conflicts and backorders rejection. Results are in the ignored `tests/bulk-tools-result.txt`; never run this fixture on production. Existing grid/market/selection query probes remain 17/17, 25/25 and 12/12.
-
-The actual Plugin_Upgrader fixture was rerun successfully with source 1.7.0 and temporary package 1.7.1: 23 lifecycle assertions cover cache refresh, WordPress aggregation/icon metadata, streamed mocked ZIP replacement, reactivation, independent-request version reload and inactive WooCommerce. Source mounts stay outside the disposable install, runtime network is mocked, and the temporary version is not a release. No live-store installation, MySQL concurrency, screenshot/visual browser check or GTmetrix measurement was performed. Production CSS/JS is 59,934 bytes and deterministic gzip 22,313, below the unchanged 60,000-byte cap; no new dependency was added.
-
-
-## Version 1.8 resource/security/calendar validation
-
-Read [AUDIT.md](AUDIT.md) for scope, measured before/after results, admission limits and unverified behavior. PHP 8.3.33 parsed all 34 plugin/test PHP files. Standalone checks passed: 3,273 dates/times against committed ICU-generated vectors and boundary/zone/bidi cases, 1,566 prices/stocks, 58 market, 23 spreadsheet adversarial/roundtrip checks, 63 private and 61 public updater checks. Both workflows run `php tests/dates.php`; no calendar runtime dependency is installed on WordPress. The accepted Persian range is 1200–1499; do not extend it without cross-engine calendar evidence. JS uses explicit Persian Intl/site-zone formatters. PHP uses the MIT-attributed year-start arithmetic and standard DateTime, not a required intl extension.
-
-Both full disposable Blueprints append `tests/audit.php` and `tests/resource-profile.php`. HPOS enabled and disabled each passed 380 cumulative assertions through the audit and two further query-growth assertions in the resource profiler. Audit regressions cover site-zone Persian scheduling/reports, roles and cross-user history, real core cookie nonce checks, taxonomy capabilities, early body and base64 caps, script/event stripping, literal CSV roundtrip, bounded variation queries, report line/pair/cache limits and pre-decode rejection of a tiny PNG advertising excessive dimensions. Core validation is not a complete HTTP/browser-cookie or external penetration test. Results use SQLite and explicit MySQL lock shims; do not run any fixture on a store.
-
-The updater lifecycle Blueprint passed 23 actual WordPress Plugin_Upgrader assertions using mocked runtime HTTP and a copied temporary 1.8.1 package; the repository remains 1.8.0. npm audit reported zero known advisories for the locked development dependency tree. Common secret/dangerous-execution pattern scanning of executable plugin source returned zero matches; that is not proof of absence of vulnerabilities. No live-store installation, actual MySQL concurrency, OS/production CPU/RAM reading, independent penetration test or screenshot/browser-rendering result is claimed.
-
-`tests/benchmark-v1.8.json` records the paired cold-cache diagnostics from the minimal integration + resource-profile Blueprint before and after optimization; full Blueprints generate additional ignored `resources-VERSION.json` diagnostics after their larger fixtures, which are not the paired sample. PHP memory figures are peak heap deltas, not process RSS or native-library memory. The Node formatting diagnostic `node tests/format-profile.cjs` has five samples, a checksum-equivalence assertion and no speed threshold. The source/minified DOM suites assert one shared number formatter per document, Persian text inputs, configured IANA/fixed-offset zones, untouched Persian request strings with `calendar=persian`, escaped product names and no raw UTC history.
-
-Assets total 59,709 bytes (22,406 deterministic gzip) under the unchanged cap. `includes-dates.php` stays lazy, zero boot SQL/public assets and existing 17/17 grid, 25/25 market capture and 12/12 selection probes passed. The paired 2/40-product previews use 12/12 queries and exports 8/8. Do not present single-run diagnostic timings or the formatter microbenchmark as production latency, host CPU percentage, RAM reduction or a GTmetrix guarantee.
-
-
-## Version 1.9 UX and optional browser verification
-
-`PRODUCT-PLAN.md` records commercial scope, journeys, empty/error states and acceptance. The UI-only update adds no REST endpoint or database migration. Source/minified DOM tests cover home entry without rate/report/write requests, explicit picker fallback, preserved variation membership, isolated forms, stale-preview closure without running/deleting the saved job, invalidated market activation and on-demand history reopening.
-
-For real Chromium rendering of the **disconnected generated fixture**, install Playwright as optional development tooling (not a WordPress runtime dependency), generate the preview and run:
+برای بررسی رابط جدا با دادهٔ ساختگی:
 
 ```sh
 python3 scripts/preview.py
 node tests/ui-browser.cjs
 ```
 
-If Playwright or Chromium is installed outside this repository, set `NIL_PLAYWRIGHT_MODULE` to its module path and optionally `NIL_CHROMIUM_BIN` to the browser executable. The runner only opens the generated local fixture and aborts HTTP(S) browser requests; product/rate/report calls use deterministic mocks. It checks 1440px/390px layouts, actual rounded input styles, primary-button hover background, category selection, previews, stale-setting closure, stock/market forms and table containment. It writes ignored screenshots to `dist/`. This is isolated layout/interaction evidence, not a full WordPress admin/theme/plugin compatibility test, production installation, MySQL concurrency check or real-user usability study.
+Playwright و Chromium ابزار اختیاری توسعه‌اند و وارد بستهٔ وردپرس نمی‌شوند. در صورت نصب بیرون از ریپو، مسیر ماژول را در `NIL_PLAYWRIGHT_MODULE` و در صورت نیاز مرورگر را در `NIL_CHROMIUM_BIN` بدهید. اجراکننده درخواست‌های HTTP مرورگر را می‌بندد و رابط ۱۴۴۰ و ۳۹۰ پیکسل، سبک واقعی ورودی، دکمه، انتخاب و مهار جدول را بررسی می‌کند. این محیط به فروشگاه وصل نیست و تأیید سازگاری وودمارت یا سایر افزونه‌ها محسوب نمی‌شود.
 
-The CSS builder must preserve descendant whitespace before pseudo-classes: `#nil-bulk-app :is(...)` must not become `#nil-bulk-app:is(...)`. The browser regression checks computed input corner radius/min-height, so DOM assertions alone cannot conceal that error. Keep the 60,000-byte production CSS/JS cap.
+## کانال توزیع
 
+منبع `includes-channel.php` باید `github` بماند. ساخت `python3 scripts/build.py --channel zhaket-review` فقط نسخهٔ کپی را به کانال بررسی ژاکت تبدیل می‌کند. خروجی در `dist/zhaket-review/` جداست؛ آن را نسخهٔ دارای لایسنس یا تأییدشدهٔ فروش اعلام نکنید و به‌عنوان بروزرسان عادی منتشر نکنید. هر دو بسته نام داخلی یکسان دارند و فقط نشانگر کانال آن‌ها تفاوت دارد. شناسنامهٔ نسخه، اندازه و هش تک‌تک فایل‌ها کنار ZIP ساخته می‌شود.
 
-## Native SQL verification and release gate — 1.9.1
+کانال بررسی هیچ HTTP یا کش گیت‌هاب ندارد؛ فقط اعلان قدیمی همین افزونه را کنار می‌گذارد و اطلاعات ارائه‌دهندهٔ ژاکت و سایر افزونه‌ها را حفظ می‌کند. دانلود قدیمی یا جدید گیت‌هاب نمی‌تواند این بسته را جایگزین کند. [آمادگی ژاکت](ZHAKET-READINESS.md) موارد باز لایسنس، حقوق منبع نرخ و آزمون فروشگاهی را ثبت می‌کند.
 
-The reusable `.github/workflows/mysql.yml` runs MySQL 8.4 and MariaDB 11.4, each with HPOS yes/no, using native PHP 8.3 (256 MB limit on the final runner). The release workflow needs this matrix before publishing a tag/ZIP. Validation branches under `codex/**` and pull requests can run the matrix before main is moved. Containers and temporary WordPress installs are disposable; all rate HTTP is mocked and mail/external runtime HTTP is blocked. Reports are artifacts retained for seven days, not plugin payload.
+## روال انتشار
 
-`bash scripts/test-mysql.sh` requires native PHP with mysqli/zip/XML/GD/mbstring, WP-CLI, curl and an isolated local MySQL/MariaDB service. Provide `NIL_MYSQL_HOST=127.0.0.1`, its port/user and `NIL_MYSQL_PASSWORD`; select `NIL_TEST_HPOS=yes` or `no` and a simple `NIL_TEST_LABEL`. The runner always creates a new random `nil_manager_test_…` database; it cannot target an existing database by name. It creates a marked temporary `nil-manager-mysql.…` site, validates its identity before loading product-writing fixtures and copies reports into ignored `dist/mysql-results/`. The reusable CI owns and destroys its containers; a manual local run leaves its new test database/temp directory for inspection. Never substitute store credentials, a production connection or a production WordPress path.
+۱. کد، آزمون و راهنما را با تغییر واقعی هماهنگ کنید. متن عمومی، عنوان انتشار و توضیحات نسخه باید فارسی و هویت محصول «نیل منجر / نیل وب» باشد؛ شناسه‌های ماشینی و متن اصلی مجوزها تغییر حقوقی نمی‌کنند.
+۲. شمارهٔ تازهٔ معنایی تعیین کنید؛ تگ منتشرشده را دوباره استفاده نکنید. شماره را در `VERSION`، هدر و ثابت PHP، `package.json` و قفل وابستگی‌ها یکسان کنید.
+۳. بخش `## [X.Y.Z] - YYYY-MM-DD` را با تغییرات، نتایج واقعی و محدودیت‌ها به `CHANGELOG.md` بیفزایید و `npm run build:descriptions` را اجرا کنید.
+۴. بررسی‌های مرتبط و ساخت ZIP را اجرا، اختلاف فایل‌ها را مرور و محتوای صرفاً افزونه را تأیید کنید. شکست و بررسی انجام‌نشده را دقیق گزارش کنید.
+۵. تغییرات را ثبت و به `main` ارسال کنید. اینتگریشن گیت‌هاب در اولویت است؛ اگر قابلیت لازم را نداشت، مرورگر طبق اجازهٔ کاربر قابل استفاده است.
+۶. ورک‌فلو انتشار پس از موفقیت ماتریس دیتابیس و بررسی‌ها، تگ `vX.Y.Z` و انتشار شامل ZIP و شناسنامه را می‌سازد. ریلیز موجود و فایل‌های آن بازنویسی نمی‌شوند. ویرایش متن و عنوان نسخه‌های قبلی فقط با درخواست صریح کاربر انجام می‌شود.
+۷. نتیجهٔ Actions، تگ، کامیت و هش فایل منتشرشده را بررسی و لینک و رفتار آزموده‌نشده را گزارش کنید. نصب روی سایت اصلی اقدام جدا و نیازمند درخواست کاربر است.
 
-The shared fixture now requires `NIL_DISPOSABLE_FIXTURE=true`. Both existing full Playground Blueprints set it; their SQLite shims remain clearly labelled. `NIL_TEST_REAL_MYSQL=true` is only set by the isolated native runner, which installs **no SQL shim**. Fixture output paths are configurable, and native progress output is buffered so REST header tests are not affected by prior echo statements.
-
-`tests/mysql-concurrency.php` launches independent native PHP workers. Barriers hold actual plugin transactions before WooCommerce saves; the controller observes server lock-wait tables before release. Cases cover competing plugin execution, apply/undo versus `wc_reduce_stock_levels`, explicit stock versus order reduction, stale previews, failure after product writes and shared-parent inventory. This tests WooCommerce order-stock reduction, not a browser checkout, payment gateway, shared persistent object cache or a whole-store load test. See SQL-VALIDATION.md for results and BETA-GUIDE.md for remaining user/store tests.
-
-## Distribution review builds
-
-Run `php tests/distribution.php` and `python3 tests/distribution-build.py` with updater changes. Source `includes-channel.php` must remain `github`; only the builder changes the copy in `--channel zhaket-review`. The review output is isolated under `dist/zhaket-review/`; never publish it as the normal GitHub update or claim Guard integration/marketplace approval. The companion manifest identifies channel/readiness and every packaged file hash. See ZHAKET-READINESS.md for the vendor-input and validation gates.
-
-## Payment-method discounts — 1.10
-
-Run `php tests/payments-unit.php`, `node tests/payment-checkout.cjs` and `NIL_MINIFIED=1 node tests/payment-checkout.cjs` alongside the existing checks. `tests/payments.php` is appended to both disposable Blueprints and the native SQL runner; never run it on a store. It exercises actual WooCommerce cart totals, sale/variation quantities, per-order caps, normal/individual-use coupons, taxes/VAT exemptions, allocated line refunds, classic order creation, Store API extension updates, direct POST method changes, discounted Block checkout, zero-total checkout, pending-order retry restrictions, permission/nonce/stale-form/validation checks and reserved-code collision handling. Runtime external HTTP and email remain disabled in native fixtures. An accepted Store API offline BACS/COD transaction is fixture evidence, not a live bank/installment-processor payment or gateway callback test.
-
-The optional local checkout script is 1,183 bytes, independently bounded at 3,000 bytes; core admin assets remain 59,895 bytes under the unchanged 60,000-byte budget. No new runtime library, table, cron or storefront stylesheet is installed. A bounded non-autoloaded option stores rules; virtual coupons avoid coupon posts. A reserved-code lookup uses WooCommerce's coupon cache to preserve any real merchant coupon with a conflicting code. See PERFORMANCE.md for what the checkout asset exception means.
+وضعیت عمومی ریپو و دسترسی همکاران را بدون درخواست کاربر تغییر ندهید. توکن، رمز، اطلاعات مشتری و نسخهٔ دیتابیس را ثبت نکنید. اسکن سادهٔ متن، نبود آسیب‌پذیری را ثابت نمی‌کند؛ نتایج محیط جدا را به مصرف واقعی RAM/CPU، امنیت مطلق یا امتیاز تضمینی GTmetrix تعمیم ندهید.

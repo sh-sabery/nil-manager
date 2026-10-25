@@ -5,17 +5,17 @@ class NIL_Bulk_Manager{const VERSION='1.2.0';}class NIL_Suite{public static func
 class WP_Error{public $code;public function __construct($code,$message){$this->code=$code;}}
 function plugins_url($p,$file){return 'https://nil.test/plugins/nilwears-bulk-manager/'.$p;}
 function is_wp_error($v){return $v instanceof WP_Error;}function absint($v){return abs((int)$v);}function wp_strip_all_tags($v){return strip_tags($v);}function esc_html($v){return htmlspecialchars($v);}function plugin_basename($v){return 'nilwears-bulk-manager/nilwears-bulk-manager.php';}
-$cache=array();$calls=array();$bad_host=false;$bad_bytes=false;$bad_size=false;$can_update=true;$mode='ok';$tag='1.2.3';$bytes="PK\x03\x04fixture-zip";$hooks=array();
+$cache=array();$calls=array();$bad_host=false;$bad_bytes=false;$bad_size=false;$can_update=true;$mode='ok';$archive_prefix='nil-manager-v';$tag='1.2.3';$bytes="PK\x03\x04fixture-zip";$hooks=array();
 function add_filter($h,$fn,$priority=10,$args=1){global $hooks;$hooks[$h][]=$fn;}function add_action($h,$fn,$priority=10,$args=1){add_filter($h,$fn,$priority,$args);}function current_user_can($c){global $can_update;return $can_update;}
 function get_site_transient($k){global $cache;return $cache[$k]??false;}function set_site_transient($k,$v,$t=0){global $cache;$cache[$k]=$v;}function delete_site_transient($k){global $cache;unset($cache[$k]);}
 function wp_tempnam($n){return tempnam(sys_get_temp_dir(),'nilup');}function wp_parse_url($u){return parse_url($u);}function wp_remote_retrieve_response_code($r){return $r['response']['code'];}function wp_remote_retrieve_body($r){return $r['body']??'';}function wp_remote_retrieve_header($r,$h){return $r['headers'][$h]??'';}
-function wp_remote_get($url,$args){global $calls,$bytes,$bad_host,$bad_bytes,$bad_size,$mode,$tag;$calls[]=array('url'=>$url,'args'=>$args);
+function wp_remote_get($url,$args){global $calls,$bytes,$bad_host,$bad_bytes,$bad_size,$mode,$tag,$archive_prefix;$calls[]=array('url'=>$url,'args'=>$args);
  if(strpos($url,'/releases/latest')!==false){
   if($mode==='network')return new WP_Error('http_request_failed','fake error with test-read-token must not be exposed');
   if(is_int($mode))return array('response'=>array('code'=>$mode));
   if($mode==='auth'&&!empty($args['headers']['Authorization']))return array('response'=>array('code'=>401));
   if($mode==='malformed')return array('response'=>array('code'=>200),'body'=>'[broken');
-  return array('response'=>array('code'=>200),'body'=>json_encode(array('tag_name'=>'v'.$tag,'body'=>'test','assets'=>$mode==='missing'?array():array(array('id'=>123,'name'=>'nilwears-bulk-manager-v'.$tag.'.zip','size'=>$mode==='huge'?20971521:strlen($bytes),'digest'=>$mode==='no-digest'?'':'sha256:'.hash('sha256',$bytes))))));
+  return array('response'=>array('code'=>200),'body'=>json_encode(array('tag_name'=>'v'.$tag,'body'=>'test','assets'=>$mode==='missing'?array():array(array('id'=>123,'name'=>$archive_prefix.$tag.'.zip','size'=>$mode==='huge'?20971521:strlen($bytes),'digest'=>$mode==='no-digest'?'':'sha256:'.hash('sha256',$bytes))))));
  }
  if(strpos($url,'api.github.com')!==false)return array('response'=>array('code'=>302),'headers'=>array('location'=>$bad_host?'https://evil.example/file.zip':'https://release-assets.githubusercontent.com/example/file.zip'));
  file_put_contents($args['filename'],$bad_size?'x':($bad_bytes?str_repeat('x',strlen($bytes)):$bytes));return array('response'=>array('code'=>200));
@@ -44,3 +44,12 @@ $mode='auth';$count=count($calls);$s=NIL_Updater::check();expect_update($s['avai
 $mode='no-digest';$s=NIL_Updater::check();expect_update($s['error']['code']==='integrity','missing SHA-256 rejected');$mode='huge';$s=NIL_Updater::check();expect_update($s['error']['code']==='integrity','oversized asset metadata rejected');$mode='ok';NIL_Updater::check();
 foreach($calls as $c)expect_update(!empty($c['args']['reject_unsafe_urls']),'every HTTP hop rejects unsafe URLs');
 echo "PASS: $n ".(getenv('NIL_PUBLIC_UPDATES')?'public':'private')." updater checks\n";
+
+expect_update($info->author==='نیل وب'&&strpos($info->sections['description'],'نیل منجر')!==false,'Persian author and description');
+expect_update(strpos($info->sections['changelog'],'نسخهٔ ۱.۰.۰')!==false&&strpos($info->sections['changelog'],'آبان')!==false,'complete local Persian history and Persian dates');
+expect_update($info->homepage==='https://github.com/sh-sabery/nil-manager','new public product homepage');
+$mode='network';NIL_Updater::check();$offline=NIL_Updater::info(false,'plugin_information',(object)array('slug'=>'nilwears-bulk-manager'));expect_update($offline->sections['description']===$info->sections['description']&&$offline->sections['changelog']===$info->sections['changelog']&&$offline->download_link==='','Persian details available while metadata is offline');
+$mode='ok';NIL_Updater::check();$old_package='https://api.github.com/repos/sh-sabery/nilwears-bulk-manager/releases/assets/123';$old_file=NIL_Updater::download(false,$old_package,null,array());expect_update(is_string($old_file),'verified legacy cached asset URL normalizes to new repository');if(is_string($old_file))unlink($old_file);
+echo "PASS: Persian branding/history, offline details and legacy package normalization\n";
+
+$archive_prefix='nilwears-bulk-manager-v';expect_update(NIL_Updater::check()['available']==='1.2.3','legacy archive name stays compatible');

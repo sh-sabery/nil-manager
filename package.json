@@ -1,15 +1,17 @@
 {
-  "name": "nilwears-bulk-manager",
-  "version": "1.10.0",
+  "name": "nil-manager",
+  "version": "1.10.1",
   "private": true,
-  "description": "Development tools for Nil Manager by Nil Web",
+  "description": "ابزارهای توسعهٔ نیل منجر، محصول نیل وب",
   "license": "GPL-2.0-or-later",
   "scripts": {
     "test:ui": "node tests/ui-dom.cjs",
     "check:js": "node --check nilwears-bulk-manager/assets/admin.js && node --check nilwears-bulk-manager/assets/suite.js && node --check nilwears-bulk-manager/assets/advanced.js && node --check nilwears-bulk-manager/assets/market.js && node --check nilwears-bulk-manager/assets/payment-checkout.js",
     "build:assets": "node scripts/assets.mjs",
     "check:assets": "node scripts/assets.mjs --check",
-    "test:ui:min": "NIL_MINIFIED=1 node tests/ui-dom.cjs"
+    "test:ui:min": "NIL_MINIFIED=1 node tests/ui-dom.cjs",
+    "build:descriptions": "node scripts/descriptions.mjs",
+    "check:descriptions": "node scripts/descriptions.mjs --check"
   },
   "devDependencies": {
     "linkedom": "0.18.14",
