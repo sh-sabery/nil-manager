@@ -14,9 +14,9 @@ add_filter('pre_http_request',function($pre,$args,$url)use(&$calls,&$mode){
  $calls++;return array('response'=>array('code'=>200),'body'=>wp_json_encode(array('status'=>$mode,'message'=>'fixture only')));
 },PHP_INT_MAX,3);
 try {
- $p=new WC_Product_Simple();$p->set_name('Guard fixture');$p->set_status('publish');$p->set_regular_price('100');$p->save();
+ $p=new WC_Product_Simple();$p->set_name('Guard fixture');$p->set_status('publish');$p->set_regular_price('100');$p->save();clean_post_cache($p->get_id());wc_delete_product_transients($p->get_id());$p=wc_get_product($p->get_id());
  $preview=new WP_REST_Request('POST');$preview->set_header('content-type','application/json');$preview->set_body(wp_json_encode(array('rows'=>array(array('id'=>$p->get_id(),'version'=>NIL_Bulk_Manager::fingerprint(NIL_Bulk_Manager::snapshot($p)),'changes'=>array('regular_price'=>'110'))))));
- $out=NIL_Bulk_Manager::preview($preview);$seal=new WP_REST_Request('POST');$seal['id']=$out['job_id'];$seal->set_param('count',1);NIL_Bulk_Manager::seal($seal);
+ $out=NIL_Bulk_Manager::preview($preview);license_native_check(!$out['errors']&&$out['added']===1,'fresh preview: '.wp_json_encode($out));$seal=new WP_REST_Request('POST');$seal['id']=$out['job_id'];$seal->set_param('count',1);NIL_Bulk_Manager::seal($seal);
  $run=new WP_REST_Request('POST','/nil-bulk/v1/job/'.$out['job_id'].'/run');$run->set_param('mode','apply');$denied=rest_do_request($run);license_native_check($denied->get_status()===403,'unactivated REST write rejected');
  try {NIL_Bulk_Manager::run($run);$blocked=false;}catch(RuntimeException $e){$blocked=true;}license_native_check($blocked&&wc_get_product($p->get_id())->get_regular_price()==='100','internal/cron job entry blocked before changes');
  NIL_License::activate('fixture-license-123');license_native_check(NIL_License::status()['allowed']&&$calls===1,'real WP HTTP interception activates');
