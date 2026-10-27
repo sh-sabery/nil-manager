@@ -2,7 +2,7 @@
 /**
  * Plugin Name: نیل منجر — مدیریت قیمت و موجودی ووکامرس
  * Description: مدیریت گروهی قیمت و موجودی محصولات و ورییشن‌ها، رندکردن پیشرفته، تخفیف روش پرداخت، قیمت‌گذاری طلا و ارز، پیش‌نمایش و بازگردانی؛ محصول نیل وب.
- * Version: 1.10.3
+ * Version: 1.11.0
  * Update URI: https://github.com/sh-sabery/nil-manager
  * Author: نیل وب
  * Requires at least: 6.4
@@ -22,7 +22,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.10.3';
+    const VERSION = '1.11.0';
     const FILE = __FILE__;
     const VARIATION_LIMIT = 500;
     /** Prime a bounded batch; reuse WordPress caches instead of per-product reads. */
@@ -67,7 +67,7 @@ final class NIL_Bulk_Manager {
     }
 
     public static function boot() {
-        if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) { NIL_Updater::boot(); }
+        if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) { NIL_Updater::boot(); NIL_License::boot(); }
         if ( ! class_exists( 'WooCommerce' ) ) {
             add_action( 'admin_notices', function() { echo '<div class="notice notice-warning"><p>نیل منجر به ووکامرس فعال نیاز دارد.</p></div>'; } );
             return;
@@ -417,6 +417,7 @@ final class NIL_Bulk_Manager {
             $job = self::job( $r['id'] );
             if ( ! in_array( $r->get_param( 'mode' ), array( 'apply', 'undo' ), true ) ) { throw new InvalidArgumentException( 'حالت اجرای عملیات نامعتبر است.' ); }
             $undo = 'undo' === $r->get_param( 'mode' );
+            if ( ! $undo ) { NIL_License::assert_write(); }
             do_action( 'nil_bulk_before_job_run', $job, $undo );
             if ( json_decode( $job['config'], true ) !== self::config() ) { throw new RuntimeException( 'واحد پول یا دقت قیمت تغییر کرده است؛ عملیات متوقف شد.' ); }
             if ( ! in_array( $job['state'], $undo ? array( 'done','undoing','undone' ) : array( 'ready','running','done' ), true ) ) { throw new RuntimeException( 'وضعیت عملیات اجازه اجرا نمی‌دهد.' ); }
@@ -433,3 +434,5 @@ final class NIL_Bulk_Manager {
 }
 register_activation_hook( __FILE__, array( 'NIL_Bulk_Manager', 'install' ) );
 add_action( 'plugins_loaded', array( 'NIL_Bulk_Manager', 'boot' ) );
+
+register_deactivation_hook( __FILE__, function() { wp_clear_scheduled_hook( 'nil_manager_guard_check' ); } );

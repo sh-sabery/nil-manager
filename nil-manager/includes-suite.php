@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 // Optional tools are parsed only when an endpoint or update hook needs them.
 spl_autoload_register( function( $class ) {
     if ( 0 !== strpos( $class, 'NIL_' ) ) { return; }
-    static $map = array( 'NIL_Payments' => 'payments', 'NIL_Dates' => 'dates', 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market', 'NIL_Selection' => 'selection' );
+    static $map = array( 'NIL_License' => 'license', 'NIL_Payments' => 'payments', 'NIL_Dates' => 'dates', 'NIL_Sheet' => 'sheet', 'NIL_Media' => 'media', 'NIL_Insights' => 'insights', 'NIL_Updater' => 'updater', 'NIL_Maintenance' => 'maintenance', 'NIL_Variations' => 'variations', 'NIL_Presets' => 'presets', 'NIL_Market' => 'market', 'NIL_Selection' => 'selection' );
     if ( isset( $map[$class] ) ) { require_once __DIR__ . '/includes-' . $map[$class] . '.php'; }
 } );
 final class NIL_Suite {
@@ -30,6 +30,7 @@ final class NIL_Suite {
                 $limit = '/nil-bulk/v1/sheet/read' === $r->get_route() ? 12 : ( '/nil-bulk/v1/sheet/export' === $r->get_route() ? 4 : 1 );
                 if ( strlen( $r->get_body() ) > $limit * 1024 * 1024 ) { return new WP_Error( 'nil_body_size', 'درخواست بزرگ است؛ فایل یا محدوده را کوچک کنید.', array( 'status' => 413 ) ); }
             }
+            if ( 0 === strpos( $r->get_route(), '/nil-bulk/v1/' ) ) { return NIL_License::rest( $reply, $server, $r ); }
             return $reply;
         }, 10, 3 );
         add_action( 'nil_bulk_market', array( 'NIL_Market', 'tick' ), 10, 1 );
@@ -153,6 +154,7 @@ final class NIL_Suite {
         return self::branding();
     }
     public static function create( $r ) {
+        NIL_License::assert_write();
         if ( ! current_user_can( 'publish_products' ) ) { throw new RuntimeException( 'اجازه ایجاد محصول ندارید.' ); }
         $b = $r->get_json_params(); $token = sanitize_key( $b['token'] ?? '' );
         if ( ! preg_match( '/^[a-f0-9-]{32,36}$/', $token ) ) { throw new InvalidArgumentException( 'کلید ایجاد نامعتبر است.' ); }
@@ -239,6 +241,7 @@ final class NIL_Suite {
         if ( get_transient( 'nil_cron_' . $id ) ) { return; } set_transient( 'nil_cron_' . $id, 1, 300 );
         $s = $list[$id]; $previous_user = get_current_user_id(); wp_set_current_user( $s['owner'] );
         try {
+            NIL_License::assert_write();
             if ( ! NIL_Bulk_Manager::permission() || $s['currency'] !== get_woocommerce_currency() || (int) $s['decimals'] !== wc_get_price_decimals() ) { throw new RuntimeException( 'مجوز یا واحد پول تغییر کرده است.' ); }
             $r = new WP_REST_Request( 'GET' ); foreach ( $s['filters'] as $k => $v ) { $r->set_param( $k, $v ); } $r->set_param( 'page', $s['page'] );
             if ( in_array( $s['state'], array( 'scheduled','previewing' ), true ) ) {

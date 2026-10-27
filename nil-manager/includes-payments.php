@@ -130,6 +130,7 @@ final class NIL_Payments {
                 $posted = wp_unslash( $_POST );
                 if ( ! isset( $posted['revision'] ) || ! is_string( $posted['revision'] ) || ! hash_equals( hash( 'sha256', wp_json_encode( $settings ) ), $posted['revision'] ) ) { throw new RuntimeException( 'تنظیمات در پنجرهٔ دیگری تغییر کرده است؛ صفحه را تازه کنید.' ); }
                 $next = self::validate( $posted, $gateways );
+                if ( $next['enabled'] ) { NIL_License::assert_write(); }
                 if ( $next['enabled'] && wc_get_coupon_id_by_code( self::CODE ) ) { throw new RuntimeException( 'کد nil-manager-payment-discount برای این قابلیت رزرو است؛ ابتدا کوپن هم‌نام موجود را تغییر نام دهید.' ); }
                 update_option( self::OPTION, $next, false );
                 $settings = $next; $notice = 'تنظیمات ذخیره شد؛ از محاسبهٔ بعدی سبد اعمال می‌شود.';

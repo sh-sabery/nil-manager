@@ -105,6 +105,7 @@ final class NIL_Media {
     public static function apply( $r ) {
         $b = $r->get_json_params(); $key = 'nil_media_' . get_current_user_id(); $p = get_transient( $key );
         if ( ! $p || ! hash_equals( $p['token'], (string) ( $b['token'] ?? '' ) ) ) { throw new RuntimeException( 'پیش‌نمایش منقضی شده است یا پیش‌نمایش جدید جای آن را گرفته است.' ); }
+        if ( 'restore' !== $p['action'] ) { NIL_License::assert_write(); }
         $lock = NIL_Bulk_Manager::lock(); $results = array();
         try {
             foreach ( $p['rows'] as $row ) {

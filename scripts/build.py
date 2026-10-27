@@ -11,7 +11,15 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--tag', help='Require the release tag to match vX.Y.Z')
 parser.add_argument('--channel', choices=('github', 'zhaket-review'), default='github', help='Marketplace output is a review candidate, never a licensed sale build')
+parser.add_argument('--product-token-file', type=Path, help='File containing only the distributable Zhaket product ID; never a seller/API private key')
 args = parser.parse_args()
+product_token = ''
+if args.product_token_file:
+    if args.channel != 'zhaket-review':
+        raise SystemExit('Product identifier is supported only in the marketplace review build')
+    product_token = args.product_token_file.read_text().strip()
+    if not re.fullmatch(r'[A-Za-z0-9_-]{8,512}', product_token):
+        raise SystemExit('Invalid product identifier format')
 version = (ROOT / 'VERSION').read_text().strip()
 if not re.fullmatch(r'\d+\.\d+\.\d+', version):
     raise SystemExit('VERSION must be X.Y.Z')
@@ -43,6 +51,9 @@ archive = out / f'nil-manager-v{version}{suffix}.zip'
 channel_file = ROOT / 'nil-manager/includes-channel.php'
 if channel_file.read_text() != "<?php\n/** Distribution identity, generated only by the release builder. */\ndefined( 'ABSPATH' ) || exit;\nreturn 'github';\n":
     raise SystemExit('Source channel must remain github; build transforms the review copy only')
+product_file = ROOT / 'nil-manager/includes-license-product.php'
+if not product_file.read_text().endswith("return '';\n"):
+    raise SystemExit('Keep the distributable product identifier outside source; inject it at build time')
 manifest_files = []
 allowed = {'.php', '.js', '.css', '.html', '.txt', '.woff2', '.svg'}
 files = sorted((ROOT / 'nil-manager').rglob('*'))
@@ -64,6 +75,8 @@ with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslev
         data = file.read_bytes()
         if file == channel_file and args.channel == 'zhaket-review':
             data = data.replace(b"return 'github';", b"return 'zhaket';")
+        if file == product_file and product_token:
+            data = data.replace(b"return '';", ("return '" + product_token + "';").encode())
         bundle.writestr(info, data)
         manifest_files.append({'path': info.filename, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
 with zipfile.ZipFile(archive) as bundle:
@@ -77,7 +90,7 @@ digest = hashlib.sha256(archive.read_bytes()).hexdigest()
 manifest = {'product': 'نیل منجر', 'publisher': 'نیل وب', 'version': version,
             'channel': args.channel, 'basename': 'nilwears-bulk-manager/nilwears-bulk-manager.php',
             'archive': archive.name, 'sha256': digest, 'size': archive.stat().st_size,
-            'guard_integrated': False, 'marketplace_approved': False,
+            'guard_integrated': args.channel == 'zhaket-review', 'guard_configured': bool(product_token), 'guard_live_tested': False, 'marketplace_approved': False,
             'readiness': 'review-only' if args.channel == 'zhaket-review' else 'github-release',
             'files': manifest_files}
 (out / (archive.name + '.manifest.json')).write_text(json.dumps(manifest, indent=2) + '\n')

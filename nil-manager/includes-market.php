@@ -231,6 +231,7 @@ final class NIL_Market {
         $previous = get_current_user_id(); $lock = null; $s = null;
         try {
             $lock = self::lock( $id ); $s = self::rule( $id ); if ( ! in_array( $s['status'], array( 'active','waiting' ), true ) ) { return; }
+            NIL_License::assert_write();
             wp_set_current_user( $s['owner'] ); self::admin(); self::currency( $s ); $s['status'] = 'active';
             // One replacement event survives a worker crash; normal completion replaces it again.
             self::schedule( $s, max( 300, $s['interval'] * 60 ) ); self::save( $s );

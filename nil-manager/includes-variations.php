@@ -86,6 +86,7 @@ final class NIL_Variations {
         set_transient( 'nil_variants_' . get_current_user_id(), $plan, HOUR_IN_SECONDS ); return array( 'token' => $token, 'rows' => $rows, 'skipped' => $skipped );
     }
     public static function apply( $r ) {
+        NIL_License::assert_write();
         global $wpdb; $b = $r->get_json_params(); $key = 'nil_variants_' . get_current_user_id(); $plan = get_transient( $key );
         if ( ! $plan || ! hash_equals( $plan['token'], (string) ( $b['token'] ?? '' ) ) ) { throw new RuntimeException( 'پیش‌نمایش ورییشن منقضی/جایگزین شده است.' ); }
         foreach ( $plan['parents'] as $id => $v ) { self::parent_product( $id ); }

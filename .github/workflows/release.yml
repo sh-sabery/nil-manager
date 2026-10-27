@@ -42,6 +42,8 @@ jobs:
           php tests/sheet.php
           php tests/updater.php
           php tests/distribution.php
+          php tests/license.php
+          NIL_TEST_LICENSE_CHANNEL=github php tests/license.php
           NIL_PUBLIC_UPDATES=1 php tests/updater.php
           NIL_PUBLIC_UPDATES=1 NIL_TEST_CANONICAL=1 php tests/updater.php
       - run: python3 tests/distribution-build.py

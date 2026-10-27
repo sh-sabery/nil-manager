@@ -30,3 +30,5 @@ wp --allow-root --path="$NIL_TEST_WP_ROOT" option update woocommerce_custom_orde
 wp --allow-root --path="$NIL_TEST_WP_ROOT" option update woocommerce_custom_orders_table_data_sync_enabled no --quiet
 php "$repo/tests/mysql-suite.php" 2>&1 | tee "$NIL_TEST_RESULTS_DIR/functional.log"
 php "$repo/tests/mysql-concurrency.php" 2>&1 | tee "$NIL_TEST_RESULTS_DIR/concurrency.log"
+
+php "$repo/tests/license-native.php" 2>&1 | tee "$NIL_TEST_RESULTS_DIR/license.log"

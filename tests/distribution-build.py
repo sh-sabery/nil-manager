@@ -19,7 +19,7 @@ for channel in ('github', 'zhaket-review'):
     manifest = json.loads(archive.with_name(archive.name + '.manifest.json').read_text())
     assert manifest['sha256'] == hashlib.sha256(archive.read_bytes()).hexdigest()
     assert manifest['size'] == archive.stat().st_size
-    assert manifest['channel'] == channel and not manifest['guard_integrated'] and not manifest['marketplace_approved']
+    assert manifest['channel'] == channel and manifest['guard_integrated'] == (channel == 'zhaket-review') and not manifest['guard_configured'] and not manifest['guard_live_tested'] and not manifest['marketplace_approved']
     with zipfile.ZipFile(archive) as bundle:
         contents[channel] = {name: bundle.read(name) for name in bundle.namelist()}
     assert set(contents[channel]) == {entry['path'] for entry in manifest['files']}
@@ -41,3 +41,21 @@ assert changed == ['nilwears-bulk-manager/includes-channel.php'], changed
 assert b"return 'github';" in contents['github'][changed[0]]
 assert b"return 'zhaket';" in contents['zhaket-review'][changed[0]]
 print('PASS: both reproducible plugin-only channels, manifest hashes, identical basename, unchanged source, review isolation')
+
+# A public product ID may be injected only into a separate review artifact, never GitHub/source.
+import tempfile
+with tempfile.TemporaryDirectory() as folder:
+    token = Path(folder) / 'public-product-id.txt'
+    token.write_text('fixture-public-product')
+    subprocess.run(['python3', 'scripts/build.py', '--channel', 'zhaket-review', '--product-token-file', str(token)], cwd=ROOT, check=True)
+    archive = ROOT / 'dist/zhaket-review' / f'nil-manager-v{version}-zhaket-review.zip'
+    with zipfile.ZipFile(archive) as bundle:
+        assert b"return 'fixture-public-product';" in bundle.read('nilwears-bulk-manager/includes-license-product.php')
+    manifest = json.loads(archive.with_name(archive.name + '.manifest.json').read_text())
+    assert manifest['guard_configured'] and not manifest['guard_live_tested'] and 'fixture-public-product' not in json.dumps(manifest)
+    assert (ROOT / 'nil-manager/includes-license-product.php').read_text().endswith("return '';\n")
+    rejected = subprocess.run(['python3', 'scripts/build.py', '--product-token-file', str(token)], cwd=ROOT, capture_output=True)
+    assert rejected.returncode != 0
+# Leave the CI artifact unconfigured; fixture IDs must not be uploaded as a real candidate.
+subprocess.run(['python3', 'scripts/build.py', '--channel', 'zhaket-review'], cwd=ROOT, check=True)
+print('PASS: marketplace-only public product ID injection, no source/manifest leak, no live-test claim')
