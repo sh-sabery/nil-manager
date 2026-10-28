@@ -12,6 +12,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--tag', help='Require the release tag to match vX.Y.Z')
 parser.add_argument('--channel', choices=('github', 'zhaket-review'), default='github', help='Marketplace output is a review candidate, never a licensed sale build')
 parser.add_argument('--product-token-file', type=Path, help='File containing only the distributable Zhaket product ID; never a seller/API private key')
+parser.add_argument('--zhaket-updater-file', type=Path, help='Unmodified official updater ZIP, review channel only')
+parser.add_argument('--guard-test-report', type=Path, help='Local redacted report from scripts/guard-live.php for this version/product')
 args = parser.parse_args()
 product_token = ''
 if args.product_token_file:
@@ -20,7 +22,25 @@ if args.product_token_file:
     product_token = args.product_token_file.read_text().strip()
     if not re.fullmatch(r'[A-Za-z0-9_-]{8,512}', product_token):
         raise SystemExit('Invalid product identifier format')
+addon = None
+if args.zhaket_updater_file:
+    if args.channel != 'zhaket-review':
+        raise SystemExit('Updater add-on is supported only in the marketplace review build')
+    addon = json.loads((ROOT / 'docs/zhaket-updater.json').read_text())
+    data = args.zhaket_updater_file.read_bytes()
+    if len(data) != addon['size'] or hashlib.sha256(data).hexdigest() != addon['sha256']:
+        raise SystemExit('Official updater size/SHA256 does not match verified metadata')
+    with zipfile.ZipFile(args.zhaket_updater_file) as z:
+        if z.testzip() or addon['entrypoint'] not in z.namelist():
+            raise SystemExit('Invalid official updater ZIP')
 version = (ROOT / 'VERSION').read_text().strip()
+live = None
+if args.guard_test_report:
+    if args.channel != 'zhaket-review' or not product_token:
+        raise SystemExit('A Guard report requires a configured review build')
+    live = json.loads(args.guard_test_report.read_text())
+    if live.get('plugin_version') != version or live.get('product_sha256') != hashlib.sha256(product_token.encode()).hexdigest() or live.get('activation') is not True or live.get('validation') is not True or live.get('scope') != 'adapter-real-https-with-isolated-option-stubs' or live.get('domain') != 'nil-manager-guard.test' or live.get('wordpress_bootstrapped') is not False or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00', live.get('tested_at', '')):
+        raise SystemExit('Guard report does not match this version/product and successful local smoke test')
 if not re.fullmatch(r'\d+\.\d+\.\d+', version):
     raise SystemExit('VERSION must be X.Y.Z')
 source = (ROOT / 'nil-manager/nil-manager.php').read_text()
@@ -79,6 +99,13 @@ with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED, compresslev
             data = data.replace(b"return '';", ("return '" + product_token + "';").encode())
         bundle.writestr(info, data)
         manifest_files.append({'path': info.filename, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+    if addon:
+        data = args.zhaket_updater_file.read_bytes()
+        info = zipfile.ZipInfo('nilwears-bulk-manager/addons/' + addon['archive'], date_time=(2020, 1, 1, 0, 0, 0))
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.external_attr = 0o100644 << 16
+        bundle.writestr(info, data)
+        manifest_files.append({'path': info.filename, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
 with zipfile.ZipFile(archive) as bundle:
     if bundle.testzip():
         raise SystemExit('ZIP integrity check failed')
@@ -90,7 +117,8 @@ digest = hashlib.sha256(archive.read_bytes()).hexdigest()
 manifest = {'product': 'نیل منجر', 'publisher': 'نیل وب', 'version': version,
             'channel': args.channel, 'basename': 'nilwears-bulk-manager/nilwears-bulk-manager.php',
             'archive': archive.name, 'sha256': digest, 'size': archive.stat().st_size,
-            'guard_integrated': args.channel == 'zhaket-review', 'guard_configured': bool(product_token), 'guard_live_tested': False, 'marketplace_approved': False,
+            'guard_integrated': args.channel == 'zhaket-review', 'guard_configured': bool(product_token), 'guard_live_tested': bool(live), 'guard_test_scope': live['scope'] if live else None, 'guard_tested_at': live['tested_at'] if live else None, 'marketplace_approved': False,
+            'updater_bundled': bool(addon), 'updater_version': addon['version'] if addon else None, 'updater_runtime_tested': False,
             'readiness': 'review-only' if args.channel == 'zhaket-review' else 'github-release',
             'files': manifest_files}
 (out / (archive.name + '.manifest.json')).write_text(json.dumps(manifest, indent=2) + '\n')

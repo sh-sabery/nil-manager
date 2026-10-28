@@ -25,7 +25,7 @@ jobs:
       - name: PHP syntax and pricing checks
         run: |
           php --version
-          for file in nil-manager/*.php tests/*.php; do php -l "$file" || exit 1; done
+          for file in nil-manager/*.php tests/*.php scripts/*.php; do php -l "$file" || exit 1; done
           php tests/dates.php
           php tests/pricing.php
           php tests/market-unit.php

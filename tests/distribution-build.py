@@ -59,3 +59,43 @@ with tempfile.TemporaryDirectory() as folder:
 # Leave the CI artifact unconfigured; fixture IDs must not be uploaded as a real candidate.
 subprocess.run(['python3', 'scripts/build.py', '--channel', 'zhaket-review'], cwd=ROOT, check=True)
 print('PASS: marketplace-only public product ID injection, no source/manifest leak, no live-test claim')
+
+# Test optional add-on/report packaging in a disposable source copy, never overwrite vendor metadata.
+import shutil
+from datetime import datetime, timezone
+with tempfile.TemporaryDirectory() as folder:
+    isolated = Path(folder)
+    for name in ('nil-manager','scripts','docs'):
+        shutil.copytree(ROOT / name, isolated / name)
+    for name in ('VERSION','CHANGELOG.md','package.json','package-lock.json'):
+        shutil.copyfile(ROOT / name, isolated / name)
+    metadata = json.loads((isolated / 'docs/zhaket-updater.json').read_text())
+    addon = isolated / 'fixture-updater.zip'
+    with zipfile.ZipFile(addon, 'w') as z:
+        z.writestr(metadata['entrypoint'], '<?php /* Plugin Name: Fixture only */')
+    metadata['size'] = addon.stat().st_size
+    metadata['sha256'] = hashlib.sha256(addon.read_bytes()).hexdigest()
+    (isolated / 'docs/zhaket-updater.json').write_text(json.dumps(metadata))
+    token = isolated / 'public-product-id.txt'
+    token.write_text('fixture-public-product')
+    report = isolated / 'guard-report.json'
+    evidence = {'plugin_version':version, 'product_sha256':hashlib.sha256(token.read_bytes()).hexdigest(), 'activation':True, 'validation':True, 'scope':'adapter-real-https-with-isolated-option-stubs', 'domain':'nil-manager-guard.test', 'wordpress_bootstrapped':False, 'tested_at':datetime.now(timezone.utc).replace(microsecond=0).isoformat()}
+    report.write_text(json.dumps(evidence))
+    command = ['python3','scripts/build.py','--channel','zhaket-review','--product-token-file',str(token),'--zhaket-updater-file',str(addon),'--guard-test-report',str(report)]
+    subprocess.run(command,cwd=isolated,check=True)
+    archive = isolated / 'dist/zhaket-review' / f'nil-manager-v{version}-zhaket-review.zip'
+    manifest = json.loads(archive.with_name(archive.name+'.manifest.json').read_text())
+    assert manifest['guard_live_tested'] and manifest['updater_bundled'] and not manifest['updater_runtime_tested']
+    assert manifest['guard_test_scope'] == evidence['scope']
+    with zipfile.ZipFile(archive) as z:
+        assert z.read('nilwears-bulk-manager/addons/'+metadata['archive']) == addon.read_bytes()
+        assert not any('guard-report' in n or 'public-product' in n for n in z.namelist())
+    for forbidden in ('fixture-public-product','fixture-license'):
+        assert forbidden not in json.dumps(manifest)
+    evidence['product_sha256']='wrong-product'
+    report.write_text(json.dumps(evidence))
+    assert subprocess.run(command,cwd=isolated,capture_output=True).returncode != 0
+    addon.write_bytes(addon.read_bytes()+b'tampered')
+    assert subprocess.run(command[:-2],cwd=isolated,capture_output=True).returncode != 0
+    assert subprocess.run(['python3','scripts/build.py','--zhaket-updater-file',str(addon)],cwd=isolated,capture_output=True).returncode != 0
+print('PASS: optional unmodified add-on only in review ZIP; matched redacted live report; corrupt files/wrong product/GitHub injection rejected')

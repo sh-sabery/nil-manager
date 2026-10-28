@@ -1,0 +1,12 @@
+{
+  "source": "https://www.zhaket.com/web/zhaket-smart-updater",
+  "version": "4.2.5",
+  "downloaded_on": "2026-10-28",
+  "outer_sha256": "ce30f46b5986de6aea558945c9e54d51cdcd582f5a530f8c4161b9fc84a405f1",
+  "archive": "zhaket-updater-4.2.5.zip",
+  "sha256": "d2cbb01f33f66859d9ea2a6c113f60e0ceb0c191f45d8ad8b2fa68f2daa39726",
+  "size": 4317750,
+  "entrypoint": "zhaket-updater/zhaket-updater.php",
+  "autoloaded": false,
+  "notes": "بستهٔ رسمی به‌صورت ZIP دست‌نخورده فقط در addons خروجی بررسی ژاکت قرار می‌گیرد؛ افزونهٔ نیل منجر آن را اجرا یا خودکار نصب نمی‌کند."
+}

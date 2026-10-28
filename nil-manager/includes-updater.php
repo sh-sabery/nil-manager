@@ -53,7 +53,7 @@ final class NIL_Updater {
         } return self::failure( 'asset', 'فایل ZIP نصب برای این نسخه در گیت‌هاب پیدا نشد.' );
     }
     public static function status() {
-        if ( 'github' !== self::channel() ) { return array( 'configured' => false, 'current' => NIL_Bulk_Manager::VERSION, 'available' => null, 'update_available' => false, 'access' => 'zhaket', 'checked_at' => null, 'error' => null, 'message' => 'نسخهٔ بررسی ژاکت؛ بروزرسانی از گیت‌هاب غیرفعال است. اتصال نهایی ژاکت و لایسنس هنوز تأیید نشده است.' ); }
+        if ( 'github' !== self::channel() ) { return array( 'configured' => false, 'current' => NIL_Bulk_Manager::VERSION, 'available' => null, 'update_available' => false, 'access' => 'zhaket', 'checked_at' => null, 'error' => null, 'message' => 'نسخهٔ بررسی ژاکت؛ بروزرسانی از گیت‌هاب غیرفعال است. مدیریت لایسنس از منوی ووکامرس انجام می‌شود؛ بروزرسان هوشمند ژاکت افزونه‌ای مستقل است.' ); }
         $r = self::release(); return array( 'configured' => '' !== self::token(), 'current' => NIL_Bulk_Manager::VERSION, 'available' => $r ? $r['version'] : null, 'update_available' => $r && version_compare( $r['version'], NIL_Bulk_Manager::VERSION, '>' ), 'access' => $r['access'] ?? ( self::token() ? 'token' : 'public' ), 'checked_at' => $r['checked_at'] ?? null, 'error' => $r ? null : ( get_site_transient( 'nil_release_error' ) ?: null ) ); }
     public static function check() {
         if ( ! current_user_can( 'update_plugins' ) ) { throw new RuntimeException( 'بررسی تازهٔ به‌روزرسانی به دسترسی به‌روزرسانی افزونه‌ها نیاز دارد.' ); }

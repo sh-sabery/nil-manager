@@ -34,7 +34,7 @@ jobs:
       - run: NIL_MINIFIED=1 node tests/payment-checkout.cjs
       - name: PHP syntax and pricing checks
         run: |
-          for file in nil-manager/*.php tests/*.php; do php -l "$file" || exit 1; done
+          for file in nil-manager/*.php tests/*.php scripts/*.php; do php -l "$file" || exit 1; done
           php tests/dates.php
           php tests/pricing.php
           php tests/market-unit.php
