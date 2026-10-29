@@ -1,7 +1,7 @@
 {
   "$schema": "https://playground.wordpress.net/blueprint-schema.json",
   "meta": {
-    "title": "دموی نیل منجر",
+    "title": "Nil Manager Demo",
     "author": "نیل وب",
     "description": "تجربهٔ واقعی مدیریت قیمت و موجودی با محصولات نمونه در مرورگر"
   },

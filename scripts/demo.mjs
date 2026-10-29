@@ -5,7 +5,9 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const version=fs.readFileSync(path.join(root,'VERSION'),'utf8').trim();
 const blueprint={
  '$schema':'https://playground.wordpress.net/blueprint-schema.json',
- meta:{title:'دموی نیل منجر',author:'نیل وب',description:'تجربهٔ واقعی مدیریت قیمت و موجودی با محصولات نمونه در مرورگر'},
+ // Playground derives the virtual transport scope from this title. An ASCII
+ // scope avoids an upstream double-encoding redirect failure; the site UI is Persian.
+ meta:{title:'Nil Manager Demo',author:'نیل وب',description:'تجربهٔ واقعی مدیریت قیمت و موجودی با محصولات نمونه در مرورگر'},
  preferredVersions:{php:'8.3',wp:'7.1.3'},
  features:{networking:true},
  constants:{NIL_PLAYGROUND_DEMO:true,DISABLE_WP_CRON:true,WP_DEBUG:false,WP_AUTO_UPDATE_CORE:false},
