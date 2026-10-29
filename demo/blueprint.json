@@ -1,0 +1,83 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "meta": {
+    "title": "دموی نیل منجر",
+    "author": "نیل وب",
+    "description": "تجربهٔ واقعی مدیریت قیمت و موجودی با محصولات نمونه در مرورگر"
+  },
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "7.1.3"
+  },
+  "features": {
+    "networking": true
+  },
+  "constants": {
+    "NIL_PLAYGROUND_DEMO": true,
+    "DISABLE_WP_CRON": true,
+    "WP_DEBUG": false,
+    "WP_AUTO_UPDATE_CORE": false
+  },
+  "landingPage": "/wp-admin/admin.php?page=nil-bulk",
+  "steps": [
+    {
+      "step": "mkdir",
+      "path": "/wordpress/wp-content/mu-plugins"
+    },
+    {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/nil-demo.php",
+      "data": "<?php\n/** Browser-only demo support. Never ship or install this file on a real store. */\ndefined('ABSPATH') || exit;\nif (!defined('NIL_PLAYGROUND_DEMO') || NIL_PLAYGROUND_DEMO !== true || !defined('DB_ENGINE') || DB_ENGINE !== 'sqlite') {\n    return;\n}\n\n// Each browser owns a disposable, single-worker SQLite database. These MySQL-only\n// statements are emulated ONLY here; production locks and transactions stay intact.\nadd_filter('query', function ($sql) {\n    if (preg_match('/^SELECT (GET_LOCK|RELEASE_LOCK)\\(/i', trim($sql))) return 'SELECT 1';\n    if (stripos($sql, 'SELECT ENGINE FROM information_schema.TABLES') !== false) return \"SELECT 'InnoDB'\";\n    return preg_replace('/ FOR UPDATE\\s*$/i', '', $sql);\n});\nadd_filter('pre_wp_mail', '__return_false');\nadd_filter('woocommerce_allow_tracking', '__return_false');\nadd_filter('woocommerce_enable_setup_wizard', '__return_false');\nadd_filter('woocommerce_admin_disabled', '__return_true');\nadd_filter('pre_http_request', function ($pre, $args, $url) {\n    // A clearly labelled sample quote, not a connection to WallGold or a bank.\n    if (strpos($url, 'https://wallgold.ir/wp-content/uploads/wallgold/prices.json?_=') === 0) {\n        $feed = array('indicators' => array());\n        foreach (array('price_dollar_rl' => array(2750000, true), 'price_eur' => array(3300000, true), 'gold18k' => array(22000000, false)) as $key => $rate) {\n            $feed['indicators'][$key] = array('price' => $rate[0], 'divide10' => $rate[1], 'unit' => 'تومان', 'updated_ms' => time() * 1000);\n        }\n        return array('response' => array('code' => 200), 'headers' => array(), 'body' => wp_json_encode($feed));\n    }\n    return new WP_Error('nil_demo_offline', 'ارتباط بیرونی در دموی آزمایشی غیرفعال است.');\n}, 1, 3);\n\nadd_action('admin_notices', function () {\n    echo '<div class=\"notice notice-info nil-demo-notice\" dir=\"rtl\"><p><strong>دموی شخصی نیل منجر</strong> — محصولات و نرخ‌های بازار نمونه‌اند. تغییرات فقط در مرورگر شما انجام می‌شوند؛ با بازکردن دوبارهٔ لینک، محیط تازه می‌گیرید. لایسنس، بروزرسان ژاکت، پرداخت واقعی و اجرای زمان‌بندی در پس‌زمینه در این دمو آزموده نمی‌شوند.</p><details><summary>تمرین سریع: ۱۰٪ افزایش با پایان ۹۰۰۰</summary><ol><li>در نیل منجر «تغییر قیمت» را باز کنید.</li><li>دستهٔ «پوشاک» یا چند کالای مشخص را انتخاب کنید.</li><li>الگوی «۱۰٪ افزایش و پایان ۹۰۰۰» را بزنید و کالاهای مشمول را ببینید.</li><li>پیش‌نمایش را تأیید و اعمال کنید؛ برای برگشت به «تاریخچه» بروید.</li></ol><p>نمونه: ۴۹۵٬۰۰۰ ← ۵۴۹٬۰۰۰ تومان. دلار نمونه ۲۷۵٬۰۰۰، یورو ۳۳۰٬۰۰۰ و طلای ۱۸ عیار ۲۲٬۰۰۰٬۰۰۰ تومان است؛ برای تمرین رشد ۱۰٪، نرخ مبنای دلار را ۲۵۰٬۰۰۰ قرار دهید.</p></details></div>';\n});\nadd_action('admin_head', function () {\n    $font = plugins_url('assets/vazirmatn-arabic-wght-normal.woff2', WP_PLUGIN_DIR . '/nilwears-bulk-manager/nilwears-bulk-manager.php');\n    echo '<style>@font-face{font-family:NilDemo;src:url(' . esc_url($font) . ') format(\"woff2\");font-display:swap}body.rtl,.nil-demo-notice{font-family:NilDemo,Tahoma,sans-serif}.nil-demo-notice{border-radius:12px;background:#f5f3ff;border-right-color:#6941c6;padding:8px 18px;line-height:1.9}.nil-demo-notice summary{cursor:pointer;color:#5b32a8;font-weight:600}.nil-demo-notice ol{margin-right:20px}</style>';\n});\n"
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "woocommerce_feature_cost_of_goods_sold_enabled": "yes"
+      }
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "url",
+        "url": "https://downloads.wordpress.org/plugin/woocommerce.11.2.1.zip"
+      },
+      "options": {
+        "activate": true
+      },
+      "progress": {
+        "caption": "آماده‌سازی ووکامرس…"
+      }
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "url",
+        "url": "https://github.com/sh-sabery/nil-manager/releases/download/v1.11.2/nil-manager-v1.11.2.zip"
+      },
+      "options": {
+        "activate": true
+      },
+      "progress": {
+        "caption": "نصب نیل منجر…"
+      }
+    },
+    {
+      "step": "setSiteLanguage",
+      "language": "fa_IR",
+      "progress": {
+        "caption": "آماده‌سازی محیط فارسی…"
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php\n/** Seed only an explicitly disposable Playground. No production data or accounts. */\nrequire '/wordpress/wp-load.php';\nif (!defined('NIL_PLAYGROUND_DEMO') || NIL_PLAYGROUND_DEMO !== true || !defined('DB_ENGINE') || DB_ENGINE !== 'sqlite' || !class_exists('WooCommerce')) {\n    throw new RuntimeException('Refusing to seed outside the disposable Playground.');\n}\nwp_set_current_user(1);\nif (get_option('nil_demo_seeded')) return;\nforeach (array(\n    'blogname' => 'دموی نیل منجر | نیل وب', 'blogdescription' => 'محصولات آزمایشی برای تجربهٔ مدیریت قیمت و موجودی',\n    'timezone_string' => 'Asia/Tehran', 'date_format' => 'Y/m/d', 'time_format' => 'H:i',\n    'woocommerce_currency' => 'IRT', 'woocommerce_price_num_decimals' => 0,\n    'woocommerce_price_thousand_sep' => ',', 'woocommerce_price_decimal_sep' => '.',\n    'woocommerce_default_country' => 'IR', 'woocommerce_store_address' => '',\n    'woocommerce_onboarding_profile' => array('completed' => true, 'skipped' => true),\n    'woocommerce_task_list_hidden' => 'yes', 'woocommerce_show_marketplace_suggestions' => 'no',\n    'woocommerce_allow_tracking' => 'no', 'woocommerce_coming_soon' => 'no',\n    'woocommerce_custom_orders_table_enabled' => 'yes', 'woocommerce_custom_orders_table_data_sync_enabled' => 'no',\n    'woocommerce_feature_cost_of_goods_sold_enabled' => 'yes',\n    'woocommerce_bacs_settings' => array('enabled' => 'yes', 'title' => 'پرداخت نقدی آزمایشی'),\n    'woocommerce_cod_settings' => array('enabled' => 'yes', 'title' => 'پرداخت هنگام دریافت آزمایشی'),\n    'nil_bulk_branding' => array('title' => 'نیل منجر', 'accent' => '#6941c6', 'logo' => '')\n) as $key => $value) update_option($key, $value);\ndelete_transient('_wc_activation_redirect');\nNIL_Bulk_Manager::install();\n$cats = array();\nforeach (array('پوشاک', 'اکسسوری', 'کالای دیجیتال') as $name) {\n    $term = wp_insert_term($name, 'product_cat');\n    if (is_wp_error($term)) throw new RuntimeException('Demo category creation failed.');\n    $cats[$name] = $term['term_id'];\n}\n$items = array(\n    array('تیشرت ساده', 'پوشاک', 495000, 12), array('هودی دورس', 'پوشاک', 1290000, 8),\n    array('شلوار جین', 'پوشاک', 1890000, 5), array('شال نخی', 'اکسسوری', 395000, 20),\n    array('کیف روزمره', 'اکسسوری', 2490000, 4), array('کمربند', 'اکسسوری', 590000, 0),\n    array('هدفون بی‌سیم', 'کالای دیجیتال', 3290000, 7), array('پاوربانک', 'کالای دیجیتال', 1590000, 10)\n);\nforeach ($items as $i => $item) {\n    $p = new WC_Product_Simple(); $p->set_name($item[0]); $p->set_status('publish');\n    $p->set_sku('DEMO-S-' . ($i + 1)); $p->set_category_ids(array($cats[$item[1]]));\n    $p->set_regular_price((string) $item[2]);\n    if ($i === 1) $p->set_sale_price('1190000');\n    $p->set_manage_stock(true); $p->set_stock_quantity($item[3]);\n    $p->set_description('این کالا فقط برای تمرین در دموی نیل منجر ساخته شده است.');\n    NIL_Cost::set($p, (string) floor($item[2] * .6)); $p->save();\n}\nforeach (array(array('بارانی', 1495000, false), array('کت پاییزه', 2495000, true)) as $i => $item) {\n    $parent = new WC_Product_Variable(); $parent->set_name($item[0]); $parent->set_status('publish');\n    $parent->set_sku('DEMO-V-' . ($i + 1)); $parent->set_category_ids(array($cats['پوشاک']));\n    if ($item[2]) { $parent->set_manage_stock(true); $parent->set_stock_quantity(18); }\n    $attrs = array();\n    foreach (array('رنگ' => array('مشکی', 'کرم'), 'سایز' => array('M', 'L')) as $name => $options) {\n        $a = new WC_Product_Attribute(); $a->set_name($name); $a->set_options($options);\n        $a->set_visible(true); $a->set_variation(true); $attrs[] = $a;\n    }\n    $parent->set_attributes($attrs); $parent_id = $parent->save();\n    $n = 0;\n    foreach (array('مشکی', 'کرم') as $color) foreach (array('M', 'L') as $size) {\n        $v = new WC_Product_Variation(); $v->set_parent_id($parent_id); $v->set_status('publish');\n        $v->set_sku('DEMO-V-' . ($i + 1) . '-' . (++$n));\n        $v->set_attributes(array(sanitize_title('رنگ') => $color, sanitize_title('سایز') => $size));\n        $v->set_regular_price((string) ($item[1] + ($size === 'L' ? 100000 : 0)));\n        if (!$item[2]) { $v->set_manage_stock(true); $v->set_stock_quantity($n + 2); }\n        NIL_Cost::set($v, (string) floor($item[1] * .6)); $v->save();\n    }\n    WC_Product_Variable::sync($parent_id);\n}\nwp_update_user(array('ID' => 1, 'display_name' => 'بازدیدکنندهٔ دمو', 'locale' => 'fa_IR'));\nupdate_option('nil_demo_seeded', true, false);\necho 'Nil Manager demo ready: 10 products, 8 variations; synthetic data only.';\n",
+      "progress": {
+        "caption": "ساخت محصولات و تنوع‌های نمونه…"
+      }
+    },
+    {
+      "step": "login",
+      "username": "admin"
+    }
+  ]
+}

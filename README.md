@@ -4,9 +4,11 @@
 
 افزونهٔ فارسی مدیریت قیمت، موجودی و تخفیف ووکامرس برای محصولات ساده و ورییشن‌های رنگ و سایز؛ با انتخاب روشن کالا، پیش‌نمایش قبل از ذخیره و بازگردانی با کنترل تداخل.
 
-**نسخهٔ فعلی: ۱.۱۰.۳** · [دریافت نسخهٔ قابل نصب](https://github.com/sh-sabery/nil-manager/releases/latest) · [تغییرات تمام نسخه‌ها](CHANGELOG.md) · [راهنمای فارسی](nil-manager/README-fa.html)
+**نسخهٔ فعلی: ۱.۱۱.۲** · [دریافت نسخهٔ قابل نصب](https://github.com/sh-sabery/nil-manager/releases/latest) · [تغییرات تمام نسخه‌ها](CHANGELOG.md) · [راهنمای فارسی](nil-manager/README-fa.html)
 
 سازنده **نیل وب** است. عنوان، رنگ و لوگوی پنل را می‌توانید متناسب با فروشگاه خود تنظیم کنید؛ تنظیمات شخصی هنگام بروزرسانی حفظ می‌شوند.
+
+[دموی تعاملی با محصولات نمونه](https://playground.wordpress.net/?blueprint-url=https%3A%2F%2Fraw.githubusercontent.com%2Fsh-sabery%2Fnil-manager%2Fv1.11.2%2Fdemo%2Fblueprint.json&mode=seamless&storage=temp) · [راهنمای دمو و محدودیت‌های محیط آزمایشی](demo/README.md)
 
 ## نصب و بروزرسانی
 

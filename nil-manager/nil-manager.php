@@ -2,7 +2,7 @@
 /**
  * Plugin Name: نیل منجر — مدیریت قیمت و موجودی ووکامرس
  * Description: مدیریت گروهی قیمت و موجودی محصولات و ورییشن‌ها، رندکردن پیشرفته، تخفیف روش پرداخت، قیمت‌گذاری طلا و ارز، پیش‌نمایش و بازگردانی؛ محصول نیل وب.
- * Version: 1.11.1
+ * Version: 1.11.2
  * Update URI: https://github.com/sh-sabery/nil-manager
  * Author: نیل وب
  * Requires at least: 6.4
@@ -22,7 +22,7 @@ add_action( 'before_woocommerce_init', function() {
 } );
 
 final class NIL_Bulk_Manager {
-    const VERSION = '1.11.1';
+    const VERSION = '1.11.2';
     const FILE = __FILE__;
     const VARIATION_LIMIT = 500;
     /** Prime a bounded batch; reuse WordPress caches instead of per-product reads. */
