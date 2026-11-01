@@ -17,7 +17,7 @@ add_filter('woocommerce_allow_tracking', '__return_false');
 add_filter('woocommerce_enable_setup_wizard', '__return_false');
 add_filter('woocommerce_admin_disabled', '__return_true');
 add_filter('pre_http_request', function ($pre, $args, $url) {
-    // A clearly labelled sample quote, not a connection to WallGold or a bank.
+    // A clearly labelled sample quote, not a connection to an external rate provider.
     if (strpos($url, 'https://wallgold.ir/wp-content/uploads/wallgold/prices.json?_=') === 0) {
         $feed = array('indicators' => array());
         foreach (array('price_dollar_rl' => array(2750000, true), 'price_eur' => array(3300000, true), 'gold18k' => array(22000000, false)) as $key => $rate) {
