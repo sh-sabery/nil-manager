@@ -8,5 +8,23 @@
   "size": 4317750,
   "entrypoint": "zhaket-updater/zhaket-updater.php",
   "autoloaded": false,
-  "notes": "بستهٔ رسمی به‌صورت ZIP دست‌نخورده فقط در addons خروجی بررسی ژاکت قرار می‌گیرد؛ افزونهٔ نیل منجر آن را اجرا یا خودکار نصب نمی‌کند."
+  "notes": "در بستهٔ کامل فروش، ZIP رسمی دست‌نخورده در Addons و خارج از ZIP نصب افزونه است. خروجی خام ابزار ساخت آن را در addons نگه می‌دارد و مرحلهٔ بسته‌بندی نهایی جدا می‌کند؛ نیل منجر آن را خودکار نصب نمی‌کند.",
+  "runtime_validation": {
+    "tested_on": "2026-11-03",
+    "plugin_version": "1.11.3",
+    "installed": true,
+    "activated": true,
+    "all_files_match_vendor_zip": true,
+    "booted_after_restart": true,
+    "environment": {
+      "from": "1.11.2",
+      "php": "8.3.36",
+      "to": "1.11.3",
+      "wc": "11.2.1",
+      "wp": "7.1.4"
+    },
+    "ioncube_available": true,
+    "remote_product_update_tested": false,
+    "report": "docs/package-validation-1405-08-12.json"
+  }
 }
