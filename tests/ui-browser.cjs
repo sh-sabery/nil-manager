@@ -25,6 +25,12 @@ async function contained(page, label) {
             await page.evaluate(() => document.fonts.ready);
             await page.locator('#nil-panel-home').waitFor({state:'visible'});
             assert(await page.locator('#nil-panel-products').isHidden());
+            // WordPress styles headings independently of the body.
+            await page.addStyleTag({content:'h1,h2,h3{font-family:serif}'});
+            for (const selector of ['.nil-welcome h2','.nil-welcome h3','#nil-tab-home']) {
+                assert.match(await page.locator(selector).first().evaluate(el=>getComputedStyle(el).fontFamily), /Nil Vazirmatn/);
+            }
+            if(name==='desktop')assert((await page.locator('.nil-tabs').boundingBox()).width>=205);
             await contained(page, name + ' home');
             await page.screenshot({path:path.join(out, `ux-${name}-home.png`), fullPage:true});
             await page.locator('#nil-panel-home [data-start-flow="manual"]').click();
@@ -62,10 +68,50 @@ async function contained(page, label) {
             await idle(page);
             await contained(page, name + ' market preview');
             await page.screenshot({path:path.join(out, `ux-${name}-market.png`), fullPage:true});
+            await page.locator('#nil-tab-media').click();
+            const archive=page.locator('.nil-media-archive');
+            assert.equal(await archive.evaluate(el=>getComputedStyle(el).flexDirection), 'row');
+            await archive.click();
+            assert(await page.locator('#nil-media-trash').isChecked());
+            const [quality,maxWidth]=await Promise.all(['#nil-media-quality','#nil-media-width'].map(id=>page.locator(id).boundingBox()));
+            assert.equal(quality.y,maxWidth.y);
+            await contained(page, name + ' media');
+
+            await page.locator('#nil-tab-insights').click();
+            assert.equal(await page.locator('style').filter({hasText:'nil-calendar::backdrop'}).count(),0);
+            const from=page.locator('#nil-insight-from'), to=page.locator('#nil-insight-to');
+            const dialog=page.locator('#nil-calendar'), year=page.locator('#nil-calendar-year');
+            await from.fill('۱۴۰۳/۱۲/۰۱');
+            await page.locator('[data-calendar=from]').click();
+            await dialog.waitFor({state:'visible'});
+            await contained(page, name + ' calendar');
+            assert.equal(await dialog.locator('#nil-calendar-days > span').count(),4, 'Esfand 1, 1403 was Wednesday');
+            assert.equal(await dialog.locator('[data-day]').count(),30);
+            await dialog.locator('[data-day="30"]').click();
+            assert.equal(await from.inputValue(),'۱۴۰۳/۱۲/۳۰');
+            await page.locator('[data-calendar=to]').click();
+            await dialog.waitFor({state:'visible'});
+            await year.fill('۱۴۰۴');
+            await year.press('Tab');
+            await page.locator('#nil-calendar-month').selectOption('12');
+            assert.equal(await dialog.locator('[data-day]').count(),29);
+            await page.locator('#nil-calendar-next').click();
+            assert.equal(await year.inputValue(),'۱۴۰۵');
+            assert.equal(await page.locator('#nil-calendar-month').inputValue(),'1');
+            await dialog.locator('[data-day="1"]').click();
+            assert.equal(await to.inputValue(),'۱۴۰۵/۰۱/۰۱');
+            await page.locator('[data-calendar=to]').click();
+            await dialog.waitFor({state:'visible'});
+            await page.keyboard.press('Escape');
+            await dialog.waitFor({state:'hidden'});
+            assert.equal(await to.inputValue(),'۱۴۰۵/۰۱/۰۱');
+            await page.locator('#nil-insight-load').click();
+            await idle(page);
+            assert.deepEqual(await page.evaluate(()=>insightQuery),{from:'۱۴۰۳/۱۲/۳۰',to:'۱۴۰۵/۰۱/۰۱',calendar:'persian'});
             await page.close();
         }
         assert.deepEqual(errors, [], 'no uncaught browser errors');
-        console.log('PASS: Chromium desktop/mobile journeys, rounded controls, primary hover, preview invalidation and contained reports');
+        console.log('PASS: Chromium desktop/mobile journeys, rounded controls, primary hover, preview invalidation, contained reports, font, media layout and Jalali range selection');
     } finally {
         await browser.close();
     }

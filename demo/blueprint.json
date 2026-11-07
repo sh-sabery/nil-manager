@@ -52,7 +52,7 @@
       "step": "installPlugin",
       "pluginData": {
         "resource": "url",
-        "url": "https://github.com/sh-sabery/nil-manager/releases/download/v1.11.3/nil-manager-v1.11.3.zip"
+        "url": "https://github.com/sh-sabery/nil-manager/releases/download/v1.11.4/nil-manager-v1.11.4.zip"
       },
       "options": {
         "activate": true

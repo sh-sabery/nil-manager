@@ -12,6 +12,8 @@ css = (plugin / 'assets/admin.min.css').read_text().replace('url(vazirmatn-arabi
 test = (root / 'tests/ui-dom.cjs').read_text()
 mock = test[test.index('const base='):test.index('const context=')]
 config = '''const NIL_BULK={api:'https://nil.test/nil/',nonce:'fixture',currency:'تومان',currencyCode:'IRT',decimals:0,categories:[{id:7,name:'بارونی'},{id:8,name:'تیشرت'}],canBrand:true,canMarket:true,canUpdate:true,timeZone:'Asia/Tehran',userId:1,branding:{title:'نیل منجر',accent:'#6941c6',logo:''}};window.fetch=fetchMock;'''
+calendar = base64.b64encode((plugin / 'assets/calendar.min.js').read_bytes()).decode()
+config += "NIL_BULK.calendar='data:text/javascript;base64," + calendar + "';"
 js = '\n'.join((plugin / ('assets/'+name+'.min.js')).read_text() for name in ['admin','suite','advanced','market'])
 html = '''<!doctype html><html dir="rtl" lang="fa"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>پیش‌نمایش آزمایشی نیل منجر</title><style>body{margin:0;background:#f3f5f9}.fixture-note{padding:10px 24px;background:#172333;color:#fff;font:12px Tahoma}#toplevel_page_woocommerce{display:none}</style><style>'''+css+'''</style><body><div class="fixture-note">محیط آزمایشی · محصولات نمونه · هیچ فروشگاهی متصل نیست</div><div id="toplevel_page_woocommerce"><a href="admin.php?page=nil-bulk">نیل</a></div><main id="nil-bulk-app" dir="rtl"></main>'''+templates+'<script>'+mock+config+'</script><script>'+js+'</script></body></html>'
 (out / 'ui-preview.html').write_text(html)

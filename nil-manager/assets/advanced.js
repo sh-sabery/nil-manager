@@ -2,7 +2,7 @@
 (()=>{
 'use strict';const a=window.NIL_APP,cfg=NIL_BULK,{api,task,esc,fmt,message}=a;
 const $=id=>document.getElementById('nil-'+id),importButton=$('v-import');
-$('cost-source').textContent=cfg.costBackend==='native'?'COGS ووکامرس':'قیمت خرید افزونه';
+$('cost-source').textContent=cfg.costBackend==='native'?'COGS ووکامرس':a.text.priceBasis;
 const on=(id,fn)=>{$(id).onclick=()=>task(fn);};let parent=null,plan=null,presets=[];
 function columns(){const view=a.getView(),labels={cost:'خرید',profit:'سود',regular:'اصلی',sale:'حراج',manage:'مدیریت تعداد',quantity:'تعداد',stock:'وضعیت'};$('columns').innerHTML=view.order.map((key,i)=>`<label><span><input type="checkbox" data-col="${key}" ${view.columns.includes(key)?'checked':''}>${labels[key]}</span><span><button type="button" class="button" data-move="${key}" data-dir="-1" aria-label="جابجایی ${labels[key]} به قبل" ${i===0?'disabled':''}>→</button><button type="button" class="button" data-move="${key}" data-dir="1" aria-label="جابجایی ${labels[key]} به بعد" ${i===view.order.length-1?'disabled':''}>←</button></span></label>`).join('');}
 $('columns').onchange=()=>{const v=a.getView();a.setColumns([...$('columns').querySelectorAll('[data-col]')].filter(e=>e.checked).map(e=>e.dataset.col),v.order);};
